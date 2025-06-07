@@ -12,13 +12,19 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
 import { useState } from "react";
+
+interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
+  onForgotPassword?: () => void;
+  onBack?: () => void;
+  onSignUp?: () => void;
+}
 
 export function ForgotPasswordForm({
   className,
+  onBack,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: React.ComponentPropsWithoutRef<"div">&LoginFormProps) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -89,12 +95,13 @@ export function ForgotPasswordForm({
               </div>
               <div className="mt-4 text-center text-sm">
                 Already have an account?{" "}
-                <Link
-                  href="/auth/login"
-                  className="underline underline-offset-4"
+                <Button
+                  onClick={onBack}
+                  variant="link"
+                  className="p-0 underline underline-offset-4"
                 >
                   Login
-                </Link>
+                </Button>
               </div>
             </form>
           </CardContent>

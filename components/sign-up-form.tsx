@@ -16,10 +16,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
+  onForgotPassword?: () => void;
+  onBack?: () => void;
+  onSignUp?: () => void;
+}
+
 export function SignUpForm({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: React.ComponentPropsWithoutRef<"div">&LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
