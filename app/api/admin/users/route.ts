@@ -145,7 +145,7 @@ export async function POST(request: Request) {
     const { data, error: authError } = await supabase.auth.admin.inviteUserByEmail(
       email,
       {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/update-password`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/`,
         data: {
           first_name: firstName,
           last_name: lastName,
