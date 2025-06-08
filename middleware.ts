@@ -2,7 +2,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith('/auth')) {
+  if (request.nextUrl.pathname.startsWith('/auth') && request.nextUrl.pathname !== '/auth/update-password') {
     return NextResponse.redirect(new URL('/', request.url))
   }
   return await updateSession(request);
