@@ -75,6 +75,7 @@ export function AppSidebar() {
       items: [
         { title: "Usuários", url: "/main/admin/users", newTab: false },
         { title: "Parceiros", url: "/main/admin/partners", newTab: false },
+        { title: "Cargos", url: "/main/admin/roles", newTab: false }
       ],
       roles: ["ADMIN"],
     },

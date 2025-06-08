@@ -49,7 +49,7 @@ export async function POST(request: Request) {
           last_name: lastName,
           is_client: Boolean(isClient),
           tel_contact: telephone || null,
-          role: null, // Allow null role
+          role: role,
           partner_id: partnerId && partnerId.trim() !== '' ? partnerId : null
         }
       }
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, user: data.user });
 
   } catch (err) {
-    const error = err as any;
+    const error = err as Error & { status?: number; code?: string };
     console.error('Full error details:', {
       message: error.message,
       status: error.status,

@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
+  // Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -20,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Role } from "@/types/roles";
+import { getRoleOptions } from "@/hooks/useOptions";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onForgotPassword?: () => void;
@@ -55,6 +57,26 @@ export function SignUpForm({
   const [isLoading, setIsLoading] = useState(false);
   const [partnerId, setPartnerId] = useState<string>("");
   const [role, setRole] = useState<string>("");
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        setIsLoadingRoles(true);
+        // You'll need to modify getRoleOptions to return an array of roles
+        const roleData = await getRoleOptions(); // This needs to be updated
+        setRoles(roleData || []);
+      } catch (error) {
+        console.error('Failed to fetch roles:', error);
+        setRoles([]);
+      } finally {
+        setIsLoadingRoles(false);
+      }
+    };
+
+    fetchRoles();
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +115,7 @@ export function SignUpForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+      {/* <Card> */}
         <CardHeader>
           <CardTitle className="text-2xl">Criar Novo Usuário</CardTitle>
           <CardDescription>Preencha os dados abaixo para criar um novo usuário</CardDescription>
@@ -152,11 +174,20 @@ export function SignUpForm({
                 <Label htmlFor="role">Função</Label>
                 <Select value={role} onValueChange={setRole}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma função" />
+                  <SelectValue placeholder="Selecione uma função" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="user">Usuário</SelectItem>
+                  {isLoadingRoles ? (
+                      <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                    ) : (
+                      roles
+                        .filter((option: Role) => option.id)
+                        .map((option: Role) => (
+                          <SelectItem key={option.id} value={option.id}>
+                            {option.title}
+                          </SelectItem>
+                        ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -214,7 +245,7 @@ export function SignUpForm({
             </Button>
           </form>
         </CardContent>
-      </Card>
+      {/* </Card> */}
     </div>
   );
 }
