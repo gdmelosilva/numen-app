@@ -15,7 +15,7 @@ import { Search } from "lucide-react";
 
 interface Filters {
   search: string;
-  active: boolean | null;
+  active: boolean | null ;
 }
 
 export default function UsersPage() {
@@ -39,7 +39,7 @@ export default function UsersPage() {
         queryParams.append("search", filters.search);
       }
       
-      if (filters.active !== null) {
+      if (filters.active !== null && filters.active !== undefined) {
         queryParams.append("active", filters.active.toString());
       }
 

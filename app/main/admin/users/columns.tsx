@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
-// import { UserDeactivate } from "@/components/UserDeactivate"
 
 export type User = {
   id: string
@@ -17,8 +16,8 @@ export type User = {
   last_name: string
   email: string
   is_client: boolean
-  tel_contact: string | null // Allow null
-  role: string | null // Allow null since you're creating users without roles
+  tel_contact: string | null
+  role: string | null
   partner_id: string | null
   created_at: string
   is_active: boolean

@@ -45,6 +45,27 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Handle API routes protection
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    // Skip auth check for public API routes
+    const publicRoutes = ["/api/auth/", "/api/public/"];
+    const isPublicRoute = publicRoutes.some(route => 
+      request.nextUrl.pathname.startsWith(route)
+    );
+
+    if (!isPublicRoute && !user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    // For protected API routes, you could add additional role-based checks here
+    // But it's better to handle detailed authorization in each route handler
+    return supabaseResponse;
+  }
+
+
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
@@ -72,3 +93,4 @@ export async function updateSession(request: NextRequest) {
 
   return supabaseResponse;
 }
+
