@@ -1,69 +1,148 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import { columns, User } from "./columns";
+import { Button } from "@/components/ui/button";
+import { UserCreateDialog } from "@/components/UserCreateDialog";
+import { exportToCSV } from "@/lib/export-file";
+import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Search } from "lucide-react";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
+interface Filters {
+  search: string;
+  active: boolean | null;
 }
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<Filters>({
+    search: "",
+    active: null,
+  });
+  const [searchInput, setSearchInput] = useState("");
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams();
+      
+      if (filters.search) {
+        queryParams.append("search", filters.search);
+      }
+      
+      if (filters.active !== null) {
+        queryParams.append("active", filters.active.toString());
+      }
+
+      const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error("Falha ao carregar usuários");
+      }
+      const data = await response.json();
+      setUsers(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro desconhecido");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/users");
-        if (!response.ok) {
-          throw new Error("Falha ao carregar usuários");
-        }
-        const data = await response.json();
-        setUsers(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro desconhecido");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, []);
+  }, [filters]);
 
-  if (loading) {
-    return <div>Carregando...</div>;
-  }
+  const handleSearch = () => {
+    setFilters(prev => ({ ...prev, search: searchInput }));
+  };
 
-  if (error) {
-    return <div>Erro: {error}</div>;
-  }
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Usuários</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {users.map((user) => (
-            <div
-              key={user.id}
-              className="flex items-center justify-between p-4 border rounded-lg"
-            >
-              <div>
-                <h3 className="font-medium">{user.name}</h3>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
-              <span className="text-sm text-muted-foreground">{user.role}</span>
-            </div>
-          ))}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Lista de Usuários</h2>
+          <p className="text-sm text-muted-foreground">Administração de Usuários</p>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleSearch} disabled={loading}>
+            <Search className="mr-2 h-4 w-4" /> Buscar
+          </Button>
+          <UserCreateDialog onSuccess={fetchUsers} />
+          <Button
+            variant="secondary"
+            onClick={() => exportToCSV(users, "usuarios.csv")}
+            disabled={users.length === 0}
+          >
+            Exportar CSV
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="search">Buscar</Label>
+              <Input
+                id="search"
+                placeholder="Buscar por nome ou email..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="active"
+                  checked={filters.active === true}
+                  onCheckedChange={(checked) => {
+                    setFilters(prev => ({ ...prev, active: checked }));
+                    fetchUsers();
+                  }}
+                />
+                <Label htmlFor="active">Ativos</Label>
+                <Switch
+                  id="inactive"
+                  checked={filters.active === false}
+                  onCheckedChange={(checked) => {
+                    setFilters(prev => ({ ...prev, active: checked ? false : null }));
+                    fetchUsers();
+                  }}
+                />
+                <Label htmlFor="inactive">Inativos</Label>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <DataTable columns={columns} data={users} />
+      )}
+    </div>
   );
 } 

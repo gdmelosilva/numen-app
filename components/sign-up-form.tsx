@@ -2,7 +2,6 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,8 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Select,
@@ -30,8 +27,7 @@ interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onSignUp?: () => void;
 }
 
-  const formatPhoneNumber = (value: string) => {
-
+const formatPhoneNumber = (value: string) => {
   const cleaned = value.replace(/\D/g, '');
   
   if (cleaned.length <= 0) {
@@ -47,6 +43,7 @@ interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
 
 export function SignUpForm({
   className,
+  onSignUp,
   ...props
 }: React.ComponentPropsWithoutRef<"div">&LoginFormProps) {
   const [firstName, setFirstName] = useState("");
@@ -58,45 +55,35 @@ export function SignUpForm({
   const [isLoading, setIsLoading] = useState(false);
   const [partnerId, setPartnerId] = useState<string>("");
   const [role, setRole] = useState<string>("");
-  const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     try {
-      const { data: res, error: error } = await supabase.auth.signUp({
-        email,
-        password: 'Numen@2025',
-        options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
+      const response = await fetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email,
+          firstName,
+          lastName,
+          telephone,
+          isClient,
+          role,
+          partnerId,
+        }),
       });
-      if (error) throw error;
-      router.push("/auth/sign-up-success");
-      if (res) {
-        const createdUser = res.user;
-        if (!createdUser) {
-          throw new Error("Usuário não criado");
-        } else {
-          try{
-            await supabase.from('users').insert({
-            id: createdUser.id,
-            first_name: firstName,
-            last_name: lastName,
-            email: createdUser.email,
-            is_client: isClient,
-            tel_contact: telephone,
-            role: role,
-            partner_id: partnerId || null,
-          })
-        } catch (error) {
-          console.error("Erro ao inserir usuário:", error);
-          setError("Erro ao criar usuário no banco de dados");
-        }
-      }}
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Erro ao criar usuário');
+      }
+
+      if (onSignUp) onSignUp();
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -108,12 +95,12 @@ export function SignUpForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle className="text-2xl">Criar Novo Usuário</CardTitle>
+          <CardDescription>Preencha os dados abaixo para criar um novo usuário</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="first_name">Nome</Label>
                 <Input
@@ -162,42 +149,6 @@ export function SignUpForm({
                 />
               </div>
               <div className="grid gap-2">
-                <Label 
-                  htmlFor="is_client" 
-                  className={cn(
-                  "flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all duration-200",
-                  isClient ? "bg-primary text-primary-foreground border-primary" : "hover:bg-secondary"
-                  )}
-                >
-                  <span>Usuário Cliente</span>
-                  <div className={cn(
-                  "w-6 h-6 rounded-sm border-2 flex items-center justify-center transition-all duration-200",
-                  isClient ? "border-primary-foreground bg-primary-foreground" : "border-muted-foreground"
-                  )}>
-                  {isClient && (
-                    <svg 
-                    className="w-4 h-4 text-primary" 
-                    fill="currentColor" 
-                    viewBox="0 0 20 20"
-                    >
-                    <path 
-                      fillRule="evenodd" 
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
-                      clipRule="evenodd" 
-                    />
-                    </svg>
-                  )}
-                  </div>
-                  <Input
-                  id="is_client"
-                  type="checkbox"
-                  className="sr-only"
-                  checked={isClient}
-                  onChange={(e) => setIsClient(e.target.checked)}
-                  />
-                </Label>
-                </div>
-              <div className="grid gap-2">
                 <Label htmlFor="role">Função</Label>
                 <Select value={role} onValueChange={setRole}>
                   <SelectTrigger>
@@ -220,17 +171,47 @@ export function SignUpForm({
                   </SelectContent>
                 </Select>
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
-              </Button>
             </div>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
-                Login
-              </Link>
+            <div className="mt-4">
+              <Label 
+                htmlFor="is_client" 
+                className={cn(
+                  "flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all duration-200",
+                  isClient ? "bg-primary text-primary-foreground border-primary" : "hover:bg-secondary"
+                )}
+              >
+                <span>Usuário Cliente</span>
+                <div className={cn(
+                  "w-6 h-6 rounded-sm border-2 flex items-center justify-center transition-all duration-200",
+                  isClient ? "border-primary-foreground bg-primary-foreground" : "border-muted-foreground"
+                )}>
+                  {isClient && (
+                    <svg 
+                      className="w-4 h-4 text-primary" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                    >
+                      <path 
+                        fillRule="evenodd" 
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                        clipRule="evenodd" 
+                      />
+                    </svg>
+                  )}
+                </div>
+                <input
+                  id="is_client"
+                  type="checkbox"
+                  className="sr-only"
+                  checked={isClient}
+                  onChange={(e) => setIsClient(e.target.checked)}
+                />
+              </Label>
             </div>
+            {error && <p className="text-sm text-red-500 mt-4">{error}</p>}
+            <Button type="submit" className="w-full mt-4" disabled={isLoading}>
+              {isLoading ? "Criando..." : "Criar Usuário"}
+            </Button>
           </form>
         </CardContent>
       </Card>
