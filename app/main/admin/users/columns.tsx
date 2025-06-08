@@ -17,7 +17,7 @@ export type User = {
   email: string
   is_client: boolean
   tel_contact: string | null
-  role: string | null
+  role: number | null
   partner_id: string | null
   created_at: string
   is_active: boolean
@@ -81,9 +81,24 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title="Função" />
     ),
     cell: ({ row }) => {
-      const role = row.getValue("role") as string | null
+      const role = row.getValue("role") as number | null
       if (!role) return <Badge variant="outline">Sem função</Badge>
-      return role.charAt(0).toUpperCase() + role.slice(1)
+      
+      // Convert role number to display name
+      const getRoleDisplayName = (roleNum: number): string => {
+        switch (roleNum) {
+          case 1:
+            return "Admin"
+          case 2:
+            return "Manager"
+          case 3:
+            return "Usuário"
+          default:
+            return "Desconhecido"
+        }
+      }
+      
+      return <Badge variant="default">{getRoleDisplayName(role)}</Badge>
     },
   },
   {

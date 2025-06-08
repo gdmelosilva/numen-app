@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 export interface AuthenticatedUser {
   id: string;
   email: string;
-  role: string;
-  partner_id?: string;
+  role: number;
+  partner_id?: string | null;
   is_client: boolean;
   first_name: string;
   last_name: string;
@@ -63,7 +63,7 @@ export async function authenticateRequest(): Promise<{
   }
 }
 
-export function requireRole(allowedRoles: string[]) {
+export function requireRole(allowedRoles: number[]) {
   return (user: AuthenticatedUser): NextResponse | null => {
     if (!allowedRoles.includes(user.role)) {
       return NextResponse.json(
@@ -77,7 +77,7 @@ export function requireRole(allowedRoles: string[]) {
 
 export function requirePartnerAccess(user: AuthenticatedUser, targetPartnerId?: string): NextResponse | null {
   // Se for admin, pode acessar tudo
-  if (user.role === 'admin') {
+  if (user.role === 1) {
     return null;
   }
   
@@ -102,10 +102,9 @@ export function requirePartnerAccess(user: AuthenticatedUser, targetPartnerId?: 
 
 // Tipos de roles para facilitar uso
 export const USER_ROLES = {
-  ADMIN: 'admin',
-  MANAGER: 'manager',
-  USER: 'user',
-  CLIENT: 'client'
+  ADMIN: 1,
+  MANAGER: 2,
+  USER: 3,
 } as const;
 
 export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
