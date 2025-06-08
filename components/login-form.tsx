@@ -17,11 +17,13 @@ import { useState } from "react";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onForgotPassword?: () => void;
+  onSignUp?: () => void;
 }
 
 export function LoginForm({
   className,
   onForgotPassword,
+  onSignUp,
   ...props
 }: React.ComponentPropsWithoutRef<"div">&LoginFormProps) {
   const [email, setEmail] = useState("");
@@ -68,7 +70,7 @@ export function LoginForm({
           <Input
             id="email"
             type="email"
-            placeholder="m@example.com"
+            placeholder="email@exemplo.com"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -76,7 +78,7 @@ export function LoginForm({
           </div>
           <div className="grid gap-2">
           <div className="flex items-center">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Senha</Label>
             {/* <Link
             href="/auth/forgot-password"
             className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
@@ -94,17 +96,18 @@ export function LoginForm({
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Logging in..." : "Login"}
+          {isLoading ? "Entrando..." : "Entrar"}
           </Button>
         </div>
         <div className="mt-4 text-center text-sm">
-          {/* Don&apos;t have an account?{" "} */}
-          {/* <Link
-          href="/auth/sign-up"
+          Developer Function:
+          <Button
+          variant="link"
+          onClick={onSignUp}
           className="underline underline-offset-4"
           >
-          Sign up
-          </Link> */}
+          Criar Conta
+          </Button>
           <Button
             onClick={onForgotPassword}
             variant="link"
