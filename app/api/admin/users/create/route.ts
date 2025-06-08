@@ -50,7 +50,7 @@ export async function POST(request: Request) {
           is_client: Boolean(isClient),
           tel_contact: telephone || null,
           role: role,
-          partner_id: partnerId && partnerId.trim() !== '' ? partnerId : null
+          partner_id: partnerId
         }
       }
     );

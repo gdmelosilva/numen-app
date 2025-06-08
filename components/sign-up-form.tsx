@@ -55,7 +55,7 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [partnerId, setPartnerId] = useState<string>("");
+  const [partnerId, setPartnerId] = useState<string | null>(null);
   const [role, setRole] = useState<string>("");
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
@@ -193,7 +193,7 @@ export function SignUpForm({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="partner">Parceiro</Label>
-                <Select value={partnerId} onValueChange={setPartnerId}>
+                <Select value={partnerId || undefined} onValueChange={setPartnerId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um parceiro" />
                   </SelectTrigger>
