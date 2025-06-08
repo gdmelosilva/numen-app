@@ -29,7 +29,7 @@ export default function Home() {
       if (accessToken && refreshToken && type === 'invite') {
         try {
           // Set the session with the tokens from the URL
-          const { data, error } = await supabase.auth.setSession({
+          const { error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken
           });

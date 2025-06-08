@@ -15,12 +15,10 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
-interface UpdatePasswordFormProps extends React.ComponentPropsWithoutRef<"div"> {}
-
 export function UpdatePasswordForm({
   className,
   ...props
-}: UpdatePasswordFormProps) {
+}: React.ComponentPropsWithoutRef<"div">) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +30,7 @@ export function UpdatePasswordForm({
     // Handle the auth callback
     const handleAuthCallback = async () => {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.getSession();
+      const { error } = await supabase.auth.getSession();
       if (error) {
         setError("Link inválido ou expirado");
         console.error("Auth error:", error);

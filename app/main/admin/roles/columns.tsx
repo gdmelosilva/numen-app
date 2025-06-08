@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { Role } from "@/types/roles"
 
-export const columns: ColumnDef<Role>[] = [
+const columns: ColumnDef<Role>[] = [
 	{
 		id: "select",
 		header: ({ table }) => (
@@ -54,3 +54,5 @@ export const columns: ColumnDef<Role>[] = [
 		},
 	},
 ]
+
+export { columns }
