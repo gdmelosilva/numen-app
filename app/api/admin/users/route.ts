@@ -106,9 +106,24 @@ export async function POST(request: Request) {
       partnerId
     });    
     
+    console.log('Current user:', {
+      id: user!.id,
+      role: user!.role,
+      is_client: user!.is_client,
+      partner_id: user!.partner_id
+    });
+    
     // Validar se pode criar usuário para este partner
     // Apenas admins não-clientes podem criar usuários para qualquer partner
     const isUnrestrictedAdmin = user!.role === USER_ROLES.ADMIN && !user!.is_client;
+    
+    console.log('Permission check:', {
+      isAdmin: user!.role === USER_ROLES.ADMIN,
+      isClient: user!.is_client,
+      isUnrestrictedAdmin,
+      targetPartnerId: partnerId,
+      userPartnerId: user!.partner_id
+    });
     
     if (!isUnrestrictedAdmin) {
       // Usuários restritos (não-admins ou admins clientes) só podem criar para seu próprio partner

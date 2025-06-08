@@ -77,7 +77,7 @@ export function requireRole(allowedRoles: number[]) {
 
 export function requirePartnerAccess(user: AuthenticatedUser, targetPartnerId?: string): NextResponse | null {
   // Se for admin, pode acessar tudo
-  if (user.role === 1) {
+  if (user.role === USER_ROLES.ADMIN) {
     return null;
   }
   
