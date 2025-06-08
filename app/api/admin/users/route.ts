@@ -8,8 +8,9 @@ export async function GET(request: Request) {
     const active = searchParams.get("active");
 
     const supabase = await createClient();
+    
     let query = supabase
-      .from("user")
+      .from('user')
       .select(`
         id,
         first_name,
@@ -38,12 +39,12 @@ export async function GET(request: Request) {
     if (supabaseError) {
       console.error("Erro Supabase:", supabaseError);
       return NextResponse.json(
-        { error: "Erro ao buscar usuários" },
+        { error: "Erro ao buscar usuários", details: supabaseError.message },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(users);
+    return NextResponse.json(users || []);
   } catch (error) {
     console.error("Erro interno:", error);
     return NextResponse.json(
@@ -51,4 +52,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

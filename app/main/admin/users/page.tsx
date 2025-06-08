@@ -31,6 +31,8 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const queryParams = new URLSearchParams();
       
       if (filters.search) {
@@ -42,13 +44,22 @@ export default function UsersPage() {
       }
 
       const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
+      
       if (!response.ok) {
-        throw new Error("Falha ao carregar usuários");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Falha ao carregar usuários");
       }
+      
       const data = await response.json();
-      setUsers(data);
+      
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        setUsers([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -111,7 +122,6 @@ export default function UsersPage() {
                   checked={filters.active === true}
                   onCheckedChange={(checked) => {
                     setFilters(prev => ({ ...prev, active: checked }));
-                    fetchUsers();
                   }}
                 />
                 <Label htmlFor="active">Ativos</Label>
@@ -120,7 +130,6 @@ export default function UsersPage() {
                   checked={filters.active === false}
                   onCheckedChange={(checked) => {
                     setFilters(prev => ({ ...prev, active: checked ? false : null }));
-                    fetchUsers();
                   }}
                 />
                 <Label htmlFor="inactive">Inativos</Label>
@@ -138,6 +147,9 @@ export default function UsersPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">{error}</p>
+            <Button onClick={fetchUsers} className="mt-4">
+              Tentar novamente
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -145,4 +157,4 @@ export default function UsersPage() {
       )}
     </div>
   );
-} 
+}

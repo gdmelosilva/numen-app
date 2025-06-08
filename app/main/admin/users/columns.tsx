@@ -17,8 +17,8 @@ export type User = {
   last_name: string
   email: string
   is_client: boolean
-  tel_contact: string
-  role: string
+  tel_contact: string | null // Allow null
+  role: string | null // Allow null since you're creating users without roles
   partner_id: string | null
   created_at: string
   is_active: boolean
@@ -71,6 +71,10 @@ export const columns: ColumnDef<User>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Telefone" />
     ),
+    cell: ({ row }) => {
+      const tel = row.getValue("tel_contact") as string | null
+      return tel || "-"
+    },
   },
   {
     accessorKey: "role",
@@ -78,7 +82,8 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title="Função" />
     ),
     cell: ({ row }) => {
-      const role = row.getValue("role") as string
+      const role = row.getValue("role") as string | null
+      if (!role) return <Badge variant="outline">Sem função</Badge>
       return role.charAt(0).toUpperCase() + role.slice(1)
     },
   },
