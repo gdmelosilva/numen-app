@@ -8,22 +8,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { UserDeactivate } from "@/components/UserDeactivate"
-import { User } from "@/app/main/admin/users/columns"
 
-interface DataTableRowActionsProps {
-  row: Row<User>
+interface DataTableRowActionsProps<TData> {
+  row: Row<TData>
 }
 
-export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const user = row.original
-  const { isActive, isLoading, updateUserStatus } = UserDeactivate({
-    userId: user.id,
-    currentStatus: user.active,
-  })
-
+export function DataTableRowActions<TData>({}: DataTableRowActionsProps<TData>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -32,22 +25,15 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
         >
           <MoreHorizontal className="h-4 w-4" />
-          <span className="sr-only">Abrir menu</span>
+          <span className="sr-only">Open menu</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuItem
-          onClick={async () => {
-            const success = await updateUserStatus(!isActive)
-            if (success) {
-              window.location.reload()
-            }
-          }}
-          disabled={isLoading}
-        >
-          {isActive ? "Desativar usuário" : "Ativar usuário"}
-        </DropdownMenuItem>
+        <DropdownMenuItem>Editar</DropdownMenuItem>
+        <DropdownMenuItem>Duplicar</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>Excluir</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
-} 
+}

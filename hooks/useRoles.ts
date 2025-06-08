@@ -2,16 +2,11 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Role } from '@/types/roles';
 
-interface CreateRoleData {
-  title: string;
-  description: string;
-}
-
 export const useCreateRole = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createRole = async (roleData: CreateRoleData): Promise<Role | null> => {
+  const createRole = async (roleData: Omit<Role, 'id' | 'created_at' | 'updated_at'>): Promise<Role | null> => {
     setIsLoading(true);
     setError(null);
 
@@ -29,7 +24,7 @@ export const useCreateRole = () => {
 
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao criar função';
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao criar cargo';
       setError(errorMessage);
       console.error('Error creating role:', err);
       return null;

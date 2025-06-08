@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
-import { UserDeactivate } from "@/components/UserDeactivate"
+// import { UserDeactivate } from "@/components/UserDeactivate"
 
 export type User = {
   id: string

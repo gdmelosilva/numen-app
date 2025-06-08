@@ -56,19 +56,19 @@ const CreateRole = () => {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
-          Criar Nova Função
+          Criar Novo Cargo
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Criar Nova Função</DialogTitle>
+          <DialogTitle>Criar Novo Cargo</DialogTitle>
           <DialogDescription>
-            Preencha os campos abaixo para criar uma nova função de usuário.
+            Preencha os campos abaixo para criar um novo Cargo.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Título da Função</Label>
+            <Label htmlFor="title">Título do Cargo</Label>
             <Input
               id="title"
               type="text"
@@ -101,7 +101,7 @@ const CreateRole = () => {
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Criando...' : 'Criar Função'}
+              {isLoading ? 'Criando...' : 'Criar Cargo'}
             </Button>
           </div>
         </form>
