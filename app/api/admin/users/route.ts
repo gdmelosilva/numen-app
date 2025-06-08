@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   if (error) return error;
 
   // Verificar se tem permissão para listar usuários
-  const roleCheck = requireRole([USER_ROLES.ADMIN, USER_ROLES.MANAGER])(user!);
+  const roleCheck = requireRole([USER_ROLES.ADMIN])(user!);
   if (roleCheck) return roleCheck;
 
   try {
