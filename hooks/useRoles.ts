@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Role } from '@/types/roles';
 
+const supabase = await createClient();
+
 export const useCreateRole = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -11,7 +13,6 @@ export const useCreateRole = () => {
     setError(null);
 
     try {
-      const supabase = await createClient();
       const { data, error } = await supabase
         .from('user_roles')
         .insert([roleData])

@@ -183,7 +183,7 @@ export function SignUpForm({
                       roles
                         .filter((option: Role) => option.id)
                         .map((option: Role) => (
-                          <SelectItem key={option.id} value={option.id}>
+                          <SelectItem key={option.id} value={option.id.toString()}>
                             {option.title}
                           </SelectItem>
                         ))
