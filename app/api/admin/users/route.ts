@@ -96,9 +96,7 @@ export async function POST(request: Request) {
       isClient,
       role,
       partnerId 
-    } = await request.json();
-
-    console.log('Creating user with data:', {
+    } = await request.json();    console.log('Creating user with data:', {
       email,
       firstName,
       lastName,
@@ -109,8 +107,11 @@ export async function POST(request: Request) {
     });    
     
     // Validar se pode criar usuário para este partner
-     if (user!.role !== USER_ROLES.ADMIN || (user!.role === USER_ROLES.ADMIN && user!.is_client)) {
-      // Se não for admin ou for admin cliente, só pode criar usuários para seu próprio partner
+    // Apenas admins não-clientes podem criar usuários para qualquer partner
+    const isUnrestrictedAdmin = user!.role === USER_ROLES.ADMIN && !user!.is_client;
+    
+    if (!isUnrestrictedAdmin) {
+      // Usuários restritos (não-admins ou admins clientes) só podem criar para seu próprio partner
       if (partnerId !== user!.partner_id) {
         return NextResponse.json(
           { error: 'Forbidden: Cannot create user for different partner' },
