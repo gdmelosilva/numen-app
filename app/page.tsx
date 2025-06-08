@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { SignUpForm } from "@/components/sign-up-form";
 import { LoginForm } from "@/components/login-form";
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
-import { ThemeSwitcher } from "@/components/theme-switcher";
+import ThemeSwitcher from "@/components/theme-switcher";
 import Image from "next/image";
 
 export default function Home() {
@@ -14,13 +14,13 @@ export default function Home() {
   const renderView = () => {
     switch (currentView) {
       case 'login':
-        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} onSignUp={() => setCurrentView('signup')} />;
+        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} />;
       case 'forgot':
         return <ForgotPasswordForm onBack={() => setCurrentView('login')} />;
       case 'signup':
         return <SignUpForm onBack={() => setCurrentView('login')} />;
       default:
-        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} onSignUp={() => setCurrentView('signup')} />;
+        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} />;
     }
   };
 
@@ -35,7 +35,7 @@ export default function Home() {
       <div className="absolute top-4 right-4 z-20">
       <ThemeSwitcher />
       </div>
-      <div className="relative z-10 flex flex-col items-center space-y-6 w-full">
+      <div className="relative z-10 flex flex-col items-center space-y-12 w-full">
       <Image
         src="/logo.svg"
         alt="Numen Lean Services Logo"

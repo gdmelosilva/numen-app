@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,13 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onForgotPassword?: () => void;
@@ -48,6 +56,8 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [partnerId, setPartnerId] = useState<string>("");
+  const [role, setRole] = useState<string>("");
   const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -79,8 +89,8 @@ export function SignUpForm({
             email: createdUser.email,
             is_client: isClient,
             tel_contact: telephone,
-            role:
-            partner_id:
+            role: role,
+            partner_id: partnerId || null,
           })
         } catch (error) {
           console.error("Erro ao inserir usuário:", error);
@@ -187,6 +197,29 @@ export function SignUpForm({
                   />
                 </Label>
                 </div>
+              <div className="grid gap-2">
+                <Label htmlFor="role">Função</Label>
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma função" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="user">Usuário</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="partner">Parceiro</Label>
+                <Select value={partnerId} onValueChange={setPartnerId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um parceiro" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Aqui serão adicionados os parceiros via API */}
+                  </SelectContent>
+                </Select>
+              </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating an account..." : "Sign up"}

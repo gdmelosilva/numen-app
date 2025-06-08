@@ -17,13 +17,11 @@ import { useState } from "react";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onForgotPassword?: () => void;
-  onSignUp?: () => void;
 }
 
 export function LoginForm({
   className,
   onForgotPassword,
-  onSignUp,
   ...props
 }: React.ComponentPropsWithoutRef<"div">&LoginFormProps) {
   const [email, setEmail] = useState("");
@@ -99,15 +97,8 @@ export function LoginForm({
           {isLoading ? "Entrando..." : "Entrar"}
           </Button>
         </div>
+          </form>
         <div className="mt-4 text-center text-sm">
-          Developer Function:
-          <Button
-          variant="link"
-          onClick={onSignUp}
-          className="underline underline-offset-4"
-          >
-          Criar Conta
-          </Button>
           <Button
             onClick={onForgotPassword}
             variant="link"
@@ -115,8 +106,9 @@ export function LoginForm({
           >
             Esqueceu sua Senha?
           </Button>
+          <div className="mt-2">
+          </div>
         </div>
-        </form>
       </CardContent>
       </Card>
     </div>

@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, SquareTerminal, NotebookPen } from "lucide-react";
-// import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 // Contexto da Sidebar
 interface SidebarContextValue {
@@ -59,11 +59,11 @@ export function SidebarInset({
 
 // Componente AppSidebar
 export function AppSidebar() {
-//   const pathname = usePathname();
-//   const router = useRouter();
+  const pathname = usePathname();
+  const router = useRouter();
   const { expanded, setExpanded } = useSidebar();
   const [openItems, setOpenItems] = React.useState<string[]>([]);
-//   const [currentPath, setCurrentPath] = React.useState(pathname);
+  const [currentPath, setCurrentPath] = React.useState(pathname);
 
   const navMain = React.useMemo(() => [
     {
@@ -101,25 +101,25 @@ export function AppSidebar() {
     );
   }, []);
 
-//   const handleNavigation = React.useCallback((url: string, newTab: boolean) => {
-//     if (newTab) {
-//       window.open(url, '_blank');
-//     } else {
-//       setCurrentPath(url);
-//       router.push(url, { scroll: false });
-//     }
-//   }, [router]);
+  const handleNavigation = React.useCallback((url: string, newTab: boolean) => {
+    if (newTab) {
+      window.open(url, '_blank');
+    } else {
+      setCurrentPath(url);
+      router.push(url, { scroll: false });
+    }
+  }, [router]);
 
-//   // Preserva o estado dos itens abertos
-//   React.useEffect(() => {
-//     const parentUrl = navMain.find(item => 
-//       item.items?.some(subItem => subItem.url === pathname)
-//     )?.url;
+  // Preserva o estado dos itens abertos
+  React.useEffect(() => {
+    const parentUrl = navMain.find(item => 
+      item.items?.some(subItem => subItem.url === pathname)
+    )?.url;
 
-//     if (parentUrl && !openItems.includes(parentUrl)) {
-//       setOpenItems(prev => [...prev, parentUrl]);
-//     }
-//   }, [pathname, navMain, openItems]);
+    if (parentUrl && !openItems.includes(parentUrl)) {
+      setOpenItems(prev => [...prev, parentUrl]);
+    }
+  }, [pathname, navMain, openItems]);
 
   return (
     <div
