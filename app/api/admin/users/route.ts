@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   if (error) return error;
 
   // Verificar se tem permissão para criar usuários
-  const roleCheck = requireRole([USER_ROLES.ADMIN, USER_ROLES.MANAGER])(user!);
+  const roleCheck = requireRole([USER_ROLES.ADMIN])(user!);
   if (roleCheck) return roleCheck;
 
   try {
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     });    
     
     // Validar se pode criar usuário para este partner
-    if (user!.role !== USER_ROLES.ADMIN || user!.is_client) {
+     if (user!.role !== USER_ROLES.ADMIN || (user!.role === USER_ROLES.ADMIN && user!.is_client)) {
       // Se não for admin ou for admin cliente, só pode criar usuários para seu próprio partner
       if (partnerId !== user!.partner_id) {
         return NextResponse.json(
