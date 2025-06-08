@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, User } from "./columns";
@@ -28,30 +28,23 @@ export default function UsersPage() {
   });
   const [searchInput, setSearchInput] = useState("");
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
       const queryParams = new URLSearchParams();
-      
       if (filters.search) {
         queryParams.append("search", filters.search);
       }
-      
       if (filters.active !== null) {
         queryParams.append("active", filters.active.toString());
       }
-
       const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
-      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Falha ao carregar usuários");
       }
-      
       const data = await response.json();
-      
       if (Array.isArray(data)) {
         setUsers(data);
       } else {
@@ -63,11 +56,11 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     fetchUsers();
-  }, [filters]);
+  }, [fetchUsers]);
 
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, search: searchInput }));

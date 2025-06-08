@@ -1,4 +1,8 @@
-export function exportToCSV(data: any[], filename: string) {
+import type { Role } from "@/types/roles";
+
+export function exportToCSV(data: Role[], filename: string): void;
+export function exportToCSV(data: Record<string, unknown>[], filename: string): void;
+export function exportToCSV<T extends object>(data: T[], filename: string): void {
   if (!data.length) return;
 
   const headers = Object.keys(data[0]);
@@ -7,7 +11,7 @@ export function exportToCSV(data: any[], filename: string) {
     ...data.map((row) =>
       headers
         .map((header) => {
-          const value = row[header];
+          const value = (row as Record<string, unknown>)[header];
           if (value === null || value === undefined) return "";
           if (typeof value === "object") return JSON.stringify(value);
           return String(value).includes(",") ? `"${value}"` : value;
@@ -25,4 +29,4 @@ export function exportToCSV(data: any[], filename: string) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-} 
+}
