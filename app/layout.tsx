@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
+import { SidebarInset, SidebarProvider, AppSidebar } from "@/components/sidebar";
+import { BreadcrumbDynamic } from "@/components/BreadcrumbDynamic";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import "./globals.css";
 
-const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "Numen Ops - Home",
+  description: "Plataforma de Gestão Operacional Numen",
 };
 
 const geistSans = Geist({
@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${geistSans.className} antialiased`}>
         <ThemeProvider
           attribute="class"
@@ -33,7 +33,21 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SidebarProvider>
+            <div className="flex min-h-screen">
+              <AppSidebar />
+              <SidebarInset>
+                <header className="flex h-14 items-center justify-between border-b px-4">
+                  <BreadcrumbDynamic />
+                  <ThemeSwitcher />
+                </header>
+                <main className="flex-1 p-6">
+                  {children}
+                </main>
+              </SidebarInset>
+            </div>
+          </SidebarProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
