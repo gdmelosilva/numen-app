@@ -78,6 +78,7 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
+<<<<<<< HEAD
     accessorKey: "partner_id",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Parceiro" />
@@ -88,6 +89,8 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
+=======
+>>>>>>> parent of 1d000e1 (Enhance user filtering options in admin panel and update dependencies)
     accessorKey: "role",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Função" />
@@ -95,27 +98,22 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const role = row.getValue("role") as number | null
       if (!role) return <Badge variant="outline">Sem função</Badge>
-
-      // Convert role number to display name and variant
-      const getRoleInfo = (roleNum: number): { name: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
+      
+      // Convert role number to display name
+      const getRoleDisplayName = (roleNum: number): string => {
         switch (roleNum) {
           case 1:
-        return { name: "Administrador", variant: "destructive" }
+            return "Admin"
           case 2:
-        return { name: "Gerente", variant: "default" }
-          case 3: {
-            const isClient = row.original.is_client;
-            return isClient
-              ? { name: "Key-User", variant: "secondary" }
-              : { name: "Funcional", variant: "secondary" };
-          }
+            return "Manager"
+          case 3:
+            return "Usuário"
           default:
-        return { name: "Desconhecido", variant: "outline" }
+            return "Desconhecido"
         }
       }
-
-      const roleInfo = getRoleInfo(role)
-      return <Badge variant={roleInfo.variant}>{roleInfo.name}</Badge>
+      
+      return <Badge variant="default">{getRoleDisplayName(role)}</Badge>
     },
   },
   {
@@ -125,7 +123,7 @@ export const columns: ColumnDef<User>[] = [
     ),
     cell: ({ row }) => {
       const isClient = row.getValue("is_client") as boolean
-      return isClient ? "Cliente" : "Administrativo"
+      return isClient ? "Cliente" : "Colaborador"
     },
   },
   {

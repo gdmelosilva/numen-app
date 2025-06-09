@@ -9,8 +9,10 @@ import { UserCreateDialog } from "@/components/UserCreateDialog";
 import { exportToCSV } from "@/lib/export-file";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
+<<<<<<< HEAD
 import { getRoleOptions } from "@/hooks/useOptions";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
@@ -23,15 +25,22 @@ interface Filters {
   role: string;
   is_client: string;
   created_at: string;
+=======
+
+interface Filters {
+  search: string;
+  active: boolean | null ;
+>>>>>>> parent of 1d000e1 (Enhance user filtering options in admin panel and update dependencies)
 }
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({
     search: "",
     active: null,
+<<<<<<< HEAD
     email: "",
     tel_contact: "",
     partner_desc: "",
@@ -50,6 +59,10 @@ export default function UsersPage() {
       );
     });
   }, []);
+=======
+  });
+  const [searchInput, setSearchInput] = useState("");
+>>>>>>> parent of 1d000e1 (Enhance user filtering options in admin panel and update dependencies)
 
   useEffect(() => {
     fetch('/api/partners')
@@ -64,15 +77,22 @@ export default function UsersPage() {
       setLoading(true);
       setError(null);
       const queryParams = new URLSearchParams();
-      if (filters.search) queryParams.append("search", filters.search);
-      if (filters.active !== null && filters.active !== undefined)
+      if (filters.search) {
+        queryParams.append("search", filters.search);
+      }
+      
+      if (filters.active !== null && filters.active !== undefined) {
         queryParams.append("active", filters.active.toString());
+<<<<<<< HEAD
       if (filters.email) queryParams.append("email", filters.email);
       if (filters.tel_contact) queryParams.append("tel_contact", filters.tel_contact);
       if (filters.partner_desc) queryParams.append("partner_desc", filters.partner_desc);
       if (filters.role) queryParams.append("role", filters.role);
       if (filters.is_client) queryParams.append("is_client", filters.is_client);
       if (filters.created_at) queryParams.append("created_at", filters.created_at);
+=======
+      }
+>>>>>>> parent of 1d000e1 (Enhance user filtering options in admin panel and update dependencies)
       const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -92,13 +112,12 @@ export default function UsersPage() {
     }
   }, [filters]);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, search: searchInput }));
-    fetchUsers();
-  };
-
-  const handleFilterChange = (field: keyof Filters, value: string) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -144,6 +163,7 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
+<<<<<<< HEAD
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -220,6 +240,27 @@ export default function UsersPage() {
                   <SelectItem value="false">Inativo</SelectItem>
                 </SelectContent>
               </Select>
+=======
+              <Label>Status</Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="active"
+                  checked={filters.active === true}
+                  onCheckedChange={(checked) => {
+                    setFilters(prev => ({ ...prev, active: checked }));
+                  }}
+                />
+                <Label htmlFor="active">Ativos</Label>
+                <Switch
+                  id="inactive"
+                  checked={filters.active === false}
+                  onCheckedChange={(checked) => {
+                    setFilters(prev => ({ ...prev, active: checked ? false : null }));
+                  }}
+                />
+                <Label htmlFor="inactive">Inativos</Label>
+              </div>
+>>>>>>> parent of 1d000e1 (Enhance user filtering options in admin panel and update dependencies)
             </div>
           </div>
         </CardContent>
