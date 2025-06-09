@@ -48,7 +48,6 @@ export function UserEditForm({ user, className, onSuccess, ...props }: UserEditF
   const [email, setEmail] = useState(user.email || "");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [partnerId, ] = useState(user.partner_id ? user.partner_id.toString() : "");
   const [role, setRole] = useState(user.role ? user.role.toString() : "");
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
@@ -73,17 +72,14 @@ export function UserEditForm({ user, className, onSuccess, ...props }: UserEditF
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/admin/users/${user.email}`, {
+      const response = await fetch(`/api/admin/users/${email}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email,
           firstName,
           lastName,
           telephone,
-          isClient,
           role,
-          partnerId,
         }),
       });
       if (!response.ok) {

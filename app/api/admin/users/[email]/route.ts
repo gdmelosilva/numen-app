@@ -20,7 +20,6 @@ export async function PUT(request: Request, context: { params: Promise<{ email: 
       firstName,
       lastName,
       telephone,
-      isClient,
       role,
       partnerId,
     } = await request.json();
@@ -46,7 +45,6 @@ export async function PUT(request: Request, context: { params: Promise<{ email: 
       first_name: firstName,
       last_name: lastName,
       tel_contact: telephone,
-      is_client: isClient,
       role,
     };
     if (partnerId) {
