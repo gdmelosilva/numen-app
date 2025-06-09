@@ -152,14 +152,14 @@ export default function UsersPage() {
           <p className="text-sm text-muted-foreground">Administração de Usuários</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleSearch} disabled={loading}>
+          <Button variant="secondary" onClick={handleSearch} disabled={loading || isEditDialogOpen}>
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
-          <UserCreateDialog onSuccess={fetchUsers} />
+          <UserCreateDialog onSuccess={fetchUsers} disabled={isEditDialogOpen} />
           <Button
             variant="secondary"
             onClick={() => exportToCSV(users.map(u => ({ ...u })) as Record<string, unknown>[], "usuarios.csv")}
-            disabled={users.length === 0}
+            disabled={users.length === 0 || isEditDialogOpen}
           >
             Exportar CSV
           </Button>
@@ -276,7 +276,7 @@ export default function UsersPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">{error}</p>
-            <Button onClick={fetchUsers} className="mt-4">
+            <Button onClick={fetchUsers} className="mt-4" disabled={isEditDialogOpen}>
               Tentar novamente
             </Button>
           </CardContent>

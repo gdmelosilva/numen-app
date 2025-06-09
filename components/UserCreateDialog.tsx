@@ -13,15 +13,16 @@ import { SignUpForm } from "@/components/sign-up-form";
 
 interface UserCreateDialogProps {
   onSuccess?: () => void;
+  disabled?: boolean;
 }
 
-export function UserCreateDialog({ onSuccess }: UserCreateDialogProps) {
+export function UserCreateDialog({ onSuccess, disabled }: UserCreateDialogProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button disabled={disabled}>
           <Plus className="mr-2 h-4 w-4" /> Novo Usuário
         </Button>
       </DialogTrigger>
