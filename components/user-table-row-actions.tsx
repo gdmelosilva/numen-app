@@ -3,6 +3,7 @@
 import { Row } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
 import React from "react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { UserEditDialog } from "@/components/UserEditDialog"
+import { banUser, unbanUser } from "@/lib/api-user-ban"
 import type { User } from "@/types/users"
 
 interface UserTableRowActionsProps<TData> {
@@ -35,6 +37,21 @@ export function UserTableRowActions<TData extends User>({
     setEditOpen(false)
     onEditClose?.()
   }
+  const handleToggleActive = async () => {
+    const user = row.original as User
+    const userId = user.id
+    if (!userId) return
+    let result
+    if (user.is_active) {
+      result = await banUser(userId)
+      if (result.success) toast.success("Usuário inativado com sucesso")
+      else toast.error(result.error || "Erro ao inativar usuário")
+    } else {
+      result = await unbanUser(userId)
+      if (result.success) toast.success("Usuário ativado com sucesso")
+      else toast.error(result.error || "Erro ao ativar usuário")
+    }
+  }
   return (
     <>
       <DropdownMenu>
@@ -50,7 +67,9 @@ export function UserTableRowActions<TData extends User>({
         <DropdownMenuContent align="end" className="w-[160px]">
           <DropdownMenuItem onClick={handleOpenEdit}>Editar</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Inativar</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleToggleActive}>
+            {row.original.is_active ? "Inativar" : "Ativar"}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       {editOpen && (
