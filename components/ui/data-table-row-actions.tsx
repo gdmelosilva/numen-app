@@ -32,7 +32,7 @@ export function DataTableRowActions<TData>({}: DataTableRowActionsProps<TData>) 
         <DropdownMenuItem>Editar</DropdownMenuItem>
         <DropdownMenuItem>Duplicar</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Excluir</DropdownMenuItem>
+        <DropdownMenuItem>Inativar</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
