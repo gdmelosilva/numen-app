@@ -8,7 +8,7 @@ import { CheckCircle2, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
-import { UserTableRowActions } from "@/components/ui/user-table-row-actions"
+import { UserTableRowActions } from "@/components/user-table-row-actions"
 
 export type User = import("@/types/users").User
 
