@@ -106,9 +106,11 @@ export async function GET(request: Request) {
     }
 
     // Flatten partner_desc to top-level for frontend compatibility
-    const usersWithPartnerDesc = (users || []).map((u: { [key: string]: unknown; partner_name?: { partner_desc?: string } }) => ({
+    const usersWithPartnerDesc = (users || []).map((u: { [key: string]: unknown }) => ({
       ...u,
-      partner_desc: u.partner_name && typeof u.partner_name === 'object' ? (u.partner_name as { partner_desc?: string }).partner_desc ?? null : null,
+      partner_desc: u.partner_name && typeof u.partner_name === 'object' && 'partner_desc' in u.partner_name
+        ? (u.partner_name as { partner_desc?: string }).partner_desc ?? null
+        : null,
     }));
 
     return NextResponse.json(usersWithPartnerDesc || []);
