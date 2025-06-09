@@ -97,17 +97,17 @@ export const columns: ColumnDef<User>[] = [
       if (!role) return <Badge variant="outline">Sem função</Badge>
 
       // Convert role number to display name and variant
-      const getRoleInfo = (roleNum: number): { name: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
+      const getRoleInfo = (roleNum: number): { name: string; variant: "default" | "secondary" | "destructive" | "outline" | "accent" | "approved" } => {
         switch (roleNum) {
           case 1:
         return { name: "Administrador", variant: "destructive" }
           case 2:
-        return { name: "Gerente", variant: "default" }
+        return { name: "Gerente", variant: "accent" }
           case 3: {
             const isClient = row.original.is_client;
             return isClient
               ? { name: "Key-User", variant: "secondary" }
-              : { name: "Funcional", variant: "secondary" };
+              : { name: "Funcional", variant: "approved" };
           }
           default:
         return { name: "Desconhecido", variant: "outline" }
@@ -125,7 +125,12 @@ export const columns: ColumnDef<User>[] = [
     ),
     cell: ({ row }) => {
       const isClient = row.getValue("is_client") as boolean
-      return isClient ? "Cliente" : "Administrativo"
+      
+      return (
+        <Badge variant={isClient ? "secondary" : "default"}>
+          {isClient ? "Cliente" : "Administrativo"}
+        </Badge>
+      )
     },
   },
   {
@@ -147,7 +152,7 @@ export const columns: ColumnDef<User>[] = [
       const active = row.getValue("is_active") as boolean
 
       return (
-        <Badge variant={active ? "default" : "secondary"}>
+        <Badge variant={active ? "approved" : "destructive"}>
           {active ? (
             <CheckCircle2 className="mr-1 h-3 w-3" />
           ) : (

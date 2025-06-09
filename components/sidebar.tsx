@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, SquareTerminal, NotebookPen } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 
 // Contexto da Sidebar
 interface SidebarContextValue {
@@ -134,7 +135,13 @@ export function AppSidebar() {
           onClick={() => handleNavigation("/", false)}
           className="flex items-center gap-2 font-semibold"
         >
-          {expanded && <span>Numen Ops</span>}
+            {/* <div className="h-8 w-8 bg-secondary rounded flex items-center justify-center p-1"> */}
+            {/* </div> */}
+            {expanded &&  
+            <>
+            <span className="text-primary-foreground font-bold text-sm ">
+              <Image src="/logo_p.svg" alt="Logo" width={35} height={35} />
+            </span><span>Numen Ops</span></>}
         </button>
         <Button
           variant="ghost"
@@ -158,8 +165,8 @@ export function AppSidebar() {
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 currentPath === item.url
-                  ? "bg-accent text-accent-foreground"
-                  : "hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-red-500 text-accent-foreground"
+                  : "hover:bg-primary hover:text-accent-foreground"
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -174,8 +181,8 @@ export function AppSidebar() {
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                       currentPath === subItem.url
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent hover:text-accent-foreground"
+                        ? "bg-red-500 text-accent-foreground"
+                        : "hover:bg-primary hover:text-accent-foreground"
                     )}
                   >
                     {subItem.title}
