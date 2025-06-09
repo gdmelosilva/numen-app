@@ -8,4 +8,5 @@ export interface User {
     tel_contact: string | null;
     role: number | null;
     partner_id: number | null;
+    partner_desc: string | null;
 }

@@ -15,12 +15,14 @@ export type User = {
   first_name: string
   last_name: string
   email: string
+  is_verified?: boolean
+  is_active: boolean
   is_client: boolean
   tel_contact: string | null
   role: number | null
   partner_id: string | null
+  partner_desc?: string | null
   created_at: string
-  is_active: boolean
 }
 
 export const columns: ColumnDef<User>[] = [
@@ -81,8 +83,8 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title="Parceiro" />
     ),
     cell: ({ row }) => {
-      const partner = row.original.partner_id
-      return partner ? partner : <span className="text-muted-foreground">-</span>
+      const partnerDesc = row.original.partner_desc;
+      return partnerDesc ? partnerDesc : <span className="text-muted-foreground">-</span>;
     },
   },
   {

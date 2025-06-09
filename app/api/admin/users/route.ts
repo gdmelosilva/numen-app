@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     const isClient = searchParams.get("is_client");
     const createdAtStart = searchParams.get("created_at_start");
     const createdAtEnd = searchParams.get("created_at_end");
+    const partnerDesc = searchParams.get("partner_desc");
 
     let query = supabase
       .from('user')
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
         tel_contact,
         role,
         partner_id,
+        partner_desc,
         created_at,
         is_active
       `);    
@@ -89,6 +91,9 @@ export async function GET(request: Request) {
     }
     if (active !== null) {
       query = query.eq("is_active", active === "true");
+    }
+    if (partnerDesc) {
+      query = query.ilike('partner_desc', `%${partnerDesc}%`);
     }
 
     const { data: users, error: supabaseError } = await query.order("created_at", {

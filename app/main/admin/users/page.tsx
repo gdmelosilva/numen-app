@@ -13,14 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
 import { getRoleOptions } from "@/hooks/useOptions";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import "react-datepicker/dist/react-datepicker.css";
 
 interface Filters {
   search: string;
   active: boolean | null;
   email: string;
   tel_contact: string;
-  partner_id: string;
+  partner_desc: string;
   role: string;
   is_client: string;
   created_at: string;
@@ -35,13 +34,14 @@ export default function UsersPage() {
     active: null,
     email: "",
     tel_contact: "",
-    partner_id: "",
+    partner_desc: "",
     role: "",
     is_client: "",
     created_at: "",
   });
   const [searchInput, setSearchInput] = useState("");
   const [roleOptions, setRoleOptions] = useState<{ label: string; value: string }[]>([]);
+  const [, setPartners] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     getRoleOptions().then((roles) => {
@@ -49,6 +49,14 @@ export default function UsersPage() {
         roles.map((role) => ({ label: role.title, value: String(role.id) }))
       );
     });
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/partners')
+      .then(res => res.json())
+      .then((data: { id: string; partner_desc: string }[]) => {
+        if (Array.isArray(data)) setPartners(data.map((p) => ({ id: String(p.id), name: p.partner_desc })));
+      });
   }, []);
 
   const fetchUsers = useCallback(async () => {
@@ -61,7 +69,7 @@ export default function UsersPage() {
         queryParams.append("active", filters.active.toString());
       if (filters.email) queryParams.append("email", filters.email);
       if (filters.tel_contact) queryParams.append("tel_contact", filters.tel_contact);
-      if (filters.partner_id) queryParams.append("partner_id", filters.partner_id);
+      if (filters.partner_desc) queryParams.append("partner_desc", filters.partner_desc);
       if (filters.role) queryParams.append("role", filters.role);
       if (filters.is_client) queryParams.append("is_client", filters.is_client);
       if (filters.created_at) queryParams.append("created_at", filters.created_at);
@@ -98,6 +106,7 @@ export default function UsersPage() {
       handleSearch();
     }
   };
+
 
   return (
     <div className="space-y-4">
@@ -153,12 +162,12 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partner_id">Parceiro</Label>
+              <Label htmlFor="partner_desc">Parceiro</Label>
               <Input
-                id="partner_id"
-                placeholder="Filtrar por parceiro"
-                value={filters.partner_id}
-                onChange={e => handleFilterChange("partner_id", e.target.value)}
+              id="partner_desc"
+              placeholder="Filtrar por parceiro"
+              value={filters.partner_desc}
+              onChange={e => handleFilterChange("partner_desc", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -230,7 +239,15 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       ) : (
-        <DataTable columns={columns} data={users} />
+        <DataTable columns={columns.map(col =>
+          'accessorKey' in col && col.accessorKey === 'partner_id'
+            ? {
+                ...col,
+                header: () => <span>Parceiro</span>,
+                cell: ({ row }: { row: { original: User } }) => (row.original.partner_desc ?? '-'),
+              }
+            : col
+        )} data={users} />
       )}
     </div>
   );
