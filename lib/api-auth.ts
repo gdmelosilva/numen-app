@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   email: string;
   role: number;
   partner_id?: string | null;
+  is_active: boolean;
   is_client: boolean;
   first_name: string;
   last_name: string;

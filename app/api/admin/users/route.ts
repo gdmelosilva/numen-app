@@ -197,6 +197,7 @@ export async function POST(request: Request) {
           first_name: firstName,
           last_name: lastName,
           is_client: Boolean(isClient),
+          is_active: true, // Usuário criado ativo por padrão
           tel_contact: telephone || null,
           role: role,
           partner_id: partnerId || user!.partner_id // Use o partner do usuário logado se não especificado

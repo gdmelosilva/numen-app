@@ -7,6 +7,7 @@ import ThemeSwitcher from "@/components/theme-switcher";
 import { LogoutButton } from "@/components/logout-button";
 import Image from "next/image";
 import "../globals.css";
+import AuthProvider from "@/components/auth-provider";
 
 export const metadata: Metadata = {
   title: "Numen Ops - Home",
@@ -22,10 +23,14 @@ export default async function MainLayout({
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {
-    redirect("/auth/login");
+    redirect("/");
+  } else {
+    console.log("User authenticated:", user);
   }
 
+
   return (
+    <AuthProvider>
     <SidebarProvider>
       <div className="flex min-h-screen bg-white dark:bg-transparent relative">
         <div className="absolute inset-0 z-0">
@@ -53,5 +58,6 @@ export default async function MainLayout({
         </div>
       </div>
     </SidebarProvider>
+    </AuthProvider>
   );
 }
