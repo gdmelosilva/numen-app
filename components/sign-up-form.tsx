@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Role } from "@/types/roles";
 import { getRoleOptions } from "@/hooks/useOptions";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onForgotPassword?: () => void;
@@ -59,6 +60,8 @@ export function SignUpForm({
   const [role, setRole] = useState<string>("");
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+  const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
+  const { user: currentUser, loading: loadingUser } = useCurrentUser();
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -77,6 +80,32 @@ export function SignUpForm({
 
     fetchRoles();
   }, []);
+
+  useEffect(() => {
+    // Buscar lista de parceiros
+    const fetchPartners = async () => {
+      try {
+        const res = await fetch("/api/options?type=partners");
+        if (res.ok) {
+          const data = await res.json();
+          setPartners(data || []);
+        } else {
+          setPartners([]);
+        }
+      } catch {
+        setPartners([]);
+      }
+    };
+    fetchPartners();
+  }, []);
+
+  // Se for admin cliente, força o parceiro e força isClient true
+  useEffect(() => {
+    if (!loadingUser && currentUser && currentUser.is_client && currentUser.role === 1) {
+      setPartnerId(currentUser.partner_id || null);
+      setIsClient(true);
+    }
+  }, [currentUser, loadingUser]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,23 +222,42 @@ export function SignUpForm({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="partner">Parceiro</Label>
-                <Select value={partnerId || undefined} onValueChange={setPartnerId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um parceiro" />
+                <Select
+                  value={partnerId || "none"}
+                  onValueChange={v => setPartnerId(v === "none" ? null : v)}
+                  disabled={!!(currentUser && currentUser.is_client && currentUser.role === 1)}
+                >
+                  <SelectTrigger disabled={!!(currentUser && currentUser.is_client && currentUser.role === 1)}>
+                    <SelectValue placeholder={isClient ? "Opcional para Usuário Cliente" : "Selecione um parceiro"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* Aqui serão adicionados os parceiros via API */}
+                    <SelectItem value="none">Nenhum parceiro</SelectItem>
+                    {partners.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="mt-4">
-              <Label 
-                htmlFor="is_client" 
+              <div
                 className={cn(
-                  "flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all duration-200",
-                  isClient ? "bg-primary text-primary-foreground border-primary" : "hover:bg-secondary"
+                  "flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all duration-200 select-none",
+                  isClient ? "bg-primary text-primary-foreground border-primary" : "hover:bg-secondary",
+                  currentUser && currentUser.is_client && currentUser.role === 1 ? "opacity-70 cursor-not-allowed" : ""
                 )}
+                onClick={() => {
+                  if (!(currentUser && currentUser.is_client && currentUser.role === 1)) setIsClient((prev) => !prev);
+                }}
+                tabIndex={currentUser && currentUser.is_client && currentUser.role === 1 ? -1 : 0}
+                role="checkbox"
+                aria-checked={isClient}
+                onKeyDown={e => {
+                  if ((e.key === ' ' || e.key === 'Enter') && !(currentUser && currentUser.is_client && currentUser.role === 1)) {
+                    e.preventDefault();
+                    setIsClient((prev) => !prev);
+                  }
+                }}
               >
                 <span>Usuário Cliente</span>
                 <div className={cn(
@@ -224,7 +272,7 @@ export function SignUpForm({
                     >
                       <path 
                         fillRule="evenodd" 
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                         clipRule="evenodd" 
                       />
                     </svg>
@@ -235,9 +283,13 @@ export function SignUpForm({
                   type="checkbox"
                   className="sr-only"
                   checked={isClient}
-                  onChange={(e) => setIsClient(e.target.checked)}
+                  onChange={() => {}}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  readOnly
+                  disabled={!!(currentUser && currentUser.is_client && currentUser.role === 1)}
                 />
-              </Label>
+              </div>
             </div>
             {error && <p className="text-sm text-red-500 mt-4">{error}</p>}
             <Button type="submit" className="w-full mt-4" disabled={isLoading}>
