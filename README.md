@@ -1,18 +1,23 @@
 Backlog geral:
 - [ ] Adicionar Usuário na Sidebar
 - [ ] Adicionar Logo da empresa na Sidebar
+- [ ] Adicionar verificaçao de role e client na sidebar para exibir:
+      (admin e cliente) == Nao <Admin - Parceiros e Contratos> e <Utilitarios> e <TimeSheet> e <TimeFlow>
+      (gerente e cliente) == Nao <Admin> e <Utilitarios> e <TimeSheet> e <TimeFlow>
+      (resource e cliente) == Nao <Admin> e <Utilitarios> e <TimeSheet> e <TimeFlow> // Além disso não pode abrir chamado - só responder.
 
 Backlog Users:
 - [X] Incluir Coluna Parceiro
 - [X] Alterar Funcionário para Funcional
-- [ ] Ativar função "Editar"
-- [ ] Remover função "Duplicar"
-- [ ] Ativar função "Excluir" e renomear para "Inativar" (marcar como inativo)
-- [ ] Criar função "Ativar" (marcar como ativo)
+- [X] Ativar função "Editar"
+- [X] Remover função "Duplicar"
+- [X] Ativar função "Excluir" e renomear para "Inativar" (marcar como inativo)
+- [X] Criar função "Ativar" (marcar como ativo)
 - [X] Finalizar inserção de filtros (incluir todos)
-- [ ] Finalizar inserção de filtros (parceiro)
-- [ ] Quando o cliente criar um user deve ir para o parceiro dele automaticamente
-- [ ] Não aparecer campo selecionar parceiro para o Admin Cliente
+- [X] Finalizar inserção de filtros (parceiro) (TESTAR)
+- [X] Remover filtro parceiro
+- [X] Quando o cliente criar um user deve ir para o parceiro dele automaticamente
+- [X] Não aparecer campo selecionar parceiro para o Admin Cliente
 
 Backlog Parceiros:
 - [X] Criar Página Parceiros
