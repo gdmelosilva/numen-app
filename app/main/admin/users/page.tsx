@@ -9,37 +9,62 @@ import { UserCreateDialog } from "@/components/UserCreateDialog";
 import { exportToCSV } from "@/lib/export-file";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
+import { getRoleOptions } from "@/hooks/useOptions";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface Filters {
   search: string;
-  active: boolean | null ;
+  active: boolean | null;
+  email: string;
+  tel_contact: string;
+  partner_id: string;
+  role: string;
+  is_client: string;
+  created_at: string;
 }
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({
     search: "",
     active: null,
+    email: "",
+    tel_contact: "",
+    partner_id: "",
+    role: "",
+    is_client: "",
+    created_at: "",
   });
   const [searchInput, setSearchInput] = useState("");
+  const [roleOptions, setRoleOptions] = useState<{ label: string; value: string }[]>([]);
+
+  useEffect(() => {
+    getRoleOptions().then((roles) => {
+      setRoleOptions(
+        roles.map((role) => ({ label: role.title, value: String(role.id) }))
+      );
+    });
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const queryParams = new URLSearchParams();
-      if (filters.search) {
-        queryParams.append("search", filters.search);
-      }
-      
-      if (filters.active !== null && filters.active !== undefined) {
+      if (filters.search) queryParams.append("search", filters.search);
+      if (filters.active !== null && filters.active !== undefined)
         queryParams.append("active", filters.active.toString());
-      }
+      if (filters.email) queryParams.append("email", filters.email);
+      if (filters.tel_contact) queryParams.append("tel_contact", filters.tel_contact);
+      if (filters.partner_id) queryParams.append("partner_id", filters.partner_id);
+      if (filters.role) queryParams.append("role", filters.role);
+      if (filters.is_client) queryParams.append("is_client", filters.is_client);
+      if (filters.created_at) queryParams.append("created_at", filters.created_at);
       const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -59,12 +84,13 @@ export default function UsersPage() {
     }
   }, [filters]);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, search: searchInput }));
+    fetchUsers();
+  };
+
+  const handleFilterChange = (field: keyof Filters, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -109,25 +135,82 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="active"
-                  checked={filters.active === true}
-                  onCheckedChange={(checked) => {
-                    setFilters(prev => ({ ...prev, active: checked }));
-                  }}
-                />
-                <Label htmlFor="active">Ativos</Label>
-                <Switch
-                  id="inactive"
-                  checked={filters.active === false}
-                  onCheckedChange={(checked) => {
-                    setFilters(prev => ({ ...prev, active: checked ? false : null }));
-                  }}
-                />
-                <Label htmlFor="inactive">Inativos</Label>
-              </div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                placeholder="Filtrar por email"
+                value={filters.email}
+                onChange={e => handleFilterChange("email", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tel_contact">Telefone</Label>
+              <Input
+                id="tel_contact"
+                placeholder="Filtrar por telefone"
+                value={filters.tel_contact}
+                onChange={e => handleFilterChange("tel_contact", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="partner_id">Parceiro</Label>
+              <Input
+                id="partner_id"
+                placeholder="Filtrar por parceiro"
+                value={filters.partner_id}
+                onChange={e => handleFilterChange("partner_id", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Função</Label>
+              <Select
+                value={filters.role || "all"}
+                onValueChange={value => handleFilterChange("role", value === "all" ? "" : value)}
+              >
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Todas as funções" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {roleOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="is_client">Tipo</Label>
+              <Select
+                value={filters.is_client || "all"}
+                onValueChange={value => handleFilterChange("is_client", value === "all" ? "" : value)}
+              >
+                <SelectTrigger id="is_client">
+                  <SelectValue placeholder="Todos os tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="true">Cliente</SelectItem>
+                  <SelectItem value="false">Administrativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="active">Status</Label>
+              <Select
+                value={filters.active === null ? "all" : filters.active ? "true" : "false"}
+                onValueChange={value => {
+                  setFilters(prev => ({ ...prev, active: value === "all" ? null : value === "true" }));
+                }}
+              >
+                <SelectTrigger id="active">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>

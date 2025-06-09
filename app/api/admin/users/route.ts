@@ -17,7 +17,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const active = searchParams.get("active");
-    
+    const firstName = searchParams.get("first_name");
+    const lastName = searchParams.get("last_name");
+    const email = searchParams.get("email");
+    const telContact = searchParams.get("tel_contact");
+    const partnerId = searchParams.get("partner_id");
+    const role = searchParams.get("role");
+    const isClient = searchParams.get("is_client");
+    const createdAtStart = searchParams.get("created_at_start");
+    const createdAtEnd = searchParams.get("created_at_end");
+
     let query = supabase
       .from('user')
       .select(`
@@ -49,7 +58,35 @@ export async function GET(request: Request) {
     if (search) {
       query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
     }
-
+    if (firstName) {
+      query = query.ilike('first_name', `%${firstName}%`);
+    }
+    if (lastName) {
+      query = query.ilike('last_name', `%${lastName}%`);
+    }
+    if (email) {
+      query = query.ilike('email', `%${email}%`);
+    }
+    if (telContact) {
+      query = query.ilike('tel_contact', `%${telContact}%`);
+    }
+    if (partnerId) {
+      query = query.eq('partner_id', partnerId);
+    }
+    if (role) {
+      query = query.eq('role', Number(role));
+    }
+    if (isClient !== null && isClient !== undefined) {
+      if (isClient === 'true' || isClient === 'false') {
+        query = query.eq('is_client', isClient === 'true');
+      }
+    }
+    if (createdAtStart) {
+      query = query.gte('created_at', createdAtStart);
+    }
+    if (createdAtEnd) {
+      query = query.lte('created_at', createdAtEnd);
+    }
     if (active !== null) {
       query = query.eq("is_active", active === "true");
     }
