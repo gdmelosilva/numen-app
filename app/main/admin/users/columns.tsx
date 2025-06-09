@@ -76,6 +76,16 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
+    accessorKey: "partner_id",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Parceiro" />
+    ),
+    cell: ({ row }) => {
+      const partner = row.original.partner_id
+      return partner ? partner : <span className="text-muted-foreground">-</span>
+    },
+  },
+  {
     accessorKey: "role",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Função" />
@@ -83,22 +93,27 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const role = row.getValue("role") as number | null
       if (!role) return <Badge variant="outline">Sem função</Badge>
-      
-      // Convert role number to display name
-      const getRoleDisplayName = (roleNum: number): string => {
+
+      // Convert role number to display name and variant
+      const getRoleInfo = (roleNum: number): { name: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
         switch (roleNum) {
           case 1:
-            return "Admin"
+        return { name: "Administrador", variant: "destructive" }
           case 2:
-            return "Manager"
-          case 3:
-            return "Usuário"
+        return { name: "Gerente", variant: "default" }
+          case 3: {
+            const isClient = row.original.is_client;
+            return isClient
+              ? { name: "Key-User", variant: "secondary" }
+              : { name: "Funcional", variant: "secondary" };
+          }
           default:
-            return "Desconhecido"
+        return { name: "Desconhecido", variant: "outline" }
         }
       }
-      
-      return <Badge variant="default">{getRoleDisplayName(role)}</Badge>
+
+      const roleInfo = getRoleInfo(role)
+      return <Badge variant={roleInfo.variant}>{roleInfo.name}</Badge>
     },
   },
   {
@@ -108,7 +123,7 @@ export const columns: ColumnDef<User>[] = [
     ),
     cell: ({ row }) => {
       const isClient = row.getValue("is_client") as boolean
-      return isClient ? "Cliente" : "Colaborador"
+      return isClient ? "Cliente" : "Administrativo"
     },
   },
   {
