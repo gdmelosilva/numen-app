@@ -157,6 +157,14 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
+    accessorKey: "id",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    enableSorting: false,
+    meta: { hidden: true },
+  },
+  {
     id: "actions",
     cell: ({ row, table }) => {
       // Try to get onEditOpen/onEditClose from table.options.meta if provided

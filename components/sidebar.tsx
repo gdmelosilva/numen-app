@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, SquareTerminal, NotebookPen } from "lucide-react";
+import { ChevronLeft, ChevronRight, SquareTerminal, WrenchIcon, ShieldUser, Blocks, ClockFading, HandCoins } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -68,6 +68,18 @@ export function AppSidebar() {
 
   const navMain = React.useMemo(() => [
     {
+      title: "Utilitários",
+      url: "/main/utils",
+      icon: WrenchIcon,
+      isActive: true,
+      newTab: false,
+      items: [
+        { title: "Cargos", url: "/main/utils/roles", newTab: false }
+      ],
+      roles: ["ADMIN"],
+    },
+    { type: "separator" },
+    {
       title: "Administrativo",
       url: "/main/admin",
       icon: SquareTerminal,
@@ -76,22 +88,51 @@ export function AppSidebar() {
       items: [
         { title: "Usuários", url: "/main/admin/users", newTab: false },
         { title: "Parceiros", url: "/main/admin/partners", newTab: false },
-        { title: "Cargos", url: "/main/admin/roles", newTab: false }
+        { title: "Contratos de Serviço", url: "/main/admin/projects", newTab: false },
       ],
       roles: ["ADMIN"],
     },
+    { type: "separator" },
     {
-      title: "Contratos de Serviço",
-      url: "/main/projects",
-      icon: NotebookPen,
+      title: "SmartCare - AMS",
+      url: "#",
+      icon: ShieldUser,
       isActive: true,
       newTab: false,
       items: [
         { title: "Administrar Chamados", url: "/main/tickets/management", newTab: false },
         { title: "Abrir Chamado", url: "/main/tickets/create", newTab: false },
-        { title: "Administrar Tarefas", url: "/main/projects/management", newTab: false },
-        { title: "Criar Tarefa", url: "/main/projects/create", newTab: false },
       ],
+    },
+    {
+      title: "SmartBuild - Projetos",
+      url: "####",
+      icon: Blocks,
+      isActive: true,
+      newTab: false,
+      items: [
+        { title: "Gestão de Atividades", url: "/main/projects/management", newTab: false },
+      ],
+    },
+    { type: "separator" },
+    {
+      title: "TimeSheet",
+      url: "##",
+      icon: ClockFading,
+      isActive: true,
+      newTab: false,
+      items: [
+        { title: "Gestão de Horas", url: "/main/projects/management", newTab: false },
+        { title: "Apontamento de Horas", url: "/main/projects/create", newTab: false },
+      ],
+    },
+    { type: "separator" },
+    {
+      title: "TimeFlow - Faturamento",
+      url: "###",
+      icon: HandCoins,
+      isActive: true,
+      newTab: false,
     },
   ], []);
 
@@ -158,41 +199,50 @@ export function AppSidebar() {
         </Button>
       </div>
       <nav className="flex-1 space-y-1 p-2">
-        {navMain.map((item) => (
-          <div key={item.url}>
-            <button
-              onClick={() => toggleItem(item.url)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                currentPath === item.url
-                  ? "bg-red-500 text-accent-foreground"
-                  : "hover:bg-primary hover:text-accent-foreground"
+        {navMain.map((item, idx) => {
+          if (item.type === "separator") {
+            return (
+              <div key={`separator-${idx}`} className="my-2 border-y border-border" />
+            );
+          }
+          // Type guard: item is not a separator
+          const typedItem = item as Exclude<typeof item, { type: string }>;
+          return (
+            <div key={typedItem.url}>
+              <button
+                onClick={() => typedItem.url && toggleItem(typedItem.url)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  currentPath === typedItem.url
+                    ? "bg-red-500 text-accent-foreground"
+                    : "hover:bg-primary hover:text-accent-foreground"
+                )}
+              >
+                {typedItem.icon && <typedItem.icon className="h-4 w-4" />}
+                {expanded && <span>{typedItem.title}</span>}
+              </button>
+              {expanded && typedItem.url && openItems.includes(typedItem.url) && typedItem.items && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {typedItem.items.map((subItem) => (
+                    <button
+                      key={subItem.url}
+                      onClick={() => handleNavigation(subItem.url, subItem.newTab)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-normal transition-colors",
+                        currentPath === subItem.url
+                          ? "bg-red-500 text-accent-foreground"
+                          : "hover:bg-primary hover:text-accent-foreground"
+                      )}
+                    >
+                      {subItem.title}
+                    </button>
+                  ))}
+                </div>
               )}
-            >
-              <item.icon className="h-4 w-4" />
-              {expanded && <span>{item.title}</span>}
-            </button>
-            {expanded && openItems.includes(item.url) && item.items && (
-              <div className="ml-6 mt-1 space-y-1">
-                {item.items.map((subItem) => (
-                  <button
-                    key={subItem.url}
-                    onClick={() => handleNavigation(subItem.url, subItem.newTab)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                      currentPath === subItem.url
-                        ? "bg-red-500 text-accent-foreground"
-                        : "hover:bg-primary hover:text-accent-foreground"
-                    )}
-                  >
-                    {subItem.title}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </nav>
     </div>
   );
-} 
+}

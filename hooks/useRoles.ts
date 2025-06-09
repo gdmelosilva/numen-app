@@ -43,3 +43,33 @@ export const useCreateRole = () => {
     resetError,
   };
 };
+
+export const useDeleteRoles = () => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const deleteRoles = async (ids: number[]): Promise<boolean> => {
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Erro ao deletar cargos');
+      return false;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return { 
+    deleteRoles, 
+    isDeleting, 
+    deleteError };
+};
