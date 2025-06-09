@@ -8,21 +8,14 @@ import { CheckCircle2, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
-import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
+import { UserTableRowActions } from "@/components/ui/user-table-row-actions"
 
-export type User = {
-  id: string
-  first_name: string
-  last_name: string
-  email: string
-  is_client: boolean
-  tel_contact: string | null
-  role: number | null
-  partner_name: {
-    partner_desc: string
-  }
-  created_at: string
-  is_active: boolean
+export type User = import("@/types/users").User
+
+// Add types for actions
+export interface UserTableActionsContext {
+  onEditOpen?: () => void;
+  onEditClose?: () => void;
 }
 
 export const columns: ColumnDef<User>[] = [
@@ -78,13 +71,13 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-    accessorKey: "partner_name.partner_desc",
+    accessorKey: "partner_desc",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Parceiro" />
     ),
     cell: ({ row }) => {
-      const partner = row.original.partner_name?.partner_desc
-      return partner ? partner : <span className="text-muted-foreground">-</span>
+      const partner = row.original.partner_desc;
+      return partner ? partner : <span className="text-muted-foreground">-</span>;
     },
   },
   {
@@ -165,6 +158,10 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row, table }) => {
+      // Try to get onEditOpen/onEditClose from table.options.meta if provided
+      const meta = (table.options.meta as UserTableActionsContext) || {};
+      return <UserTableRowActions<User> row={row} onEditOpen={meta.onEditOpen} onEditClose={meta.onEditClose} />;
+    },
   },
 ]

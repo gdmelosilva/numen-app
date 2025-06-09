@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const lastName = searchParams.get("last_name");
     const email = searchParams.get("email");
     const telContact = searchParams.get("tel_contact");
-    const partnerId = searchParams.get("partner_name.partner_desc");
+    const partnerDesc = searchParams.get("partner_desc");
     const role = searchParams.get("role");
     const isClient = searchParams.get("is_client");
     const createdAtStart = searchParams.get("created_at_start");
@@ -72,8 +72,8 @@ export async function GET(request: Request) {
     if (telContact) {
       query = query.ilike('tel_contact', `%${telContact}%`);
     }
-    if (partnerId) {
-      query = query.eq('partner_id', partnerId);
+    if (partnerDesc) {
+      query = query.ilike('users_partner_id_fkey.partner_desc', `%${partnerDesc}%`);
     }
     if (role) {
       query = query.eq('role', Number(role));
@@ -105,7 +105,15 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json(users || []);
+    // Flatten partner_desc to top-level for frontend compatibility
+    const usersWithPartnerDesc = (users || []).map((u: { [key: string]: unknown }) => ({
+      ...u,
+      partner_desc: u.partner_name && typeof u.partner_name === 'object' && 'partner_desc' in u.partner_name
+        ? (u.partner_name as { partner_desc?: string }).partner_desc ?? null
+        : null,
+    }));
+
+    return NextResponse.json(usersWithPartnerDesc || []);
   } catch (error) {
     console.error("Erro interno:", error);
     return NextResponse.json(
