@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
 import { getRoleOptions } from "@/hooks/useOptions";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { UserEditDialog } from "@/components/UserEditDialog";
 
 interface Filters {
   search: string;
@@ -41,6 +42,8 @@ export default function UsersPage() {
   });
   const [searchInput, setSearchInput] = useState("");
   const [roleOptions, setRoleOptions] = useState<{ label: string; value: string }[]>([]);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
 
   useEffect(() => {
     getRoleOptions().then((roles) => {
@@ -134,6 +137,13 @@ export default function UsersPage() {
     }
   };
 
+  // Handler to close edit dialog
+  const handleCloseEditDialog = () => {
+    setEditUser(null);
+    setIsEditDialogOpen(false);
+    fetchUsers();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -148,7 +158,7 @@ export default function UsersPage() {
           <UserCreateDialog onSuccess={fetchUsers} />
           <Button
             variant="secondary"
-            onClick={() => exportToCSV(users, "usuarios.csv")}
+            onClick={() => exportToCSV(users.map(u => ({ ...u })) as Record<string, unknown>[], "usuarios.csv")}
             disabled={users.length === 0}
           >
             Exportar CSV
@@ -167,6 +177,7 @@ export default function UsersPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyPress={handleKeyPress}
+                disabled={isEditDialogOpen}
               />
             </div>
             <div className="space-y-2">
@@ -176,6 +187,7 @@ export default function UsersPage() {
                 placeholder="Filtrar por email"
                 value={filters.email}
                 onChange={e => handleFilterChange("email", e.target.value)}
+                disabled={isEditDialogOpen}
               />
             </div>
             <div className="space-y-2">
@@ -185,6 +197,7 @@ export default function UsersPage() {
                 placeholder="Filtrar por telefone"
                 value={filters.tel_contact}
                 onChange={e => handleFilterChange("tel_contact", e.target.value)}
+                disabled={isEditDialogOpen}
               />
             </div>
             <div className="space-y-2">
@@ -194,6 +207,7 @@ export default function UsersPage() {
                 placeholder="Filtrar por parceiro"
                 value={filters.partner_desc}
                 onChange={e => handleFilterChange("partner_desc", e.target.value)}
+                disabled={isEditDialogOpen}
               />
             </div>
             <div className="space-y-2">
@@ -201,8 +215,9 @@ export default function UsersPage() {
               <Select
                 value={filters.role || "all"}
                 onValueChange={value => handleFilterChange("role", value === "all" ? "" : value)}
+                disabled={isEditDialogOpen}
               >
-                <SelectTrigger id="role">
+                <SelectTrigger id="role" disabled={isEditDialogOpen}>
                   <SelectValue placeholder="Todas as funções" />
                 </SelectTrigger>
                 <SelectContent>
@@ -218,8 +233,9 @@ export default function UsersPage() {
               <Select
                 value={filters.is_client || "all"}
                 onValueChange={value => handleFilterChange("is_client", value === "all" ? "" : value)}
+                disabled={isEditDialogOpen}
               >
-                <SelectTrigger id="is_client">
+                <SelectTrigger id="is_client" disabled={isEditDialogOpen}>
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,8 +252,9 @@ export default function UsersPage() {
                 onValueChange={value => {
                   handleFilterChange("active", value === "all" ? null : value === "true");
                 }}
+                disabled={isEditDialogOpen}
               >
-                <SelectTrigger id="active">
+                <SelectTrigger id="active" disabled={isEditDialogOpen}>
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -265,7 +282,18 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       ) : (
-        <DataTable columns={columns} data={users} />
+        <DataTable
+          columns={columns}
+          data={users}
+          meta={{
+            onEditOpen: () => setIsEditDialogOpen(true),
+            onEditClose: () => setIsEditDialogOpen(false),
+          }}
+        />
+      )}
+
+      {editUser && isEditDialogOpen && (
+        <UserEditDialog user={editUser} onSuccess={handleCloseEditDialog} />
       )}
     </div>
   );
