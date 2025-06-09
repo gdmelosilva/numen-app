@@ -1,3 +1,7 @@
+Backlog geral:
+- [ ] Adicionar Usuário na Sidebar
+- [ ] Adicionar Logo da empresa na Sidebar
+
 Backlog Users:
 - [X] Incluir Coluna Parceiro
 - [X] Alterar Funcionário para Funcional
