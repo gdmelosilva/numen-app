@@ -17,21 +17,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const active = searchParams.get("active");
-<<<<<<< HEAD
     const firstName = searchParams.get("first_name");
     const lastName = searchParams.get("last_name");
     const email = searchParams.get("email");
     const telContact = searchParams.get("tel_contact");
-    const partnerId = searchParams.get("partner_id");
+    const partnerId = searchParams.get("partner_name.partner_desc");
     const role = searchParams.get("role");
     const isClient = searchParams.get("is_client");
     const createdAtStart = searchParams.get("created_at_start");
     const createdAtEnd = searchParams.get("created_at_end");
-    const partnerDesc = searchParams.get("partner_desc");
 
-=======
-    
->>>>>>> parent of 1d000e1 (Enhance user filtering options in admin panel and update dependencies)
     let query = supabase
       .from('user')
       .select(`
@@ -42,8 +37,9 @@ export async function GET(request: Request) {
         is_client,
         tel_contact,
         role,
-        partner_id,
-        partner_desc,
+        partner_name: users_partner_id_fkey(
+          partner_desc
+          ),
         created_at,
         is_active
       `);    
@@ -64,12 +60,37 @@ export async function GET(request: Request) {
     if (search) {
       query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
     }
-
+    if (firstName) {
+      query = query.ilike('first_name', `%${firstName}%`);
+    }
+    if (lastName) {
+      query = query.ilike('last_name', `%${lastName}%`);
+    }
+    if (email) {
+      query = query.ilike('email', `%${email}%`);
+    }
+    if (telContact) {
+      query = query.ilike('tel_contact', `%${telContact}%`);
+    }
+    if (partnerId) {
+      query = query.eq('partner_id', partnerId);
+    }
+    if (role) {
+      query = query.eq('role', Number(role));
+    }
+    if (isClient !== null && isClient !== undefined) {
+      if (isClient === 'true' || isClient === 'false') {
+        query = query.eq('is_client', isClient === 'true');
+      }
+    }
+    if (createdAtStart) {
+      query = query.gte('created_at', createdAtStart);
+    }
+    if (createdAtEnd) {
+      query = query.lte('created_at', createdAtEnd);
+    }
     if (active !== null) {
       query = query.eq("is_active", active === "true");
-    }
-    if (partnerDesc) {
-      query = query.ilike('partner_desc', `%${partnerDesc}%`);
     }
 
     const { data: users, error: supabaseError } = await query.order("created_at", {

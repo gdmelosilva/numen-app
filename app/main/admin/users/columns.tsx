@@ -15,14 +15,14 @@ export type User = {
   first_name: string
   last_name: string
   email: string
-  is_verified?: boolean
-  is_active: boolean
   is_client: boolean
   tel_contact: string | null
   role: number | null
-  partner_id: string | null
-  partner_desc?: string | null
+  partner_name: {
+    partner_desc: string
+  }
   created_at: string
+  is_active: boolean
 }
 
 export const columns: ColumnDef<User>[] = [
@@ -78,19 +78,16 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-<<<<<<< HEAD
-    accessorKey: "partner_id",
+    accessorKey: "partner_name.partner_desc",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Parceiro" />
     ),
     cell: ({ row }) => {
-      const partnerDesc = row.original.partner_desc;
-      return partnerDesc ? partnerDesc : <span className="text-muted-foreground">-</span>;
+      const partner = row.original.partner_name?.partner_desc
+      return partner ? partner : <span className="text-muted-foreground">-</span>
     },
   },
   {
-=======
->>>>>>> parent of 1d000e1 (Enhance user filtering options in admin panel and update dependencies)
     accessorKey: "role",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Função" />
@@ -98,22 +95,27 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const role = row.getValue("role") as number | null
       if (!role) return <Badge variant="outline">Sem função</Badge>
-      
-      // Convert role number to display name
-      const getRoleDisplayName = (roleNum: number): string => {
+
+      // Convert role number to display name and variant
+      const getRoleInfo = (roleNum: number): { name: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
         switch (roleNum) {
           case 1:
-            return "Admin"
+        return { name: "Administrador", variant: "destructive" }
           case 2:
-            return "Manager"
-          case 3:
-            return "Usuário"
+        return { name: "Gerente", variant: "default" }
+          case 3: {
+            const isClient = row.original.is_client;
+            return isClient
+              ? { name: "Key-User", variant: "secondary" }
+              : { name: "Funcional", variant: "secondary" };
+          }
           default:
-            return "Desconhecido"
+        return { name: "Desconhecido", variant: "outline" }
         }
       }
-      
-      return <Badge variant="default">{getRoleDisplayName(role)}</Badge>
+
+      const roleInfo = getRoleInfo(role)
+      return <Badge variant={roleInfo.variant}>{roleInfo.name}</Badge>
     },
   },
   {
@@ -123,7 +125,7 @@ export const columns: ColumnDef<User>[] = [
     ),
     cell: ({ row }) => {
       const isClient = row.getValue("is_client") as boolean
-      return isClient ? "Cliente" : "Colaborador"
+      return isClient ? "Cliente" : "Administrativo"
     },
   },
   {
