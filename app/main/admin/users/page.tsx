@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, User } from "./columns";
@@ -42,16 +42,9 @@ export default function UsersPage() {
   });
   const [searchInput, setSearchInput] = useState("");
   const [roleOptions, setRoleOptions] = useState<{ label: string; value: string }[]>([]);
+  const [roleOptionsLoaded, setRoleOptionsLoaded] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    getRoleOptions().then((roles) => {
-      setRoleOptions(
-        roles.map((role) => ({ label: role.title, value: String(role.id) }))
-      );
-    });
-  }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -137,6 +130,14 @@ export default function UsersPage() {
     }
   };
 
+  const handleRoleSelectOpen = async (open: boolean) => {
+    if (open && !roleOptionsLoaded) {
+      const roles = await getRoleOptions();
+      setRoleOptions(roles.map((role) => ({ label: role.title, value: String(role.id) })));
+      setRoleOptionsLoaded(true);
+    }
+  };
+
   // Handler to close edit dialog
   const handleCloseEditDialog = () => {
     setEditUser(null);
@@ -216,6 +217,7 @@ export default function UsersPage() {
                 value={filters.role || "all"}
                 onValueChange={value => handleFilterChange("role", value === "all" ? "" : value)}
                 disabled={isEditDialogOpen}
+                onOpenChange={handleRoleSelectOpen}
               >
                 <SelectTrigger id="role" disabled={isEditDialogOpen}>
                   <SelectValue placeholder="Todas as funções" />

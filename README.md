@@ -15,13 +15,26 @@ Backlog Users:
 - [ ] Não aparecer campo selecionar parceiro para o Admin Cliente
 
 Backlog Parceiros:
-- [ ] Incluir Coluna Parceiro
-- [ ] Alterar Funcionário para Funcional
+- [X] Criar Página Parceiros
+- [X] Criar Tabela Parceiros
+- [X] Criar GET Parceiros
+- [X] Criar POST Parceiros
 - [ ] Ativar função "Editar"
 - [ ] Remover função "Duplicar"
 - [ ] Ativar função "Excluir" e renomear para "Inativar" (marcar como inativo)
 - [ ] Criar função "Ativar" (marcar como ativo)
-- [ ] Finalizar inserção de filtros (incluir todos)
+- [ ] Criar função "Detalhes" (acessar pagina de detalhes)
+- [X] Finalizar inserção de filtros (incluir todos)
+- [ ] Ajustar filtro de Segmento
+- [ ] Ajustar select de Segmento
+- [ ] Ajustar selects de Comp.Adm. e Ativo
+- [ ] Ajustar campos na criação (limite de caracteres e formatação)
+- [ ] Ajustar campo identificação na tabela (se 14 char = 00.000.000/0000-00 se menos = 000.000.000-00)
+- [ ] Ajustar campo telefone na tabela (sempre 8 ou 9 caracteres formato ddd+telefone)
+- [ ] Criar botão "Exportar Excel"
+
+Backlog Roles:
+- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
 
 <a href="https://demo-nextjs-with-supabase.vercel.app/">
   <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">

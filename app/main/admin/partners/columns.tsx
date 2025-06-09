@@ -6,18 +6,21 @@ import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { DataTableRowActions } from "@/components/ui/data-table-row-actions";
 
 export type Partner = {
+  id: string,
   partner_ext_id: string;
   partner_desc: string;
   partner_ident: string;
   partner_email: string;
   partner_tel: string;
-  partner_mkt_sg: string;
+  partner_segment: {
+    name: string;
+  };
   is_compadm: boolean;
   is_active: boolean;
 };
 
 export const columns: ColumnDef<Partner>[] = [
-{
+  {
     accessorKey: "partner_ext_id",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Id.Parceiro" />
@@ -48,41 +51,49 @@ export const columns: ColumnDef<Partner>[] = [
     ),
   },
   {
-    accessorKey: "partner_mkt_sg",
+    accessorKey: "partner_segment.name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Segmento" />
     ),
   },
-    {
+  {
     accessorKey: "is_compadm",
     header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Tipo Parceiro" />
+      <DataTableColumnHeader column={column} title="Tipo Parceiro" />
     ),
     cell: ({ row }) => {
-        const value = row.getValue("is_compadm") as boolean;
-        const label = value ? "Administrativo" : "Cliente";
-        return (
+      const value = row.getValue("is_compadm") as boolean;
+      const label = value ? "Administrativo" : "Cliente";
+      return (
         <Badge variant={value ? "default" : "secondary"}>
-            {label}
+          {label}
         </Badge>
-        );
+      );
     },
-    },
-    {
+  },
+  {
     accessorKey: "is_active",
     header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
+      <DataTableColumnHeader column={column} title="Status" />
     ),
     cell: ({ row }) => {
-        const value = row.getValue("is_active") as boolean;
-        const label = value ? "Ativo" : "Inativo";
-        return (
+      const value = row.getValue("is_active") as boolean;
+      const label = value ? "Ativo" : "Inativo";
+      return (
         <Badge variant={value ? "approved" : "secondary"}>
-            {label}
+          {label}
         </Badge>
-        );
+      );
     },
-    },
+  },
+  {
+    accessorKey: "id",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    enableSorting: false,
+    meta: { hidden: true },
+  },
   {
     id: "actions",
     cell: ({ row }) => <DataTableRowActions row={row} />,

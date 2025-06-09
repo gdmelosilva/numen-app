@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Quicksand } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   description: "Plataforma de Gestão Operacional Numen",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
   display: "swap",
   subsets: ["latin"],
 });
@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${quicksand.className} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

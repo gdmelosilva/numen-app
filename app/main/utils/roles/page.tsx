@@ -10,11 +10,13 @@ import { exportToCSV } from "@/lib/export-file";
 import { Loader2 } from "lucide-react";
 import { getRoleOptions } from "@/hooks/useOptions";
 import { Role } from "@/types/roles";
+import DeleteRole from "@/components/delete-role";
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const fetchRoles = async () => {
     try {
@@ -48,8 +50,11 @@ export default function RolesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {/* Remove search button */}
           <CreateRole />
+          <DeleteRole
+            selectedIds={selectedIds}
+            onDeleted={fetchRoles}
+          />
           <Button
             variant="secondary"
             onClick={() => exportToCSV(filteredRoles, "cargos.csv")}
@@ -74,7 +79,11 @@ export default function RolesPage() {
           </CardContent>
         </Card>
       ) : (
-        <DataTable columns={columns} data={filteredRoles} />
+          <DataTable
+            columns={columns}
+            data={filteredRoles}
+            onSelectionChange={(ids) => setSelectedIds(ids.filter(id => id != null) as number[])}
+          />
       )}
     </div>
   );

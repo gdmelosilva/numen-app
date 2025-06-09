@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
 import { columns, Partner } from "./columns";
+import { PartnerCreateDialog } from "@/components/partner-create-dialog";
 
 interface Filters {
   partner_ext_id: string;
@@ -127,6 +128,7 @@ export default function PartnersPage() {
           <Button variant="secondary" onClick={handleSearch} disabled={loading}>
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
+          <PartnerCreateDialog onSuccess={fetchPartners} />
         </div>
       </div>
 

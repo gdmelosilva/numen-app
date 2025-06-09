@@ -22,21 +22,27 @@ import {
 } from "@/components/ui/table"
 
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<TData extends { id?: number|string }, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   meta?: Record<string, unknown>
+  onSelectionChange?: (ids: (number|string)[]) => void
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends { id?: number|string }, TValue>({
   columns,
   data,
   meta,
+  onSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [rowSelection, setRowSelection] = useState({})
+
+  // Só ativa seleção se receber onSelectionChange e se as colunas incluírem a coluna 'select'
+  const enableRowSelection = !!onSelectionChange && columns.some(col => col.id === "select");
 
   const table = useReactTable({
     data,
@@ -50,9 +56,20 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
       columnFilters,
+      rowSelection,
     },
+    enableRowSelection,
+    onRowSelectionChange: enableRowSelection ? setRowSelection : undefined,
     meta,
   })
+
+  useEffect(() => {
+    if (enableRowSelection && onSelectionChange) {
+      const selectedIds = table.getSelectedRowModel().rows.map(row => row.original.id).filter(id => id !== undefined)
+      onSelectionChange(selectedIds)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowSelection])
 
   return (
     <div>
