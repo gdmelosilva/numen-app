@@ -37,6 +37,9 @@ export async function GET(request: Request) {
         partner_email,
         partner_tel,
         partner_mkt_sg,
+        partner_segment: partner_partner_mkt_sg_fkey(
+          name
+        ),
         is_compadm,
         is_active,
         created_at
@@ -102,123 +105,89 @@ export async function POST(request: Request) {
   const { user, error } = await authenticateRequest();
   if (error) return error;
 
-  // Verificar se tem permissão para criar usuários
+  // Verificar se tem permissão para criar parceiros
   const roleCheck = requireRole([USER_ROLES.ADMIN])(user!);
   if (roleCheck) return roleCheck;
 
   try {
     const supabase = await createClient();
-    
-    const { 
-      email, 
-      firstName, 
-      lastName, 
-      telephone,
-      isClient,
-      role,
-      partnerId 
-    } = await request.json();    console.log('Creating user with data:', {
-      email,
-      firstName,
-      lastName,
-      telephone,
-      isClient: Boolean(isClient),
-      role,
-      partnerId
-    });    
-    
-    console.log('Current user:', {
-      id: user!.id,
-      role: user!.role,
-      is_client: user!.is_client,
-      partner_id: user!.partner_id
-    });
-    
-    // Validar se pode criar usuário para este partner
-    // Apenas admins não-clientes podem criar usuários para qualquer partner
-    const isUnrestrictedAdmin = user!.role === USER_ROLES.ADMIN && !user!.is_client;
-    
-    console.log('Permission check:', {
-      isAdmin: user!.role === USER_ROLES.ADMIN,
-      isClient: user!.is_client,
-      isUnrestrictedAdmin,
-      targetPartnerId: partnerId,
-      userPartnerId: user!.partner_id
-    });
-    
-    if (!isUnrestrictedAdmin) {
-      // Usuários restritos (não-admins ou admins clientes) só podem criar para seu próprio partner
-      if (partnerId !== user!.partner_id) {
-        return NextResponse.json(
-          { error: 'Forbidden: Cannot create user for different partner' },
-          { status: 403 }
-        );
-      }
-    }
 
-    if (!email || !firstName || !lastName) {
+    // Recebe os campos do parceiro
+    const {
+      partner_desc,
+      partner_ident,
+      partner_email,
+      partner_tel,
+      partner_mkt_sg,
+      partner_cep,
+      partner_addrs,
+      partner_compl,
+      partner_distr,
+      partner_city,
+      partner_state,
+      partner_cntry,
+      is_compadm,
+    } = await request.json();
+
+    // Validação simples
+    if (
+      !partner_desc ||
+      !partner_ident ||
+      !partner_email ||
+      !partner_tel
+    ) {
       return NextResponse.json(
-        { error: 'Missing required fields: email, firstName, and lastName are required.' },
+        { error: "Todos os campos obrigatórios devem ser preenchidos." },
         { status: 400 }
       );
     }
 
-    const { data, error: authError } = await supabase.auth.admin.inviteUserByEmail(
-      email,
-      {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/`,
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          is_client: Boolean(isClient),
-          tel_contact: telephone || null,
-          role: role,
-          partner_id: partnerId || user!.partner_id // Use o partner do usuário logado se não especificado
-        }
+    // Insere o novo parceiro
+    const { data, error: insertError } = await supabase
+      .from("partner")
+      .insert([
+        {
+            partner_desc,
+            partner_ident,
+            partner_email,
+            partner_tel,
+            partner_mkt_sg,
+            partner_cep,
+            partner_addrs,
+            partner_compl,
+            partner_distr,
+            partner_city,
+            partner_state,
+            partner_cntry,
+            is_active: true,
+            is_compadm,
+        },
+      ])
+      .select()
+      .single();
+
+    if (insertError) {
+      let friendlyMessage = "Erro ao criar parceiro.";
+      let status = 500;
+      if (
+        insertError.message?.includes("duplicate key") ||
+        insertError.message?.includes("already exists")
+      ) {
+        friendlyMessage = "Já existe um parceiro com este identificador ou email.";
+        status = 409;
       }
-    );
-
-    if (authError) {
-      console.error('Supabase auth error:', {
-        message: authError.message,
-        status: authError.status,
-        code: authError.code
-      });
-      throw authError;
+      return NextResponse.json(
+        { error: friendlyMessage, details: insertError.message },
+        { status }
+      );
     }
 
-    return NextResponse.json({ success: true, user: data.user });
-
+    return NextResponse.json({ success: true, partner: data });
   } catch (err) {
-    const error = err as Error & { status?: number; code?: string };
-    console.error('Full error details:', {
-      message: error.message,
-      status: error.status,
-      code: error.code,
-      stack: error.stack
-    });
-
-    // Handle specific database errors
-    let friendlyMessage = 'An unexpected error occurred.';
-    let status = 500;
-
-    if (error.message?.includes('Database error saving new user')) {
-      friendlyMessage = 'Database error occurred while creating user. Please check the user data and try again.';
-      status = 500;
-    } else if (error.message?.includes('duplicate key') || error.message?.includes('already exists')) {
-      friendlyMessage = 'A user with this email already exists.';
-      status = 409;
-    } else if (error.message?.includes('Foreign Key Violation')) {
-      friendlyMessage = 'Invalid role or partner ID provided.';
-      status = 400;
-    } else if (error.message?.includes('Invalid UUID Format')) {
-      friendlyMessage = 'Invalid partner ID format.';
-      status = 400;
-    }
-
-    return NextResponse.json({ 
-      error: friendlyMessage,
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { status });
+    const error = err as Error;
+    return NextResponse.json(
+      { error: "Erro interno do servidor", details: error.message },
+      { status: 500 }
+    );
   }
 }

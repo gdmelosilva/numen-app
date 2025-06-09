@@ -11,7 +11,9 @@ export type Partner = {
   partner_ident: string;
   partner_email: string;
   partner_tel: string;
-  partner_mkt_sg: string;
+  partner_segment: {
+    name: string;
+  };
   is_compadm: boolean;
   is_active: boolean;
 };
@@ -48,7 +50,7 @@ export const columns: ColumnDef<Partner>[] = [
     ),
   },
   {
-    accessorKey: "partner_mkt_sg",
+    accessorKey: "partner_segment.name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Segmento" />
     ),
