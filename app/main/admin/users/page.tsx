@@ -19,10 +19,7 @@ interface Filters {
   active: boolean | null;
   email: string;
   tel_contact: string;
-  partner_id: string;
-  partner_name: {
-    partner_desc: string;
-  }
+  partner_desc: string;
   role: string;
   is_client: string;
   created_at: string;
@@ -37,10 +34,7 @@ export default function UsersPage() {
     active: null,
     email: "",
     tel_contact: "",
-    partner_id: "",
-    partner_name: {
-      partner_desc: "",
-    },
+    partner_desc: "",
     role: "",
     is_client: "",
     created_at: "",
@@ -66,7 +60,7 @@ export default function UsersPage() {
         queryParams.append("active", filters.active.toString());
       if (filters.email) queryParams.append("email", filters.email);
       if (filters.tel_contact) queryParams.append("tel_contact", filters.tel_contact);
-      if (filters.partner_name.partner_desc) queryParams.append("partner_name", filters.partner_name.partner_desc);
+      if (filters.partner_desc) queryParams.append("partner_desc", filters.partner_desc);
       if (filters.role) queryParams.append("role", filters.role);
       if (filters.is_client) queryParams.append("is_client", filters.is_client);
       if (filters.created_at) queryParams.append("created_at", filters.created_at);
@@ -90,11 +84,47 @@ export default function UsersPage() {
   }, [filters]);
 
   const handleSearch = () => {
-    setFilters(prev => ({ ...prev, search: searchInput }));
-    fetchUsers();
+    setFilters(prev => {
+      const newFilters = { ...prev, search: searchInput };
+      fetchUsersWithFilters(newFilters);
+      return newFilters;
+    });
   };
 
-  const handleFilterChange = (field: keyof Filters, value: string) => {
+  const fetchUsersWithFilters = async (customFilters: Filters) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const queryParams = new URLSearchParams();
+      if (customFilters.search) queryParams.append("search", customFilters.search);
+      if (customFilters.active !== null && customFilters.active !== undefined)
+        queryParams.append("active", customFilters.active.toString());
+      if (customFilters.email) queryParams.append("email", customFilters.email);
+      if (customFilters.tel_contact) queryParams.append("tel_contact", customFilters.tel_contact);
+      if (customFilters.partner_desc) queryParams.append("partner_desc", customFilters.partner_desc);
+      if (customFilters.role) queryParams.append("role", customFilters.role);
+      if (customFilters.is_client) queryParams.append("is_client", customFilters.is_client);
+      if (customFilters.created_at) queryParams.append("created_at", customFilters.created_at);
+      const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Falha ao carregar usuários");
+      }
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        setUsers([]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro desconhecido");
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterChange = (field: keyof Filters, value: string | boolean | null) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 
@@ -158,15 +188,12 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partner_name">Parceiro</Label>
+              <Label htmlFor="partner_desc">Parceiro</Label>
               <Input
-                id="partner_name"
+                id="partner_desc"
                 placeholder="Filtrar por parceiro"
-                value={filters.partner_name.partner_desc}
-                onChange={e => setFilters(prev => ({
-                ...prev,
-                partner_name: { partner_desc: e.target.value }
-              }))}
+                value={filters.partner_desc}
+                onChange={e => handleFilterChange("partner_desc", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -207,7 +234,7 @@ export default function UsersPage() {
               <Select
                 value={filters.active === null ? "all" : filters.active ? "true" : "false"}
                 onValueChange={value => {
-                  setFilters(prev => ({ ...prev, active: value === "all" ? null : value === "true" }));
+                  handleFilterChange("active", value === "all" ? null : value === "true");
                 }}
               >
                 <SelectTrigger id="active">
