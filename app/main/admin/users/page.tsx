@@ -202,16 +202,6 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partner_desc">Parceiro</Label>
-              <Input
-                id="partner_desc"
-                placeholder="Filtrar por parceiro"
-                value={filters.partner_desc}
-                onChange={e => handleFilterChange("partner_desc", e.target.value)}
-                disabled={isEditDialogOpen}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="role">Função</Label>
               <Select
                 value={filters.role || "all"}
