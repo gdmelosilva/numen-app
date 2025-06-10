@@ -14,6 +14,12 @@ import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@
 import { getMarketSegments } from "@/hooks/useOptions";
 import type { MarketingInterface } from "@/types/marketing_segments";
 import { formatCpfCnpj, formatPhoneNumber } from "@/lib/utils";
+import { UnlinkUserButton } from "@/components/UnlinkUserButton";
+import { LinkUserButton } from "@/components/LinkUserButton";
+
+interface PartnerDetailsClientProps {
+  partnerId: string;
+}
 
 async function getPartner(id: string): Promise<PartnerWithUsers | null> {
   // Use sempre a mesma baseURL para evitar duplicidade de requests
@@ -31,6 +37,7 @@ async function getPartner(id: string): Promise<PartnerWithUsers | null> {
 
 interface PartnerWithUsers extends Partner {
   users: Array<{
+    id: string;
     first_name: string;
     last_name: string;
     email: string;
@@ -51,62 +58,6 @@ type UserRow = {
   role: number;
   is_client: boolean;
 };
-
-const userColumns: ColumnDef<UserRow>[] = [
-  {
-    accessorKey: "first_name",
-    header: "Nome",
-    cell: ({ row }) => `${row.original.first_name} ${row.original.last_name}`,
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "tel_contact",
-    header: "Telefone",
-    cell: ({ row }) => row.original.tel_contact || "-",
-  },
-  {
-    accessorKey: "role",
-    header: "Função",
-    cell: ({ row }) =>
-      row.original.role === 1
-        ? "Administrador"
-        : row.original.role === 2
-        ? "Gerente"
-        : row.original.is_client
-        ? "Key-User"
-        : "Funcional",
-  },
-  {
-    accessorKey: "is_client",
-    header: "Tipo",
-    cell: ({ row }) => (
-      <Badge variant={row.original.is_client ? "secondary" : "default"}>
-        {row.original.is_client ? "Cliente" : "Administrativo"}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "is_active",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge variant={row.original.is_active ? "approved" : "destructive"}>
-        {row.original.is_active ? (
-          <CheckCircle2 className="mr-1 h-3 w-3 inline" />
-        ) : (
-          <XCircle className="mr-1 h-3 w-3 inline" />
-        )}
-        {row.original.is_active ? "Ativo" : "Inativo"}
-      </Badge>
-    ),
-  },
-];
-
-interface PartnerDetailsClientProps {
-  partnerId: string;
-}
 
 export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClientProps) {
   const [partner, setPartner] = useState<PartnerWithUsers | null>(null);
@@ -264,6 +215,79 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
       setLoading(false);
     }
   };
+
+  const userColumns: ColumnDef<UserRow>[] = [
+    {
+      accessorKey: "first_name",
+      header: "Nome",
+      cell: ({ row }) => `${row.original.first_name} ${row.original.last_name}`,
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+    },
+    {
+      accessorKey: "tel_contact",
+      header: "Telefone",
+      cell: ({ row }) => row.original.tel_contact || "-",
+    },
+    {
+      accessorKey: "role",
+      header: "Função",
+      cell: ({ row }) =>
+        row.original.role === 1
+          ? "Administrador"
+          : row.original.role === 2
+          ? "Gerente"
+          : row.original.is_client
+          ? "Key-User"
+          : "Funcional",
+    },
+    {
+      accessorKey: "is_client",
+      header: "Tipo",
+      cell: ({ row }) => (
+        <Badge variant={row.original.is_client ? "secondary" : "default"}>
+          {row.original.is_client ? "Cliente" : "Administrativo"}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "is_active",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant={row.original.is_active ? "approved" : "destructive"}>
+          {row.original.is_active ? (
+            <CheckCircle2 className="mr-1 h-3 w-3 inline" />
+          ) : (
+            <XCircle className="mr-1 h-3 w-3 inline" />
+          )}
+          {row.original.is_active ? "Ativo" : "Inativo"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        partner ? (
+          <UnlinkUserButton
+            user={row.original}
+            partnerId={partner.id}
+            onUnlinked={async () => {
+              setLoading(true);
+              setError(null);
+              const p = await getPartner(partnerId);
+              setPartner(p);
+              setLoading(false);
+            }}
+          />
+        ) : null
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+  ];
 
   if (loading) {
     return (
@@ -454,10 +478,27 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
           </form>
         </CardContent>
       </Card>
-      <h1 className="text-md pt-4 pb-1 font-bold">Usuários alocados</h1>
+      <h1 className="text-md pt-4 pb-1 font-bold flex items-center justify-between">
+        Usuários alocados
+        <div>
+          {/* Adicionar usuário button à direita */}
+          {partner && (
+            <LinkUserButton
+              partnerId={partner.id}
+              onLinked={async () => {
+                setLoading(true);
+                setError(null);
+                const p = await getPartner(partnerId);
+                setPartner(p);
+                setLoading(false);
+              }}
+            />
+          )}
+        </div>
+      </h1>
       <CardContent className="p-0">
         {partner.users && partner.users.length > 0 ? (
-          <DataTable columns={userColumns} data={partner.users.map(u => ({ id: u.email, ...u }))} />
+          <DataTable columns={userColumns} data={partner.users} />
         ) : (
           <div className="text-gray-500">Nenhum usuário alocado para este parceiro.</div>
         )}
