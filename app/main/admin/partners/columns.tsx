@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import { DataTableRowActions } from "@/components/ui/data-table-row-actions";
+import { PartnerTableRowActions } from "@/components/partner-table-row-actions";
 import { CheckCircle2, XCircle } from "lucide-react";
 
 export type Partner = {
@@ -102,6 +102,6 @@ export const columns: ColumnDef<Partner>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => <PartnerTableRowActions row={row} />,
   },
 ];
