@@ -40,7 +40,6 @@ export default function PartnersPage() {
     is_compadm: null,
     is_active: null,
   });
-  const [searchInput, setSearchInput] = useState("");
   const [marketSegments, setMarketSegments] = useState<MarketingInterface[]>([]);
 
   const fetchPartners = useCallback(async () => {
@@ -84,12 +83,6 @@ export default function PartnersPage() {
 
   const handleFilterChange = (field: keyof Filters, value: string | boolean) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
   };
 
   useEffect(() => {
@@ -143,47 +136,37 @@ export default function PartnersPage() {
         <CardContent className="pt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="search">Buscar</Label>
+              <Label htmlFor="partner_desc">Nome</Label>
               <Input
-                id="search"
-                placeholder="Buscar por nome, email, ID externo..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={handleKeyPress}
+                id="partner_desc"
+                placeholder="Filtrar por Nome"
+                value={filters.partner_desc}
+                onChange={(e) => handleFilterChange("partner_desc", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="partner_email">Email</Label>
               <Input
                 id="partner_email"
-                placeholder="Filtrar por email"
+                placeholder="Filtrar por Email"
                 value={filters.partner_email}
                 onChange={(e) => handleFilterChange("partner_email", e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partner_ext_id">ID Externo</Label>
+              <Label htmlFor="partner_ext_id">Id.Parceiro</Label>
               <Input
                 id="partner_ext_id"
-                placeholder="Filtrar por ID externo"
+                placeholder="Filtrar por Id.Parceiro"
                 value={filters.partner_ext_id}
                 onChange={(e) => handleFilterChange("partner_ext_id", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="partner_desc">Descrição</Label>
-              <Input
-                id="partner_desc"
-                placeholder="Filtrar por descrição"
-                value={filters.partner_desc}
-                onChange={(e) => handleFilterChange("partner_desc", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="partner_ident">Identificador</Label>
               <Input
                 id="partner_ident"
-                placeholder="Filtrar por identificador"
+                placeholder="Filtrar por Identificador"
                 value={filters.partner_ident}
                 onChange={(e) => handleFilterChange("partner_ident", e.target.value)}
               />
@@ -192,7 +175,7 @@ export default function PartnersPage() {
               <Label htmlFor="partner_tel">Telefone</Label>
               <Input
                 id="partner_tel"
-                placeholder="Filtrar por telefone"
+                placeholder="Filtrar por Telefone"
                 value={filters.partner_tel}
                 onChange={(e) => handleFilterChange("partner_tel", e.target.value)}
               />
@@ -224,25 +207,25 @@ export default function PartnersPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="is_compadm">Comp. Adm?</Label>
+              <Label htmlFor="is_compadm">Tipo</Label>
               <Select
                 value={getBooleanSelectValue(filters.is_compadm)}
                 onValueChange={(value) => handleBooleanFilterChange("is_compadm", value)}
               >
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Comp. Adm?">
+                  <SelectValue placeholder="Filtrar por tipo">
                     {getBooleanSelectLabel(filters.is_compadm)}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="true">Sim</SelectItem>
-                  <SelectItem value="false">Não</SelectItem>
+                  <SelectItem value="true">Administrativo</SelectItem>
+                  <SelectItem value="false">Cliente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="is_active">Ativo?</Label>
+              <Label htmlFor="is_active">Status</Label>
               <Select
                 value={getBooleanSelectValue(filters.is_active)}
                 onValueChange={(value) => handleBooleanFilterChange("is_active", value)}
@@ -254,8 +237,8 @@ export default function PartnersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="true">Sim</SelectItem>
-                  <SelectItem value="false">Não</SelectItem>
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     const isClient = searchParams.get("is_client");
     const createdAtStart = searchParams.get("created_at_start");
     const createdAtEnd = searchParams.get("created_at_end");
+    const partnerId = searchParams.get("partner_id");
 
     let query = supabase
       .from('user')
@@ -91,6 +92,9 @@ export async function GET(request: Request) {
     }
     if (active !== null) {
       query = query.eq("is_active", active === "true");
+    }
+    if (partnerId) {
+      query = query.eq('partner_id', partnerId);
     }
 
     const { data: users, error: supabaseError } = await query.order("created_at", {
