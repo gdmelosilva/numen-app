@@ -57,6 +57,16 @@ export const formatCpfCnpj = (value: string) => {
   }
 };
 
+// Format CEP to XXXXX-XXX format
+export const formatCEP = (value: string) => {
+  const cleaned = value.replace(/\D/g, '');
+  
+  if (cleaned.length <= 5) {
+    return cleaned;
+  } else {
+    return `${cleaned.slice(0, 5)}-${cleaned.slice(5, 8)}`;
+  }
+};
 
 export const export_to_xls = (data: unknown[], filename: string = 'export') => {
   const worksheet = XLSX.utils.json_to_sheet(data);
