@@ -79,7 +79,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   try {
     const supabase = await createClient();
-    console.log(id);
     const { data, error } = await supabase
       .from("partner")
       .select("*, partner_segment: partner_partner_mkt_sg_fkey(*)")
@@ -88,6 +87,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     if (error || !data) {
       return NextResponse.json({ error: "Parceiro não encontrado." }, { status: 404 });
     }
+    // Corrige o nome do campo para partner_segment, não parceiro
     return NextResponse.json(data);
   } catch (err) {
     const error = err as Error & { status?: number; code?: string };
