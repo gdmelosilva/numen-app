@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
 import { columns, Partner } from "./columns";
 import { PartnerCreateDialog } from "@/components/partner-create-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getMarketSegments } from "@/hooks/useOptions";
+import type { MarketingInterface } from "@/types/marketing_segments";
 
 interface Filters {
   partner_ext_id: string;
@@ -36,6 +39,7 @@ export default function PartnersPage() {
     is_active: null,
   });
   const [searchInput, setSearchInput] = useState("");
+  const [marketSegments, setMarketSegments] = useState<MarketingInterface[]>([]);
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -66,43 +70,14 @@ export default function PartnersPage() {
   }, [filters]);
 
   useEffect(() => {
-    fetchPartners();
-  }, [fetchPartners]);
-
-  const handleSearch = () => {
-    setFilters((prev) => {
-      const newFilters = { ...prev, search: searchInput };
-      fetchPartnersWithFilters(newFilters);
-      return newFilters;
+    getMarketSegments().then((segments) => {
+      if (segments) setMarketSegments(segments);
     });
-  };
+  }, []);
 
-  const fetchPartnersWithFilters = async (customFilters: Filters) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const queryParams = new URLSearchParams();
-      if (customFilters.partner_ext_id) queryParams.append("partner_ext_id", customFilters.partner_ext_id);
-      if (customFilters.partner_desc) queryParams.append("partner_desc", customFilters.partner_desc);
-      if (customFilters.partner_ident) queryParams.append("partner_ident", customFilters.partner_ident);
-      if (customFilters.partner_email) queryParams.append("partner_email", customFilters.partner_email);
-      if (customFilters.partner_tel) queryParams.append("partner_tel", customFilters.partner_tel);
-      if (customFilters.partner_mkt_sg) queryParams.append("partner_mkt_sg", customFilters.partner_mkt_sg);
-      if (typeof customFilters.is_compadm === "boolean") queryParams.append("is_compadm", String(customFilters.is_compadm));
-      if (typeof customFilters.is_active === "boolean") queryParams.append("is_active", String(customFilters.is_active));
-      const response = await fetch(`/api/admin/partners?${queryParams.toString()}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Falha ao carregar parceiros");
-      }
-      const data = await response.json();
-      setPartners(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro desconhecido");
-      setPartners([]);
-    } finally {
-      setLoading(false);
-    }
+  // Buscar só quando clicar no botão
+  const handleSearch = () => {
+    fetchPartners();
   };
 
   const handleFilterChange = (field: keyof Filters, value: string | boolean) => {
@@ -113,6 +88,29 @@ export default function PartnersPage() {
     if (e.key === "Enter") {
       handleSearch();
     }
+  };
+
+  useEffect(() => {
+    if (filters.partner_mkt_sg === "all") {
+      setFilters((prev) => ({ ...prev, partner_mkt_sg: "" }));
+    }
+  }, [filters.partner_mkt_sg]);
+
+  // Função utilitária para lidar com selects booleanos
+  function getBooleanSelectValue(val: boolean | null): string {
+    if (val === null) return "all";
+    if (val === true) return "true";
+    return "false";
+  }
+  function getBooleanSelectLabel(val: boolean | null): string {
+    if (val === null) return "Todos";
+    if (val === true) return "Sim";
+    return "Não";
+  }
+
+  const handleBooleanFilterChange = (field: keyof Filters, value: string) => {
+    if (value === "all") setFilters((prev) => ({ ...prev, [field]: null }));
+    else setFilters((prev) => ({ ...prev, [field]: value === "true" }));
   };
 
   return (
@@ -191,37 +189,66 @@ export default function PartnersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partner_mkt_sg">Sigla MKT</Label>
-              <Input
-                id="partner_mkt_sg"
-                placeholder="Filtrar por sigla MKT"
+              <Label htmlFor="partner_mkt_sg">Segmento</Label>
+              <Select
                 value={filters.partner_mkt_sg}
-                onChange={(e) => handleFilterChange("partner_mkt_sg", e.target.value)}
-              />
+                onValueChange={(value) => handleFilterChange("partner_mkt_sg", value)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue
+                    placeholder="Filtrar por Segmento"
+                    // Exibe o nome do segmento selecionado
+                    >
+                    {filters.partner_mkt_sg
+                      ? marketSegments.find(s => s.id.toString() === filters.partner_mkt_sg)?.name || "Filtrar por Segmento"
+                      : "Filtrar por Segmento"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {marketSegments.map((segment) => (
+                    <SelectItem key={segment.id} value={segment.id.toString()}>
+                      {segment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="is_compadm">Comp. Adm?</Label>
-              <select
-                id="is_compadm"
-                className="w-full border rounded px-2 py-1"
-                value={filters.is_compadm ? "true" : "false"}
-                onChange={(e) => handleFilterChange("is_compadm", e.target.value === "true")}
+              <Select
+                value={getBooleanSelectValue(filters.is_compadm)}
+                onValueChange={(value) => handleBooleanFilterChange("is_compadm", value)}
               >
-                <option value="false">Não</option>
-                <option value="true">Sim</option>
-              </select>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Comp. Adm?">
+                    {getBooleanSelectLabel(filters.is_compadm)}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="true">Sim</SelectItem>
+                  <SelectItem value="false">Não</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="is_active">Ativo?</Label>
-              <select
-                id="is_active"
-                className="w-full border rounded px-2 py-1"
-                value={filters.is_active ? "true" : "false"}
-                onChange={(e) => handleFilterChange("is_active", e.target.value === "true")}
+              <Select
+                value={getBooleanSelectValue(filters.is_active)}
+                onValueChange={(value) => handleBooleanFilterChange("is_active", value)}
               >
-                <option value="false">Não</option>
-                <option value="true">Sim</option>
-              </select>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Ativo?">
+                    {getBooleanSelectLabel(filters.is_active)}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="true">Sim</SelectItem>
+                  <SelectItem value="false">Não</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>

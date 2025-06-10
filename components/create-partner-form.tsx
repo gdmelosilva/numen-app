@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MarketingInterface } from "@/types/marketing_segments";
+import { getMarketSegments } from "@/hooks/useOptions";
 
 export function CreatePartnerForm({
   className,
@@ -22,7 +24,7 @@ export function CreatePartnerForm({
   const [partner_ident, setPartnerIdent] = useState("");
   const [partner_email, setPartnerEmail] = useState("");
   const [partner_tel, setPartnerTel] = useState("");
-  const [partner_mkt_sg, setPartnerMktSg] = useState("");
+  const [partner_mkt_sg, setPartnerMktSg] = useState<{ id: string; name: string }>({ id: "", name: "" });
   const [is_compadm, setIsCompadm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,12 +35,18 @@ export function CreatePartnerForm({
   const [partner_city, setPartnerCity] = useState("");
   const [partner_state, setPartnerState] = useState("");
   const [partner_cntry, setPartnerCntry] = useState("");
+  const [marketSegments, setMarketSegments] = useState<MarketingInterface[]>([]);
+
+  useEffect(() => {
+    getMarketSegments().then((segments) => {
+      if (segments) setMarketSegments(segments);
+    });
+  }, []);
 
   const handleCreatePartner = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
     try {
       const response = await fetch("/api/admin/partners", {
         method: "POST",
@@ -48,7 +56,7 @@ export function CreatePartnerForm({
           partner_ident,
           partner_email,
           partner_tel,
-          partner_mkt_sg,
+          partner_mkt_sg: partner_mkt_sg.id ? Number(partner_mkt_sg.id) : null,
           is_compadm,
           partner_cep,
           partner_addrs,
@@ -127,14 +135,30 @@ export function CreatePartnerForm({
                   required
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="partner_mkt_sg">Sigla MKT</Label>
-                <Input
-                  id="partner_mkt_sg"
-                  value={partner_mkt_sg}
-                  onChange={(e) => setPartnerMktSg(e.target.value)}
-                />
-              </div>
+              <div className="space-y-2 col-span-2">
+              <Label htmlFor="partner_mkt_sg" className="text-sm font-medium text-foreground">Segmento</Label>
+              <Select
+                value={partner_mkt_sg.id}
+                onValueChange={(value) => {
+                  const seg = marketSegments.find(s => s.id.toString() === value);
+                  setPartnerMktSg(seg ? { id: seg.id.toString(), name: seg.name } : { id: value, name: "" });
+                }}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione um segmento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {marketSegments.map((segment) => (
+                    <SelectItem key={segment.id} value={segment.id.toString()}>
+                      {segment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {partner_mkt_sg.id && (
+                <div className="text-xs text-muted-foreground mt-1">{partner_mkt_sg.name}</div>
+              )}
+            </div>
               <div className="grid gap-2">
                 <Label htmlFor="is_compadm">Tipo Parceiro</Label>
                 <Select

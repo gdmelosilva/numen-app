@@ -67,7 +67,10 @@ export async function GET(request: Request) {
       query = query.ilike('partner_tel', `%${partner_tel}%`);
     }
     if (partner_mkt_sg) {
-      query = query.ilike('partner_mkt_sg', `%${partner_mkt_sg}%`);
+      const mktSgId = Number(partner_mkt_sg);
+      if (!isNaN(mktSgId)) {
+        query = query.eq('partner_mkt_sg', mktSgId);
+      }
     }
     if (is_compadm !== null && is_compadm !== undefined) {
       if (is_compadm === "true") query = query.eq('is_compadm', true);
