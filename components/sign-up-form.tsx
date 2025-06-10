@@ -23,26 +23,13 @@ import {
 import { Role } from "@/types/roles";
 import { getRoleOptions } from "@/hooks/useOptions";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { formatPhoneNumber } from "@/lib/utils";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onForgotPassword?: () => void;
   onBack?: () => void;
   onSignUp?: () => void;
 }
-
-const formatPhoneNumber = (value: string) => {
-  const cleaned = value.replace(/\D/g, '');
-  
-  if (cleaned.length <= 0) {
-    return "";
-  } else if(cleaned.length <= 2) {
-    return `(${cleaned}`;
-  } else if (cleaned.length <= 7) {
-    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
-  } else {
-    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7, 11)}`;
-  }
-};
 
 export function SignUpForm({
   className,

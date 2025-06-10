@@ -13,6 +13,7 @@ import { PartnerCreateDialog } from "@/components/partner-create-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getMarketSegments } from "@/hooks/useOptions";
 import type { MarketingInterface } from "@/types/marketing_segments";
+import { export_to_xls } from "@/lib/utils";
 
 interface Filters {
   partner_ext_id: string;
@@ -114,6 +115,10 @@ export default function PartnersPage() {
     else setFilters((prev) => ({ ...prev, [field]: value === "true" }));
   };
 
+  const handleExport = () => {
+    export_to_xls(partners, "parceiros");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -128,6 +133,9 @@ export default function PartnersPage() {
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
           <PartnerCreateDialog onSuccess={fetchPartners} />
+          <Button onClick={handleExport} variant="outline">
+            Exportar para Excel
+          </Button>
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { PartnerTableRowActions } from "@/components/partner-table-row-actions";
 import { CheckCircle2, XCircle } from "lucide-react";
 import type { Partner } from "@/types/partners";
+import { formatCpfCnpj, formatPhoneNumber } from "@/lib/utils";
 
 export const columns: ColumnDef<Partner>[] = [
 	{
@@ -23,6 +24,10 @@ export const columns: ColumnDef<Partner>[] = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Identificação" />
 		),
+		cell: ({ row }) => {
+		const value = row.getValue("partner_ident") as string;
+		return formatCpfCnpj(value);
+	},
 	},
 	{
 		accessorKey: "partner_email",
@@ -33,6 +38,10 @@ export const columns: ColumnDef<Partner>[] = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Telefone" />
 		),
+		cell: ({ row }) => {
+			const value = row.getValue("partner_tel") as string;
+			return formatPhoneNumber(value);
+		},
 	},
 	{
 		accessorKey: "partner_segment.name",
