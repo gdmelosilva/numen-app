@@ -48,8 +48,20 @@ export function UpdatePasswordForm({
       return;
     }
 
-    if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres");
+    if (password.length < 8) {
+      setError("A senha deve ter pelo menos 8 caracteres");
+      return;
+    }
+
+    // Nova verificação: pelo menos 1 caractere especial
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      setError("A senha deve conter pelo menos 1 caractere especial");
+      return;
+    }
+
+    // Nova verificação: pelo menos 1 letra maiúscula
+    if (!/[A-Z]/.test(password)) {
+      setError("A senha deve conter pelo menos 1 letra maiúscula");
       return;
     }
 

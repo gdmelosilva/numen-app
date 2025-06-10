@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, SquareTerminal, WrenchIcon, ShieldUser, Blocks, ClockFading, HandCoins } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useUserContext } from "@/components/user-context";
 
 // Contexto da Sidebar
 interface SidebarContextValue {
@@ -58,13 +59,81 @@ export function SidebarInset({
   );
 }
 
+// --- Regras de visibilidade de menus ---
+import type { AuthenticatedUser } from "@/lib/api-auth";
+
+type NavItem = {
+  title?: string;
+  url?: string;
+  icon?: React.ElementType;
+  isActive?: boolean;
+  newTab?: boolean;
+  items?: { title: string; url: string; newTab: boolean }[];
+  roles?: string[];
+  type?: string;
+};
+
+type MenuVisibilityRule = {
+  match: (user: AuthenticatedUser) => boolean;
+  hide: (string | { parent: string; items: string[] })[];
+};
+
+const menuVisibilityRules: MenuVisibilityRule[] = [
+  {
+    match: (user) => user.role === 1 && user.is_client === true, // Admin cliente
+    hide: [
+      // Esconder abas inteiras
+      "Utilitários",
+      "TimeSheet",
+      "TimeFlow - Faturamento",
+      // Esconder itens específicos da aba Administrativo
+      { parent: "Administrativo", items: ["Parceiros", "Contratos de Serviço"] },
+    ],
+  },
+  {
+    match: (user) => user.role === 2 && user.is_client === true, // Gerente cliente
+    hide: [
+      // Esconder abas inteiras
+      "Utilitários",
+      "TimeSheet",
+      "TimeFlow - Faturamento",
+      "Administrativo",
+    ],
+  },
+  // Adicione mais regras conforme necessário
+];
+
+function filterNavMain(navMain: NavItem[], user: AuthenticatedUser | null): NavItem[] {
+  if (!user) return navMain;
+  let filtered = navMain;
+  for (const rule of menuVisibilityRules) {
+    if (rule.match(user)) {
+      for (const hide of rule.hide) {
+        if (typeof hide === "string") {
+          filtered = filtered.filter((item: NavItem) => item.title !== hide);
+        } else if (hide.parent && Array.isArray(hide.items)) {
+          filtered = filtered.map((item: NavItem) => {
+            if (item.title === hide.parent && Array.isArray(item.items)) {
+              return {
+                ...item,
+                items: item.items.filter((sub: { title: string }) => !hide.items.includes(sub.title)),
+              };
+            }
+            return item;
+          });
+        }
+      }
+    }
+  }
+  return filtered;
+}
+
 // Componente AppSidebar
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { expanded, setExpanded } = useSidebar();
-  const [openItems, setOpenItems] = React.useState<string[]>([]);
-  const [currentPath, setCurrentPath] = React.useState(pathname);
+  const { user, loading } = useUserContext();
 
   const navMain = React.useMemo(() => [
     {
@@ -153,16 +222,77 @@ export function AppSidebar() {
     }
   }, [router]);
 
-  // Preserva o estado dos itens abertos
-  React.useEffect(() => {
-    const parentUrl = navMain.find(item => 
-      item.items?.some(subItem => subItem.url === pathname)
-    )?.url;
+  // Aplica regras de visibilidade
+  const filteredNavMain = React.useMemo(() => filterNavMain(navMain, user), [navMain, user]);
 
-    if (parentUrl && !openItems.includes(parentUrl)) {
-      setOpenItems(prev => [...prev, parentUrl]);
+  // Sempre deixa todas as abas abertas por padrão
+  const allParentUrls = React.useMemo(() =>
+    filteredNavMain.filter(item => item.url && item.items && item.items.length > 0).map(item => item.url!),
+    [filteredNavMain]
+  );
+
+  const [openItems, setOpenItems] = React.useState<string[]>(allParentUrls);
+  const [currentPath, setCurrentPath] = React.useState(pathname);
+
+  // Atualiza abas abertas quando muda o menu (ex: após login ou mudança de regras)
+  React.useEffect(() => {
+    setOpenItems(allParentUrls);
+  }, [allParentUrls]);
+
+  // Exibe loading enquanto usuário está carregando
+  if (loading) {
+    return (
+      <div className={cn(
+        "flex h-screen flex-col border-r border-border/40 bg-background transition-all duration-300",
+        expanded ? "w-64" : "w-16"
+      )}>
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-muted-foreground animate-pulse">Carregando menu...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Componente SidebarUserCard
+  function SidebarUserCard() {
+    const { user, loading } = useUserContext();
+    if (loading) {
+      return (
+        <div className="flex items-center gap-3 p-3 border-t border-border/40 bg-background/80 animate-pulse">
+          <div className="h-10 w-10 rounded-md bg-muted" />
+          <div className="flex flex-col gap-1">
+            <div className="h-4 w-24 bg-muted rounded" />
+            <div className="h-3 w-16 bg-muted rounded" />
+          </div>
+        </div>
+      );
     }
-  }, [pathname, navMain, openItems]);
+    if (!user) return null;
+    const name = `${user.first_name} ${user.last_name}`.trim();
+    return (
+      <div className="flex items-center gap-3 p-3 border-t border-border/40 bg-background/80">
+        <div className="flex items-center justify-center h-10 w-10 rounded-md bg-muted text-primary font-bold text-lg">
+          {/* Avatar genérico: Iniciais do nome */}
+          {user.first_name && user.last_name
+            ? `${user.first_name[0]}${user.last_name[0]}`
+            : user.first_name?.[0] || user.last_name?.[0] || "?"}
+        </div>
+        <div className="flex flex-col">
+          <span className="font-medium text-sm text-default-foreground">{name}</span>
+          <span className="text-xs text-muted-foreground">{typeof user.role === 'string' ? user.role : roleToLabel(user.role, user.is_client)}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Função utilitária para exibir o nome do cargo
+  function roleToLabel(role: number | string | null | undefined, is_client: boolean) {
+    if ((role === 1 || role === "1")) return "Administrador";
+    if (role === 2 || role === "2") return "Gerente";
+    if ((role === 3 || role === "3") && (is_client === true )) return "Key-User";
+    if ((role === 3 || role === "3") && (is_client === false )) return "Funcional";
+    return "Cargo Indefinido";
+  }
 
   return (
     <div
@@ -170,6 +300,7 @@ export function AppSidebar() {
         "flex h-screen flex-col border-r border-border/40 bg-background transition-all duration-300",
         expanded ? "w-64" : "w-16"
       )}
+      style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 30 }}
     >
       <div className="flex h-14 items-center justify-between border-b border-border/40 px-4">
         <button
@@ -199,7 +330,7 @@ export function AppSidebar() {
         </Button>
       </div>
       <nav className="flex-1 space-y-1 p-2">
-        {navMain.map((item, idx) => {
+        {filteredNavMain.map((item: NavItem, idx: number) => {
           if (item.type === "separator") {
             return (
               <div key={`separator-${idx}`} className="my-2 border-y border-border" />
@@ -223,7 +354,7 @@ export function AppSidebar() {
               </button>
               {expanded && typedItem.url && openItems.includes(typedItem.url) && typedItem.items && (
                 <div className="ml-6 mt-1 space-y-1">
-                  {typedItem.items.map((subItem) => (
+                  {typedItem.items.map((subItem: { title: string; url: string; newTab: boolean }) => (
                     <button
                       key={subItem.url}
                       onClick={() => handleNavigation(subItem.url, subItem.newTab)}
@@ -243,6 +374,8 @@ export function AppSidebar() {
           );
         })}
       </nav>
+      {/* Card do usuário na parte inferior */}
+      {expanded && <SidebarUserCard />}
     </div>
   );
 }

@@ -38,17 +38,27 @@ export function LoginForm({
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      email,
+      password,
       });
-      if (error) throw error;
+      if (error) {
+      if (
+        error.message.includes("Invalid login credentials") ||
+        error.message.includes("Credenciais de login inválidas")
+      ) {
+        setError("Credenciais inválidas. Verifique seu email e senha.");
+      } else {
+        setError(error.message);
+      }
+      return;
+      }
       router.push("/main");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(error instanceof Error ? error.message : "Ocorreu um erro");
     } finally {
       setIsLoading(false);
     }
-  };
+    };
 
   return (
     <div className={cn("flex flex-col gap-6 max-w-sm w-full ", className)} {...props}>

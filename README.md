@@ -1,19 +1,12 @@
-Backlog geral:
-- [ ] Adicionar Usuário na Sidebar
-- [ ] Adicionar Logo da empresa na Sidebar
-- [ ] Adicionar verificaçao de role e client na sidebar para exibir:
+Feitos:
+- [X] Adicionar verificaçao de role e client na sidebar para exibir:
       (admin e cliente) == Nao <Admin - Parceiros e Contratos> e <Utilitarios> e <TimeSheet> e <TimeFlow>
       (gerente e cliente) == Nao <Admin> e <Utilitarios> e <TimeSheet> e <TimeFlow>
       (resource e cliente) == Nao <Admin> e <Utilitarios> e <TimeSheet> e <TimeFlow> // Além disso não pode abrir chamado - só responder.
-- [ ] Validação da Senha (caracteres mínimos pelo menos)
-- [ ] Geral - Entender porque a barra de rolagem está rodando a pagina com a sidebar (quando a sidebar deveria ser fixa)
-
-Backlog Utilitarios:
-- [ ] Cargos - Depois de criar, atualizar tabela (adicionar Fetch)
-- [ ] Cargos - Verificar Politica de Delete (cacete do caralho)
-- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
-
-Backlog Users:
+- [X] Validação da Senha (caracteres mínimos pelo menos)
+- [X] Ajustes de Mensagens de Erro para Portugues
+- [X] Geral - Entender porque a barra de rolagem está rodando a pagina com a sidebar (quando a sidebar deveria ser fixa) - Criado um Provider
+- [X] Adicionar Usuário na Sidebar
 - [X] Incluir Coluna Parceiro
 - [X] Alterar Funcionário para Funcional
 - [X] Ativar função "Editar"
@@ -25,14 +18,6 @@ Backlog Users:
 - [X] Remover filtro parceiro
 - [X] Quando o cliente criar um user deve ir para o parceiro dele automaticamente
 - [X] Não aparecer campo selecionar parceiro para o Admin Cliente
-- [ ] Fazer campo de filtro BUSCAR funcionar para só o nome do usuário
-- [ ] Botão limpar todos os filtros
-- [ ] Limitar first_name para somente uma palavra (não pode espaço e mais de 40 caracteres)
-- [ ] Fetch após inativar / ativar / alterar
-- [ ] Fetch dividido (para paginação)
-- [ ] ** Função Desconhecida (devemos tratar?)
-
-Backlog Parceiros:
 - [X] Criar Página Parceiros
 - [X] Criar Tabela Parceiros
 - [X] Criar GET Parceiros
@@ -45,6 +30,27 @@ Backlog Parceiros:
 - [X] Finalizar inserção de filtros (incluir todos)
 - [X] Ajustar filtro de Segmento
 - [X] Ajustar select de Segmento
+
+Vai ficar pra ver com o Felipe:
+- [ ] Encerrar a Sessão automáticamente com 1h de uso (Supabase // Precisamos do plano Pro)
+
+Backlog geral:
+- [ ] Tirar texto "numen" do arquivo svg e manter a proporção quadradinha
+
+Backlog Utilitarios:
+- [ ] Cargos - Depois de criar, atualizar tabela (adicionar Fetch)
+- [ ] Cargos - Verificar Politica de Delete (cacete do caralho)
+- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
+
+Backlog Users:
+- [ ] Fazer campo de filtro BUSCAR funcionar para só o nome do usuário
+- [ ] Botão limpar todos os filtros
+- [ ] Limitar first_name para somente uma palavra (não pode espaço e mais de 40 caracteres)
+- [ ] Fetch após inativar / ativar / alterar
+- [ ] Fetch dividido (para paginação)
+- [ ] ** Função Desconhecida (devemos tratar?)
+
+Backlog Parceiros:
 - [ ] Remover filtro Buscar
 - [ ] Alterar ID Externo por Id.Parceiro
 - [ ] Alterar Descrição por Nome
