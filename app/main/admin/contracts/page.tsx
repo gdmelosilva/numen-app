@@ -3,7 +3,8 @@
 import { useState, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
-import { columns, Contract } from "./columns";
+import { columns } from "./columns";
+import type { Contract } from "@/types/contracts";
 import { Button } from "@/components/ui/button";
 import { exportToCSV } from "@/lib/export-file";
 import { Loader2, Search } from "lucide-react";
