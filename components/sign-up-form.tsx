@@ -147,7 +147,11 @@ export function SignUpForm({
                   placeholder="John"
                   required
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  maxLength={32}
+                  onChange={(e) => {
+                    const value = e.target.value.slice(0, 34);
+                    setFirstName(value);
+                  }}
                 />
               </div>
               <div className="grid gap-2">
@@ -158,7 +162,9 @@ export function SignUpForm({
                   placeholder="Doe da Silva"
                   required
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.slice(0, 34);
+                    setLastName(value)}}
                 />
               </div>
               <div className="grid gap-2">
@@ -169,7 +175,12 @@ export function SignUpForm({
                   placeholder="email@exemplo.com"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  maxLength={40}
+                  pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$"
+                  onChange={(e) => {
+                    const value = e.target.value.slice(0, 40);
+                    setEmail(value);
+                  }}
                 />
               </div>
               <div className="grid gap-2">

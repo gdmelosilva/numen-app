@@ -145,6 +145,23 @@ export default function UsersPage() {
     fetchUsers();
   };
 
+  // Função para limpar filtros e buscar usuários sem filtros
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      search: "",
+      active: null,
+      email: "",
+      tel_contact: "",
+      partner_desc: "",
+      role: "",
+      is_client: "",
+      created_at: "",
+    };
+    setFilters(clearedFilters);
+    setSearchInput("");
+    fetchUsersWithFilters(clearedFilters);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -156,12 +173,19 @@ export default function UsersPage() {
           <Button variant="colored2" onClick={handleSearch} disabled={loading || isEditDialogOpen}>
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
+          <Button
+            variant="outline"
+            onClick={handleClearFilters}
+            disabled={loading || isEditDialogOpen}
+          >
+            Limpar filtros
+          </Button>
           <UserCreateDialog onSuccess={fetchUsers} disabled={isEditDialogOpen} />
           <Button
             variant="secondary"
             onClick={() => exportToCSV(users.map(u => ({ ...u })) as Record<string, unknown>[], "usuarios.csv")}
             disabled={users.length === 0 || isEditDialogOpen}
-            className="bg-accent text-white"
+            className="bg-accent text-white hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Exportar CSV
           </Button>
@@ -172,10 +196,10 @@ export default function UsersPage() {
         <CardContent className="pt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="search">Buscar</Label>
+              <Label htmlFor="search">Nome</Label>
               <Input
                 id="search"
-                placeholder="Buscar por nome ou email..."
+                placeholder="Filtrar por nome"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyPress={handleKeyPress}

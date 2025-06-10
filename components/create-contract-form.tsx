@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export function CreateProjectForm({ className, onCreate, ...props }: React.ComponentPropsWithoutRef<"div"> & { onCreate?: () => void }) {
+export function CreateContractForm({ className, onCreate, ...props }: React.ComponentPropsWithoutRef<"div"> & { onCreate?: () => void }) {
   const [projectName, setProjectName] = useState("");
   const [projectDesc, setProjectDesc] = useState("");
   const [partnerId, setPartnerId] = useState("");
@@ -39,7 +39,7 @@ export function CreateProjectForm({ className, onCreate, ...props }: React.Compo
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/admin/projects", {
+      const response = await fetch("/api/admin/contracts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

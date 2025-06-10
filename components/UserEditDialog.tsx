@@ -17,7 +17,6 @@ interface UserEditDialogProps {
 export function UserEditDialog({ user, onSuccess }: UserEditDialogProps) {
   const [open, setOpen] = useState(true);
 
-  // When dialog closes, unmount it by calling onSuccess (which in parent sets editOpen to false)
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {

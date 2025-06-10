@@ -8,7 +8,7 @@ import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
 import { Badge } from "@/components/ui/badge"
 
-export type Project = {
+export type Contract = {
   id?: string | number;
   projectExtId: string;
   projectName: string;
@@ -29,28 +29,28 @@ export type Project = {
 };
 
 // Add types for actions
-export interface ProjectTableActionsContext {
+export interface ContractTableActionsContext {
   onEditOpen?: () => void;
   onEditClose?: () => void;
 }
 
-export const columns: ColumnDef<Project>[] = [
+export const columns: ColumnDef<Contract>[] = [
   {
     accessorKey: "projectExtId",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="ID Externo" />
+      <DataTableColumnHeader column={column} title="Id.Contrato" />
     ),
   },
   {
     accessorKey: "projectName",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nome do Projeto" />
+      <DataTableColumnHeader column={column} title="Cód. Contrato" />
     ),
   },
   {
     accessorKey: "projectDesc",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Descrição" />
+      <DataTableColumnHeader column={column} title="Nome" />
     ),
   },
   {

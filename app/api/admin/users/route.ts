@@ -58,7 +58,7 @@ export async function GET(request: Request) {
     }
 
     if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+      query = query.ilike('first_name', `%${search}%`);
     }
     if (firstName) {
       query = query.ilike('first_name', `%${firstName}%`);

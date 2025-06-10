@@ -7,13 +7,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
-import { CreateProjectForm } from "@/components/create-project-form";
+import { CreateContractForm } from "@/components/create-contract-form";
 
-interface ProjectCreateDialogProps {
+interface ContractCreateDialogProps {
   onSuccess?: () => void;
 }
 
-export function ProjectCreateDialog({ onSuccess }: ProjectCreateDialogProps) {
+export function ContractCreateDialog({ onSuccess }: ContractCreateDialogProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -25,7 +25,7 @@ export function ProjectCreateDialog({ onSuccess }: ProjectCreateDialogProps) {
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
         <DialogTitle className="sr-only">Criar Novo Projeto</DialogTitle>
-        <CreateProjectForm onCreate={() => {
+        <CreateContractForm onCreate={() => {
           setOpen(false);
           onSuccess?.();
         }} />

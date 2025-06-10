@@ -157,7 +157,7 @@ export function AppSidebar() {
       items: [
         { title: "Usuários", url: "/main/admin/users", newTab: false },
         { title: "Parceiros", url: "/main/admin/partners", newTab: false },
-        { title: "Contratos de Serviço", url: "/main/admin/projects", newTab: false },
+        { title: "Contratos de Serviço", url: "/main/admin/contracts", newTab: false },
       ],
       roles: ["ADMIN"],
     },

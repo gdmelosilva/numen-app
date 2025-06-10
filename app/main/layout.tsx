@@ -26,8 +26,6 @@ export default async function MainLayout({
 
   if (error || !user) {
     redirect("/");
-  } else {
-    console.log("User authenticated:", user);
   }
 
   return (

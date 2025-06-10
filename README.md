@@ -30,25 +30,25 @@ Feitos:
 - [X] Finalizar inserção de filtros (incluir todos)
 - [X] Ajustar filtro de Segmento
 - [X] Ajustar select de Segmento
+- [X] Fazer campo de filtro BUSCAR funcionar para só o nome do usuário
+- [X] Botão limpar todos os filtros
+- [X] Limitar first_name para somente uma palavra (não pode espaço e mais de 40 caracteres)
 
 Vai ficar pra ver com o Felipe:
 - [ ] Encerrar a Sessão automáticamente com 1h de uso (Supabase // Precisamos do plano Pro)
+- [ ] Verificar a adicao de roles
 
 Backlog geral:
 - [ ] Tirar texto "numen" do arquivo svg e manter a proporção quadradinha
 
-Backlog Utilitarios:
+Backlog Utilitarios: **Deixar por ultimo!
 - [ ] Cargos - Depois de criar, atualizar tabela (adicionar Fetch)
 - [ ] Cargos - Verificar Politica de Delete (cacete do caralho)
 - [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
 
-Backlog Users:
-- [ ] Fazer campo de filtro BUSCAR funcionar para só o nome do usuário
-- [ ] Botão limpar todos os filtros
-- [ ] Limitar first_name para somente uma palavra (não pode espaço e mais de 40 caracteres)
-- [ ] Fetch após inativar / ativar / alterar
-- [ ] Fetch dividido (para paginação)
-- [ ] ** Função Desconhecida (devemos tratar?)
+Backlog Users: (Finalizado!)
+- [ ] Fetch após inativar / ativar / alterar *
+- [ ] Fetch dividido (para paginação) *
 
 Backlog Parceiros:
 - [ ] Remover filtro Buscar
@@ -64,7 +64,7 @@ Backlog Parceiros:
 - [ ] Fetch após inativar / ativar / alterar
 
 Backlog Contratos: (pegar referencia no projeto antigo)
-- [ ] Alterar PROJETOS para CONTRATOS
+- [X] Alterar PROJETOS para CONTRATOS
 - [ ] Ajustar filtro id parceiro para trazer o select da api
 - [ ] Ajustar filtro tipo de projeto para trazer o select do enum
 - [ ] Ajustar filtro status de projeto para trazer o select da tabela

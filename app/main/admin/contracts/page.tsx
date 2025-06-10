@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
-import { columns, Project } from "./columns";
+import { columns, Contract } from "./columns";
 import { Button } from "@/components/ui/button";
 import { exportToCSV } from "@/lib/export-file";
 import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { ProjectCreateDialog } from "@/components/project-create-dialog";
+import { ContractCreateDialog } from "@/components/contract-create-dialog";
 
 interface Filters {
   projectExtId: string;
@@ -25,8 +25,8 @@ interface Filters {
   end_at: string;
 }
 
-export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
+export default function ContractsPage() {
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({
@@ -43,6 +43,10 @@ export default function ProjectsPage() {
   });
   const [pendingFilters, setPendingFilters] = useState<Filters>(filters);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const partnerOptionsRef = useRef<{ id: string; name: string }[]>([]);
+  const [partnerOptions, setPartnerOptions] = useState<{ id: string; name: string }[]>([]);
+  const [loadingPartners, setLoadingPartners] = useState(false);
+  const [partnersLoaded, setPartnersLoaded] = useState(false);
 
   const buildProjectQueryParams = (customFilters: Filters) => {
     const queryParams = new URLSearchParams();
@@ -66,20 +70,20 @@ export default function ProjectsPage() {
       setLoading(true);
       setError(null);
       const queryParams = buildProjectQueryParams(customFilters);
-      const response = await fetch(`/api/admin/projects?${queryParams.toString()}`);
+      const response = await fetch(`/api/admin/contracts?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Falha ao carregar projetos");
       }
       const data = await response.json();
       if (Array.isArray(data)) {
-        setProjects(data);
+        setContracts(data);
       } else {
-        setProjects([]);
+        setContracts([]);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
-      setProjects([]);
+      setContracts([]);
     } finally {
       setLoading(false);
     }
@@ -96,12 +100,46 @@ export default function ProjectsPage() {
     fetchProjects(pendingFilters);
   };
 
+  const handleClearFilters = () => {
+    const clearedFilters: Filters = {
+      projectExtId: "",
+      projectName: "",
+      projectDesc: "",
+      partnerId: "",
+      project_type: "",
+      project_status: "",
+      is_wildcard: null,
+      is_247: null,
+      start_date: "",
+      end_at: "",
+    };
+    setPendingFilters(clearedFilters);
+    setFilters(clearedFilters);
+    fetchProjects(clearedFilters);
+  };
+
+  const handleOpenPartnerSelect = async () => {
+    if (partnersLoaded) return;
+    setLoadingPartners(true);
+    try {
+      const res = await fetch("/api/options?type=partners");
+      const data = await res.json();
+      partnerOptionsRef.current = Array.isArray(data) ? data : [];
+      setPartnerOptions(partnerOptionsRef.current);
+      setPartnersLoaded(true);
+    } catch {
+      setPartnerOptions([]);
+    } finally {
+      setLoadingPartners(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Lista de Projetos</h2>
-          <p className="text-sm text-muted-foreground">Administração de Projetos</p>
+          <h2 className="text-xl font-semibold">Lista de Contratos</h2>
+          <p className="text-sm text-muted-foreground">Administração de Contratos</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -110,10 +148,17 @@ export default function ProjectsPage() {
           >
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
-          <ProjectCreateDialog />
+          <Button
+            variant="outline"
+            onClick={handleClearFilters}
+            disabled={loading || isEditDialogOpen}
+          >
+            Limpar filtros
+          </Button>
+          <ContractCreateDialog />
           <Button
             variant="colored1"
-            onClick={() => exportToCSV(projects, "projetos.csv")}
+            onClick={() => exportToCSV(contracts, "projetos.csv")}
             disabled={loading || isEditDialogOpen}
           >
             Exportar CSV
@@ -125,17 +170,17 @@ export default function ProjectsPage() {
         <CardContent className="pt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="projectExtId">ID Externo</Label>
+              <Label htmlFor="projectExtId">Id.Contrato</Label>
               <Input
                 id="projectExtId"
-                placeholder="Filtrar por ID externo"
+                placeholder="Filtrar por Id.Contrato"
                 value={pendingFilters.projectExtId}
                 onChange={e => handleFilterChange("projectExtId", e.target.value)}
                 disabled={isEditDialogOpen}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="projectName">Nome do Projeto</Label>
+              <Label htmlFor="projectName">Nome do Contrato</Label>
               <Input
                 id="projectName"
                 placeholder="Filtrar por nome do projeto"
@@ -155,17 +200,26 @@ export default function ProjectsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partnerId">ID do Parceiro</Label>
-              <Input
-                id="partnerId"
-                placeholder="Filtrar por ID do parceiro"
-                value={pendingFilters.partnerId}
-                onChange={e => handleFilterChange("partnerId", e.target.value)}
-                disabled={isEditDialogOpen}
-              />
+              <Label htmlFor="partnerId">Parceiro</Label>
+              <Select
+                value={pendingFilters.partnerId || "__all__"}
+                onValueChange={value => handleFilterChange("partnerId", value === "__all__" ? "" : value)}
+                disabled={isEditDialogOpen || loadingPartners}
+                onOpenChange={open => { if (open) handleOpenPartnerSelect(); }}
+              >
+                <SelectTrigger id="partnerId" disabled={isEditDialogOpen || loadingPartners}>
+                  <SelectValue placeholder="Filtrar por parceiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos</SelectItem>
+                  {partnerOptions.map(partner => (
+                    <SelectItem key={partner.id} value={partner.id}>{partner.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project_type">Tipo de Projeto</Label>
+              <Label htmlFor="project_type">Tipo de Contrato</Label>
               <Input
                 id="project_type"
                 placeholder="Filtrar por tipo de projeto"
@@ -175,7 +229,7 @@ export default function ProjectsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project_status">Status do Projeto</Label>
+              <Label htmlFor="project_status">Status do Contrato</Label>
               <Input
                 id="project_status"
                 placeholder="Filtrar por status do projeto"
@@ -258,7 +312,7 @@ export default function ProjectsPage() {
       ) : (
         <DataTable
           columns={columns}
-          data={projects}
+          data={contracts}
           meta={{
             onEditOpen: () => setIsEditDialogOpen(true),
             onEditClose: () => setIsEditDialogOpen(false),
