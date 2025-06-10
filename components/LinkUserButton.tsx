@@ -10,6 +10,7 @@ import {
 import { Loader2, Link2 } from "lucide-react";
 import React, { useState } from "react";
 import type { User } from "@/types/users";
+import { Input } from "./ui/input";
 
 interface LinkUserButtonProps {
   partnerId: string;
@@ -124,7 +125,7 @@ export const LinkUserButton: React.FC<LinkUserButtonProps> = ({
             </DialogDescription>
           </DialogHeader>
           <div className="mb-3">
-            <input
+            <Input
               type="text"
               className="w-full px-3 py-2 border rounded text-sm"
               placeholder="Buscar por nome ou email..."
