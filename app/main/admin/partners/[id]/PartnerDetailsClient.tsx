@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Pencil, Loader2 } from "lucide-react";
 import type { Partner } from "@/types/partners";
@@ -13,6 +13,19 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { getMarketSegments } from "@/hooks/useOptions";
 import type { MarketingInterface } from "@/types/marketing_segments";
+
+async function getPartner(id: string): Promise<PartnerWithUsers | null> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/partners?id=${id}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const partner = data[0] || null;
+  if (!partner) return null;
+  // Fetch users for this partner (filtrando já na query)
+  const usersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/users?partner_id=${id}`);
+  const users = usersRes.ok ? await usersRes.json() : [];
+  partner.users = users;
+  return partner;
+}
 
 interface PartnerWithUsers extends Partner {
   users: Array<{
@@ -90,94 +103,71 @@ const userColumns: ColumnDef<UserRow>[] = [
 ];
 
 interface PartnerDetailsClientProps {
-  partner: PartnerWithUsers | null;
   partnerId: string;
 }
 
-export default function PartnerDetailsClient({ partner: initialPartner, partnerId }: PartnerDetailsClientProps) {
-  const [partner, setPartner] = useState<PartnerWithUsers | null>(initialPartner);
-  const [loading, setLoading] = useState(false);
+export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClientProps) {
+  const [partner, setPartner] = useState<PartnerWithUsers | null>(null);
+  const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({
-    partner_desc: initialPartner?.partner_desc || "",
-    partner_ident: initialPartner?.partner_ident || "",
-    partner_email: initialPartner?.partner_email || "",
-    partner_tel: initialPartner?.partner_tel || "",
-    partner_mkt_sg: initialPartner?.partner_segment
-      ? { id: initialPartner.partner_segment.id?.toString() || "", name: initialPartner.partner_segment.name || "" }
-      : { id: "", name: "" },
+    partner_desc: "",
+    partner_ident: "",
+    partner_email: "",
+    partner_tel: "",
+    partner_mkt_sg: { id: "", name: "" },
   });
   const [error, setError] = useState<string | null>(null);
   const [marketSegments, setMarketSegments] = useState<MarketingInterface[]>([]);
-  const [marketSegmentsLoaded, setMarketSegmentsLoaded] = useState(false);
 
+  // Fetch market segments and partner data on mount
   useEffect(() => {
-    getMarketSegments().then((segments) => {
-      if (segments) setMarketSegments(segments);
-      setMarketSegmentsLoaded(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    // Refetch partner when market segments are loaded (to ensure segment id is mapped correctly)
-    if (marketSegmentsLoaded && initialPartner) {
-      let segment = null;
-      if (initialPartner.partner_segment?.name && marketSegments.length > 0) {
-        segment = marketSegments.find(s => s.name === initialPartner.partner_segment.name);
+    let isMounted = true;
+    async function fetchAll() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [segments, p] = await Promise.all([
+          getMarketSegments(),
+          getPartner(partnerId),
+        ]);
+        if (!p) throw new Error("Erro ao buscar parceiro");
+        if (isMounted) {
+          setMarketSegments(segments || []);
+          setPartner(p);
+          // Find the segment in marketSegments by name to get its id
+          let segment: MarketingInterface | undefined = undefined;
+          if (p.partner_segment?.name && segments && segments.length > 0) {
+            segment = segments.find((s: MarketingInterface) => s.name === p.partner_segment.name);
+          }
+          setForm({
+            partner_desc: p.partner_desc,
+            partner_ident: p.partner_ident,
+            partner_email: p.partner_email,
+            partner_tel: p.partner_tel,
+            partner_mkt_sg: segment
+              ? { id: segment.id.toString(), name: segment.name }
+              : { id: "", name: p.partner_segment?.name || "" },
+          });
+        }
+      } catch (err: unknown) {
+        if (isMounted) setError(err instanceof Error ? err.message : "Erro desconhecido");
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setForm({
-        partner_desc: initialPartner.partner_desc,
-        partner_ident: initialPartner.partner_ident,
-        partner_email: initialPartner.partner_email,
-        partner_tel: initialPartner.partner_tel,
-        partner_mkt_sg: segment
-          ? { id: segment.id.toString(), name: segment.name }
-          : initialPartner.partner_segment && 'id' in initialPartner.partner_segment
-            ? { id: initialPartner.partner_segment.id?.toString() || '', name: initialPartner.partner_segment.name || '' }
-            : { id: '', name: (initialPartner.partner_segment as { name?: string })?.name || '' },
-      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marketSegmentsLoaded]);
-
-  const fetchPartner = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/admin/partners?id=${partnerId}`);
-      if (!res.ok) throw new Error("Erro ao buscar parceiro");
-      const data = await res.json();
-      const p = data[0] || null;
-      if (!p) throw new Error("Parceiro não encontrado");
-      const usersRes = await fetch(`/api/admin/users?partner_id=${partnerId}`);
-      const users = usersRes.ok ? await usersRes.json() : [];
-      p.users = users;
-      setPartner(p);
-      // Find the segment in marketSegments by name to get its id
-      let segment = null;
-      if (p.partner_segment?.name && marketSegments.length > 0) {
-        segment = marketSegments.find(s => s.name === p.partner_segment.name);
-      }
-      setForm({
-        partner_desc: p.partner_desc,
-        partner_ident: p.partner_ident,
-        partner_email: p.partner_email,
-        partner_tel: p.partner_tel,
-        partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: p.partner_segment?.name || "" },
-      });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Erro desconhecido");
-    } finally {
-      setLoading(false);
-    }
-  }, [partnerId, marketSegments]);
+    fetchAll();
+    return () => {
+      isMounted = false;
+    };
+  }, [partnerId]);
 
   const handleEdit = () => setEditMode(true);
   const handleCancel = () => {
     if (partner) {
-      let segment = null;
+      let segment: MarketingInterface | undefined = undefined;
       if (partner.partner_segment?.name && marketSegments.length > 0) {
-        segment = marketSegments.find(s => s.name === partner.partner_segment.name);
+        segment = marketSegments.find((s: MarketingInterface) => s.name === partner.partner_segment.name);
       }
       setForm({
         partner_desc: partner.partner_desc,
@@ -214,7 +204,23 @@ export default function PartnerDetailsClient({ partner: initialPartner, partnerI
         throw new Error(data.error || 'Erro ao atualizar parceiro');
       }
       setEditMode(false);
-      fetchPartner();
+      // Refetch partner data after save
+      setLoading(true);
+      setError(null);
+      const p = await getPartner(partnerId);
+      if (!p) throw new Error("Erro ao buscar parceiro");
+      setPartner(p);
+      let segment: MarketingInterface | undefined = undefined;
+      if (p.partner_segment?.name && marketSegments.length > 0) {
+        segment = marketSegments.find((s: MarketingInterface) => s.name === p.partner_segment.name);
+      }
+      setForm({
+        partner_desc: p.partner_desc,
+        partner_ident: p.partner_ident,
+        partner_email: p.partner_email,
+        partner_tel: p.partner_tel,
+        partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: p.partner_segment?.name || "" },
+      });
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -234,7 +240,7 @@ export default function PartnerDetailsClient({ partner: initialPartner, partnerI
       <Card>
         <CardContent className="pt-6">
           <p className="text-destructive">{error}</p>
-          <Button onClick={fetchPartner} className="mt-4">
+          <Button onClick={() => window.location.reload()} className="mt-4">
             Tentar novamente
           </Button>
         </CardContent>
@@ -390,7 +396,7 @@ export default function PartnerDetailsClient({ partner: initialPartner, partnerI
         {partner.users && partner.users.length > 0 ? (
           <DataTable columns={userColumns} data={partner.users.map(u => ({ id: u.email, ...u }))} />
         ) : (
-          <div className="text-gray-500">Nenhum usuário cadastrado para este parceiro.</div>
+          <div className="text-gray-500">Nenhum usuário alocado para este parceiro.</div>
         )}
       </CardContent>
     </div>

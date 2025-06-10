@@ -61,3 +61,22 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function GET(request: Request, context: { params: { id: string } }) {
+  const { id } = context.params;
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("partner")
+      .select("*, partner_segment(id, name)")
+      .eq("id", id)
+      .single();
+    if (error || !data) {
+      return NextResponse.json({ error: "Parceiro não encontrado." }, { status: 404 });
+    }
+    return NextResponse.json(data);
+  } catch (err) {
+    const error = err as Error & { status?: number; code?: string };
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
