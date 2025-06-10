@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarketingInterface } from "@/types/marketing_segments";
 import { getMarketSegments } from "@/hooks/useOptions";
+import { formatCpfCnpj, formatPhoneNumber, formatCEP } from "@/lib/utils";
 
 export function CreatePartnerForm({
   className,
@@ -95,34 +96,25 @@ export function CreatePartnerForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleCreatePartner}>
-          {/* Seção 1: Dados principais */}
-          <div className="mb-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="partner_desc">Nome/Descrição</Label>
-                <Input
-                  id="partner_desc"
-                  value={partner_desc}
-                  onChange={(e) => setPartnerDesc(e.target.value)}
-                  required
-                />
+          <div className="grid grid-cols-4 gap-8 mb-6">
+            {/* Seção 1: Dados principais (colunas 1 e 2) */}
+            <div className="col-span-2 grid grid-cols-2 gap-4">
+              {/* Linha 1: Nome */}
+              <div className="col-span-2 grid gap-2">
+                <Label htmlFor="partner_desc">Nome</Label>
+                <Input id="partner_desc" value={partner_desc} onChange={(e) => setPartnerDesc(e.target.value)} required />
               </div>
+              {/* Linha 2: Identificador e Telefone */}
               <div className="grid gap-2">
                 <Label htmlFor="partner_ident">Identificador</Label>
                 <Input
                   id="partner_ident"
-                  value={partner_ident}
-                  onChange={(e) => setPartnerIdent(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="partner_email">Email</Label>
-                <Input
-                  id="partner_email"
-                  type="email"
-                  value={partner_email}
-                  onChange={(e) => setPartnerEmail(e.target.value)}
+                  value={formatCpfCnpj(partner_ident)}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/\D/g, "");
+                    if (raw.length <= 14) setPartnerIdent(raw);
+                  }}
+                  maxLength={18} // 18 chars for formatted CNPJ
                   required
                 />
               </div>
@@ -130,45 +122,46 @@ export function CreatePartnerForm({
                 <Label htmlFor="partner_tel">Telefone</Label>
                 <Input
                   id="partner_tel"
-                  value={partner_tel}
-                  onChange={(e) => setPartnerTel(e.target.value)}
+                  value={formatPhoneNumber(partner_tel)}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/\D/g, "");
+                    if (raw.length <= 11) setPartnerTel(raw);
+                  }}
+                  maxLength={15} // (99) 99999-9999
                   required
                 />
               </div>
-              <div className="space-y-2 col-span-2">
-              <Label htmlFor="partner_mkt_sg" className="text-sm font-medium text-foreground">Segmento</Label>
-              <Select
-                value={partner_mkt_sg.id}
-                onValueChange={(value) => {
+              {/* Linha 3: Email */}
+              <div className="col-span-2 grid gap-2">
+                <Label htmlFor="partner_email">Email</Label>
+                <Input id="partner_email" type="email" value={partner_email} onChange={(e) => setPartnerEmail(e.target.value)} required />
+              </div>
+              {/* Linha 4: Segmento e Tipo */}
+              <div className="grid gap-2">
+                <Label htmlFor="partner_mkt_sg" className="text-sm font-medium text-foreground">Segmento</Label>
+                <Select value={partner_mkt_sg.id} onValueChange={(value) => {
                   const seg = marketSegments.find(s => s.id.toString() === value);
                   setPartnerMktSg(seg ? { id: seg.id.toString(), name: seg.name } : { id: value, name: "" });
-                }}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Selecione um segmento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {marketSegments.map((segment) => (
-                    <SelectItem key={segment.id} value={segment.id.toString()}>
-                      {segment.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {partner_mkt_sg.id && (
-                <div className="text-xs text-muted-foreground mt-1">{partner_mkt_sg.name}</div>
-              )}
-            </div>
+                }}>
+                  <SelectTrigger className="space-y-2">
+                    <SelectValue placeholder="Segmento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {marketSegments.map((segment) => (
+                      <SelectItem key={segment.id} value={segment.id.toString()}>
+                        {segment.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {partner_mkt_sg.id && (
+                  <div className="text-xs text-muted-foreground mt-1">{partner_mkt_sg.name}</div>
+                )}
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="is_compadm">Tipo Parceiro</Label>
-                <Select
-                  value={is_compadm ? "true" : "false"}
-                  onValueChange={(value) => setIsCompadm(value === "true")}
-                >
-                  <SelectTrigger
-                    id="is_compadm"
-                    className="border rounded px-2 py-1"
-                  >
+                <Select value={is_compadm ? "true" : "false"} onValueChange={(value) => setIsCompadm(value === "true")}>
+                  <SelectTrigger id="is_compadm" className="border rounded px-2 py-1">
                     {is_compadm ? "Administrativo" : "Cliente"}
                   </SelectTrigger>
                   <SelectContent>
@@ -178,66 +171,43 @@ export function CreatePartnerForm({
                 </Select>
               </div>
             </div>
-          </div>
-
-          {/* Seção 2: Endereço */}
-          <div className="mb-6">
-            <div className="grid grid-cols-2 gap-4">
+            {/* Seção 2: Endereço (colunas 3 e 4) */}
+            <div className="col-span-2 grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="partner_cep">CEP</Label>
                 <Input
                   id="partner_cep"
-                  value={partner_cep}
-                  onChange={(e) => setPartnerCep(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="partner_addrs">Endereço</Label>
-                <Input
-                  id="partner_addrs"
-                  value={partner_addrs}
-                  onChange={(e) => setPartnerAddrs(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="partner_compl">Complemento</Label>
-                <Input
-                  id="partner_compl"
-                  value={partner_compl}
-                  onChange={(e) => setPartnerCompl(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="partner_distr">Bairro</Label>
-                <Input
-                  id="partner_distr"
-                  value={partner_distr}
-                  onChange={(e) => setPartnerDistr(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="partner_city">Cidade</Label>
-                <Input
-                  id="partner_city"
-                  value={partner_city}
-                  onChange={(e) => setPartnerCity(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="partner_state">Estado</Label>
-                <Input
-                  id="partner_state"
-                  value={partner_state}
-                  onChange={(e) => setPartnerState(e.target.value)}
+                  value={formatCEP(partner_cep)}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/\D/g, "");
+                    if (raw.length <= 8) setPartnerCep(raw);
+                  }}
+                  maxLength={9} // 99999-999
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="partner_cntry">País</Label>
-                <Input
-                  id="partner_cntry"
-                  value={partner_cntry}
-                  onChange={(e) => setPartnerCntry(e.target.value)}
-                />
+                <Input id="partner_cntry" value={partner_cntry} onChange={(e) => setPartnerCntry(e.target.value)} />
+              </div>
+              <div className="grid gap-2 col-span-2">
+                <Label htmlFor="partner_addrs">Endereço</Label>
+                <Input id="partner_addrs" value={partner_addrs} onChange={(e) => setPartnerAddrs(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="partner_compl">Complemento</Label>
+                <Input id="partner_compl" value={partner_compl} onChange={(e) => setPartnerCompl(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="partner_distr">Bairro</Label>
+                <Input id="partner_distr" value={partner_distr} onChange={(e) => setPartnerDistr(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="partner_city">Cidade</Label>
+                <Input id="partner_city" value={partner_city} onChange={(e) => setPartnerCity(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="partner_state">Estado</Label>
+                <Input id="partner_state" value={partner_state} onChange={(e) => setPartnerState(e.target.value)} />
               </div>
             </div>
           </div>
