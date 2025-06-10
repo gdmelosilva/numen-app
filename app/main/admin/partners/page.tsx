@@ -125,7 +125,7 @@ export default function PartnersPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleSearch} disabled={loading}>
+          <Button variant="colored2" onClick={handleSearch} disabled={loading}>
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
           <PartnerCreateDialog onSuccess={fetchPartners} />

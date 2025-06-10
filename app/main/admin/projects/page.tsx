@@ -6,10 +6,11 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns, Project } from "./columns";
 import { Button } from "@/components/ui/button";
 import { exportToCSV } from "@/lib/export-file";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { ProjectCreateDialog } from "@/components/project-create-dialog";
 
 interface Filters {
   projectExtId: string;
@@ -40,6 +41,7 @@ export default function ProjectsPage() {
     start_date: "",
     end_at: "",
   });
+  const [pendingFilters, setPendingFilters] = useState<Filters>(filters);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const buildProjectQueryParams = (customFilters: Filters) => {
@@ -59,11 +61,11 @@ export default function ProjectsPage() {
     return queryParams;
   };
 
-  const fetchProjects = useCallback(async () => {
+  const fetchProjects = useCallback(async (customFilters: Filters) => {
     try {
       setLoading(true);
       setError(null);
-      const queryParams = buildProjectQueryParams(filters);
+      const queryParams = buildProjectQueryParams(customFilters);
       const response = await fetch(`/api/admin/projects?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -81,10 +83,17 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, []);
 
+  // Atualiza os filtros pendentes ao digitar, mas não atualiza a tabela ainda
   const handleFilterChange = (field: keyof Filters, value: string | boolean | null) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
+    setPendingFilters(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Aplica os filtros pendentes e busca os projetos ao clicar em Buscar
+  const handleSearch = () => {
+    setFilters(pendingFilters);
+    fetchProjects(pendingFilters);
   };
 
   return (
@@ -96,9 +105,16 @@ export default function ProjectsPage() {
         </div>
         <div className="flex gap-2">
           <Button
-            variant="secondary"
+            variant="colored2"
+            onClick={handleSearch}
+          >
+            <Search className="mr-2 h-4 w-4" /> Buscar
+          </Button>
+          <ProjectCreateDialog />
+          <Button
+            variant="colored1"
             onClick={() => exportToCSV(projects, "projetos.csv")}
-            disabled={projects.length === 0 || isEditDialogOpen}
+            disabled={loading || isEditDialogOpen}
           >
             Exportar CSV
           </Button>
@@ -113,7 +129,7 @@ export default function ProjectsPage() {
               <Input
                 id="projectExtId"
                 placeholder="Filtrar por ID externo"
-                value={filters.projectExtId}
+                value={pendingFilters.projectExtId}
                 onChange={e => handleFilterChange("projectExtId", e.target.value)}
                 disabled={isEditDialogOpen}
               />
@@ -123,7 +139,7 @@ export default function ProjectsPage() {
               <Input
                 id="projectName"
                 placeholder="Filtrar por nome do projeto"
-                value={filters.projectName}
+                value={pendingFilters.projectName}
                 onChange={e => handleFilterChange("projectName", e.target.value)}
                 disabled={isEditDialogOpen}
               />
@@ -133,7 +149,7 @@ export default function ProjectsPage() {
               <Input
                 id="projectDesc"
                 placeholder="Filtrar por descrição"
-                value={filters.projectDesc}
+                value={pendingFilters.projectDesc}
                 onChange={e => handleFilterChange("projectDesc", e.target.value)}
                 disabled={isEditDialogOpen}
               />
@@ -143,7 +159,7 @@ export default function ProjectsPage() {
               <Input
                 id="partnerId"
                 placeholder="Filtrar por ID do parceiro"
-                value={filters.partnerId}
+                value={pendingFilters.partnerId}
                 onChange={e => handleFilterChange("partnerId", e.target.value)}
                 disabled={isEditDialogOpen}
               />
@@ -153,7 +169,7 @@ export default function ProjectsPage() {
               <Input
                 id="project_type"
                 placeholder="Filtrar por tipo de projeto"
-                value={filters.project_type}
+                value={pendingFilters.project_type}
                 onChange={e => handleFilterChange("project_type", e.target.value)}
                 disabled={isEditDialogOpen}
               />
@@ -163,7 +179,7 @@ export default function ProjectsPage() {
               <Input
                 id="project_status"
                 placeholder="Filtrar por status do projeto"
-                value={filters.project_status}
+                value={pendingFilters.project_status}
                 onChange={e => handleFilterChange("project_status", e.target.value)}
                 disabled={isEditDialogOpen}
               />
@@ -171,7 +187,7 @@ export default function ProjectsPage() {
             <div className="space-y-2">
               <Label htmlFor="is_wildcard">Wildcard?</Label>
               <Select
-                value={filters.is_wildcard === null ? "all" : filters.is_wildcard ? "true" : "false"}
+                value={pendingFilters.is_wildcard === null ? "all" : pendingFilters.is_wildcard ? "true" : "false"}
                 onValueChange={value => handleFilterChange("is_wildcard", value === "all" ? null : value === "true")}
                 disabled={isEditDialogOpen}
               >
@@ -188,7 +204,7 @@ export default function ProjectsPage() {
             <div className="space-y-2">
               <Label htmlFor="is_247">24/7?</Label>
               <Select
-                value={filters.is_247 === null ? "all" : filters.is_247 ? "true" : "false"}
+                value={pendingFilters.is_247 === null ? "all" : pendingFilters.is_247 ? "true" : "false"}
                 onValueChange={value => handleFilterChange("is_247", value === "all" ? null : value === "true")}
                 disabled={isEditDialogOpen}
               >
@@ -207,7 +223,7 @@ export default function ProjectsPage() {
               <Input
                 id="start_date"
                 type="date"
-                value={filters.start_date}
+                value={pendingFilters.start_date}
                 onChange={e => handleFilterChange("start_date", e.target.value)}
                 disabled={isEditDialogOpen}
               />
@@ -217,7 +233,7 @@ export default function ProjectsPage() {
               <Input
                 id="end_at"
                 type="date"
-                value={filters.end_at}
+                value={pendingFilters.end_at}
                 onChange={e => handleFilterChange("end_at", e.target.value)}
                 disabled={isEditDialogOpen}
               />
@@ -234,7 +250,7 @@ export default function ProjectsPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">{error}</p>
-            <Button onClick={fetchProjects} className="mt-4" disabled={isEditDialogOpen}>
+            <Button onClick={() => fetchProjects(filters)} className="mt-4" disabled={isEditDialogOpen}>
               Tentar novamente
             </Button>
           </CardContent>

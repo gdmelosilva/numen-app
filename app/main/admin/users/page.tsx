@@ -153,7 +153,7 @@ export default function UsersPage() {
           <p className="text-sm text-muted-foreground">Administração de Usuários</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleSearch} disabled={loading || isEditDialogOpen}>
+          <Button variant="colored2" onClick={handleSearch} disabled={loading || isEditDialogOpen}>
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
           <UserCreateDialog onSuccess={fetchUsers} disabled={isEditDialogOpen} />
@@ -161,6 +161,7 @@ export default function UsersPage() {
             variant="secondary"
             onClick={() => exportToCSV(users.map(u => ({ ...u })) as Record<string, unknown>[], "usuarios.csv")}
             disabled={users.length === 0 || isEditDialogOpen}
+            className="bg-accent text-white"
           >
             Exportar CSV
           </Button>

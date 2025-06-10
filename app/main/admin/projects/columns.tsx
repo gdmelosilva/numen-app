@@ -5,14 +5,17 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
+import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
 
-// Project type for table rows
 export type Project = {
   id?: string | number;
   projectExtId: string;
   projectName: string;
   projectDesc: string;
   partnerId: string;
+  partner_name: {
+    partner_desc: string;
+  };
   project_type: string;
   project_status: string;
   is_wildcard: boolean | null;
@@ -47,9 +50,9 @@ export const columns: ColumnDef<Project>[] = [
     ),
   },
   {
-    accessorKey: "partnerId",
+    accessorKey: "partner_name.partner_desc",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="ID do Parceiro" />
+      <DataTableColumnHeader column={column} title="Nome Parceiro" />
     ),
   },
   {
@@ -104,11 +107,16 @@ export const columns: ColumnDef<Project>[] = [
       return value ? format(new Date(value), "dd/MM/yyyy", { locale: ptBR }) : "-";
     },
   },
-  {
-    id: "actions",
-    cell: () => {
-      // Ações customizadas para projetos podem ser implementadas aqui
-      return null;
+    {
+      id: "actions",
+      cell: ({ row }) => <DataTableRowActions row={row} />,
     },
-  },
+    {
+      accessorKey: "id",
+      header: () => null,
+      cell: () => null,
+      enableHiding: false,
+      enableSorting: false,
+      meta: { hidden: true },
+    }
 ]
