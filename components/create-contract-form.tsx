@@ -7,6 +7,8 @@ import { CardContent, CardHeader, CardTitle, CardDescription } from "@/component
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function CreateContractForm({ className, onCreate, ...props }: React.ComponentPropsWithoutRef<"div"> & { onCreate?: () => void }) {
   const [projectName, setProjectName] = useState("");
@@ -80,7 +82,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
         <form onSubmit={handleCreateProject}>
           <div className="mb-6 grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="projectName">Nome do Projeto</Label>
+              <Label>Nome do Projeto</Label>
               <Input id="projectName" value={projectName} onChange={e => setProjectName(e.target.value)} required />
             </div>
             <div className="grid gap-2">
@@ -88,7 +90,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
               <Input id="projectDesc" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="partnerId">ID do Parceiro</Label>
+              <Label>ID do Parceiro</Label>
               <Select value={partnerId} onValueChange={setPartnerId} required>
                 <SelectTrigger id="partnerId">
                   <SelectValue placeholder="Selecione o parceiro" />
@@ -101,7 +103,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="project_type">Tipo de Projeto</Label>
+              <Label>Tipo de Projeto</Label>
               <Select value={project_type} onValueChange={setProjectType} required>
                 <SelectTrigger id="project_type">
                   <SelectValue placeholder="Selecione o tipo" />
@@ -114,7 +116,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="project_status">Status do Projeto</Label>
+              <Label>Status do Projeto</Label>
               <Select value={project_status} onValueChange={setProjectStatus} required>
                 <SelectTrigger id="project_status">
                   <SelectValue placeholder="Selecione o status" />
@@ -127,7 +129,21 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="is_wildcard">Wildcard?</Label>
+              <Label className="flex items-center gap-1">
+                Wildcard?
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="ml-1 cursor-pointer text-muted-foreground">
+                        <Info size={16} />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      O projeto pode ter apontamentos realizados sem alocação prévia?
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
               <Select value={is_wildcard === null ? "all" : is_wildcard ? "true" : "false"} onValueChange={v => setIsWildcard(v === "all" ? null : v === "true") }>
                 <SelectTrigger id="is_wildcard"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
@@ -138,7 +154,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="is_247">24/7?</Label>
+              <Label>24/7?</Label>
               <Select value={is_247 === null ? "all" : is_247 ? "true" : "false"} onValueChange={v => setIs247(v === "all" ? null : v === "true") }>
                 <SelectTrigger id="is_247"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>

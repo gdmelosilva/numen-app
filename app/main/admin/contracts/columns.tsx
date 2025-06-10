@@ -7,6 +7,7 @@ import { ptBR } from "date-fns/locale"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
 import { Badge } from "@/components/ui/badge"
+import { CheckCircle2, XCircle } from "lucide-react"
 
 export type Contract = {
   id?: string | number;
@@ -42,6 +43,32 @@ export const columns: ColumnDef<Contract>[] = [
     ),
   },
   {
+    accessorKey: "project_type",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Tipo" />
+    ),
+    cell: ({ row }) => {
+      const value = row.getValue("project_type") as string;
+      const typeColorMap: Record<string, "accent" | "secondary" | "outline" | "default"> = {
+        "AMS": "accent",
+        "BSHOP": "secondary",
+        "TKEY": "outline",
+      };
+      const typeLabelMap: Record<string, string> = {
+        "AMS": "AMS",
+        "BSHOP": "Bodyshop",
+        "TKEY": "Turnkey",
+      };
+      const variant = typeColorMap[value] ?? "default";
+      const label = typeLabelMap[value] ?? (value || "-");
+      return (
+        <div className="text-center w-full">
+          <Badge variant={variant}>{label}</Badge>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "projectName",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Cód. Contrato" />
@@ -57,12 +84,6 @@ export const columns: ColumnDef<Contract>[] = [
     accessorKey: "partner_name.partner_desc",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nome Parceiro" />
-    ),
-  },
-  {
-    accessorKey: "project_type",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Tipo" />
     ),
   },
   {
@@ -83,9 +104,9 @@ export const columns: ColumnDef<Contract>[] = [
       };
       const variant = variantMap[color] ?? "outline";
       return (
-        <Badge variant={variant}>
-          {name}
-        </Badge>
+        <div className="text-center w-full">
+          <Badge variant={variant}>{name}</Badge>
+        </div>
       );
     },
   },
@@ -96,7 +117,19 @@ export const columns: ColumnDef<Contract>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("is_wildcard") as boolean | null;
-      return value === null ? <span className="text-muted-foreground">-</span> : value ? "Sim" : "Não";
+      return value === null 
+        ? <span className="text-muted-foreground">-</span> 
+        : value 
+          ? (
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4 inline" />Sim
+              </span>
+            )
+          : (
+              <span className="flex items-center gap-1">
+                <XCircle className="w-4 h-4 inline" />Não
+              </span>
+            )
     },
   },
   {
@@ -106,7 +139,19 @@ export const columns: ColumnDef<Contract>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("is_247") as boolean | null;
-      return value === null ? <span className="text-muted-foreground">-</span> : value ? "Sim" : "Não";
+      return value === null
+        ? <span className="text-muted-foreground">-</span> 
+        : value 
+          ? (
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4 inline" />Sim
+              </span>
+            )
+          : (
+              <span className="flex items-center gap-1">
+                <XCircle className="w-4 h-4 inline" />Não
+              </span>
+            )
     },
   },
   {

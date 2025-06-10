@@ -65,12 +65,11 @@ Backlog Parceiros:
 
 Backlog Contratos: (pegar referencia no projeto antigo)
 - [X] Alterar PROJETOS para CONTRATOS
-- [ ] Ajustar filtro id parceiro para trazer o select da api
-- [ ] Ajustar filtro tipo de projeto para trazer o select do enum
-- [ ] Ajustar filtro status de projeto para trazer o select da tabela
-- [ ] Ajustar filtro status de projeto para trazer o select da tabela
-- [ ] Ajustar Coluna Tipo de Projeto para trazer a Badge conforme enum (AMS, Bodyshop ou Turnkey)
-- [ ] Ajustar Coluna booleana para ter uma badge de sim / não
+- [X] Ajustar filtro id parceiro para trazer o select da api
+- [X] Ajustar filtro tipo de projeto para trazer o select do enum
+- [X] Ajustar filtro status de projeto para trazer o select da tabela
+- [X] Ajustar Coluna Tipo de Projeto para trazer a Badge conforme enum (AMS, Bodyshop ou Turnkey)
+- [X] Ajustar Coluna booleana para ter uma badge de sim / não
 - [ ] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
 - [ ] Criar funções: Alocar Recurso, Editar Projeto (dados do projeto + campos adicionais), 
 
