@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { Role } from '@/types/roles';
+import { MarketingInterface } from '@/types/marketing_segments';
 
 const supabase = await createClient();
 
@@ -28,4 +29,16 @@ export async function getRoleById(id: string): Promise<Role | null> {
     throw error;
   }
   return data;
+}
+
+export async function getMarketSegments(): Promise<MarketingInterface[] | null> {
+  const {data, error} = await supabase
+    .from('market_segments')
+    .select('*')
+    
+    if (error) {
+      console.error('Error fetching marketing_segments');
+    }
+
+    return data || [];
 }
