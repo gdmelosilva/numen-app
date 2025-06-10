@@ -10,7 +10,19 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("partner")
-      .select("id, name: partner_desc");
+      .select("id, name: partner_desc")
+      .eq("is_active", true);
+    if (error) {
+      return NextResponse.json([], { status: 200 });
+    }
+    return NextResponse.json(data || [], { status: 200 });
+  }
+
+  if (type === "project_status") {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("project_status")
+      .select("id, name");
     if (error) {
       return NextResponse.json([], { status: 200 });
     }

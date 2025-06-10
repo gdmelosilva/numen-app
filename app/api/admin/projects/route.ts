@@ -4,8 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 // Helper to map DB row to frontend Project type
 // Use unknown instead of any for row type
 // Use Record<string, unknown> instead of any
+type ProjectStatus = {
+  id?: string;
+  name?: string;
+};
+
 function mapProjectRow(row: unknown) {
   const r = row as Record<string, unknown>;
+  const projectStatus = r.project_status as ProjectStatus | undefined;
   return {
     id: r.id,
     projectExtId: r.projectExtId?.toString() ?? "",
@@ -14,7 +20,12 @@ function mapProjectRow(row: unknown) {
     partnerId: r.partnerId ?? "",
     partner_name: r.partner_name ?? "",
     project_type: r.project_type ?? "",
-    project_status: r.project_status ?? "",
+    project_status: projectStatus
+        ? {
+                id: projectStatus.id ?? "",
+                name: projectStatus.name ?? "",
+            }
+        : { id: "", name: "" },
     is_wildcard: r.is_wildcard,
     is_247: r.is_247,
     start_date: r.start_date ? new Date(r.start_date as string).toISOString() : "",
@@ -26,7 +37,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = new URL(req.url);
 
-  let query = supabase.from("project").select("*, partner_name: fk_project_partner(partner_desc)", { count: "exact" });
+  let query = supabase.from("project").select("*, partner_name: fk_project_partner(partner_desc), project_status: fk_project_status(id, name)", { count: "exact" });
 
   // Filtering
   if (searchParams.get("projectExtId")) {

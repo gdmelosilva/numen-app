@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,6 +20,19 @@ export function CreateProjectForm({ className, onCreate, ...props }: React.Compo
   const [end_at, setEndAt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
+  const [statuses, setStatuses] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    // Buscar parceiros
+    fetch("/api/options?type=partners")
+      .then((res) => res.json())
+      .then((data) => setPartners(data || []));
+    // Buscar status de projeto
+    fetch("/api/options?type=project_status")
+      .then((res) => res.json())
+      .then((data) => setStatuses(data || []));
+  }, []);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,15 +89,42 @@ export function CreateProjectForm({ className, onCreate, ...props }: React.Compo
             </div>
             <div className="grid gap-2">
               <Label htmlFor="partnerId">ID do Parceiro</Label>
-              <Input id="partnerId" value={partnerId} onChange={e => setPartnerId(e.target.value)} required />
+              <Select value={partnerId} onValueChange={setPartnerId} required>
+                <SelectTrigger id="partnerId">
+                  <SelectValue placeholder="Selecione o parceiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  {partners.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="project_type">Tipo de Projeto</Label>
-              <Input id="project_type" value={project_type} onChange={e => setProjectType(e.target.value)} />
+              <Select value={project_type} onValueChange={setProjectType} required>
+                <SelectTrigger id="project_type">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AMS">AMS</SelectItem>
+                  <SelectItem value="TKEY">Turn-Key</SelectItem>
+                  <SelectItem value="BSHOP">BodyShop</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="project_status">Status do Projeto</Label>
-              <Input id="project_status" value={project_status} onChange={e => setProjectStatus(e.target.value)} />
+              <Select value={project_status} onValueChange={setProjectStatus} required>
+                <SelectTrigger id="project_status">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="is_wildcard">Wildcard?</Label>

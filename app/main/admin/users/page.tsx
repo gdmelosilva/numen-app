@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, User } from "./columns";
 import { Button } from "@/components/ui/button";
-import { UserCreateDialog } from "@/components/UserCreateDialog";
+import { UserCreateDialog } from "@/components/user-create-dialog";
 import { exportToCSV } from "@/lib/export-file";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
