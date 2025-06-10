@@ -5,6 +5,13 @@ Backlog geral:
       (admin e cliente) == Nao <Admin - Parceiros e Contratos> e <Utilitarios> e <TimeSheet> e <TimeFlow>
       (gerente e cliente) == Nao <Admin> e <Utilitarios> e <TimeSheet> e <TimeFlow>
       (resource e cliente) == Nao <Admin> e <Utilitarios> e <TimeSheet> e <TimeFlow> // Além disso não pode abrir chamado - só responder.
+- [ ] Validação da Senha (caracteres mínimos pelo menos)
+- [ ] Geral - Entender porque a barra de rolagem está rodando a pagina com a sidebar (quando a sidebar deveria ser fixa)
+
+Backlog Utilitarios:
+- [ ] Cargos - Depois de criar, atualizar tabela (adicionar Fetch)
+- [ ] Cargos - Verificar Politica de Delete (cacete do caralho)
+- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
 
 Backlog Users:
 - [X] Incluir Coluna Parceiro
@@ -18,28 +25,64 @@ Backlog Users:
 - [X] Remover filtro parceiro
 - [X] Quando o cliente criar um user deve ir para o parceiro dele automaticamente
 - [X] Não aparecer campo selecionar parceiro para o Admin Cliente
+- [ ] Fazer campo de filtro BUSCAR funcionar para só o nome do usuário
+- [ ] Botão limpar todos os filtros
+- [ ] Limitar first_name para somente uma palavra (não pode espaço e mais de 40 caracteres)
+- [ ] Fetch após inativar / ativar / alterar
+- [ ] Fetch dividido (para paginação)
+- [ ] ** Função Desconhecida (devemos tratar?)
 
 Backlog Parceiros:
 - [X] Criar Página Parceiros
 - [X] Criar Tabela Parceiros
 - [X] Criar GET Parceiros
 - [X] Criar POST Parceiros
-- [ ] Ativar função "Editar"
-- [ ] Remover função "Duplicar"
-- [ ] Ativar função "Excluir" e renomear para "Inativar" (marcar como inativo)
-- [ ] Criar função "Ativar" (marcar como ativo)
-- [ ] Criar função "Detalhes" (acessar pagina de detalhes)
+- [X] Ativar função "Editar"
+- [X] Remover função "Duplicar"
+- [X] Ativar função "Excluir" e renomear para "Inativar" (marcar como inativo)
+- [X] Criar função "Ativar" (marcar como ativo)
+- [X] Criar função "Detalhes" (acessar pagina de detalhes)
 - [X] Finalizar inserção de filtros (incluir todos)
-- [ ] Ajustar filtro de Segmento
-- [ ] Ajustar select de Segmento
+- [X] Ajustar filtro de Segmento
+- [X] Ajustar select de Segmento
+- [ ] Remover filtro Buscar
+- [ ] Alterar ID Externo por Id.Parceiro
+- [ ] Alterar Descrição por Nome
 - [ ] Ajustar selects de Comp.Adm. e Ativo
 - [ ] Ajustar campos na criação (limite de caracteres e formatação)
 - [ ] Ajustar campo identificação na tabela (se 14 char = 00.000.000/0000-00 se menos = 000.000.000-00)
 - [ ] Ajustar campo telefone na tabela (sempre 8 ou 9 caracteres formato ddd+telefone)
 - [ ] Criar botão "Exportar Excel"
+- [ ] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
+- [ ] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
+- [ ] Fetch após inativar / ativar / alterar
 
-Backlog Roles:
-- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
+Backlog Contratos: (pegar referencia no projeto antigo)
+- [ ] Alterar PROJETOS para CONTRATOS
+- [ ] Ajustar filtro id parceiro para trazer o select da api
+- [ ] Ajustar filtro tipo de projeto para trazer o select do enum
+- [ ] Ajustar filtro status de projeto para trazer o select da tabela
+- [ ] Ajustar filtro status de projeto para trazer o select da tabela
+- [ ] Ajustar Coluna Tipo de Projeto para trazer a Badge conforme enum (AMS, Bodyshop ou Turnkey)
+- [ ] Ajustar Coluna booleana para ter uma badge de sim / não
+- [ ] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
+- [ ] Criar funções: Alocar Recurso, Editar Projeto (dados do projeto + campos adicionais), 
+
+Backlog Administrar Chamados:
+- [ ] Criar página para exibir tabela de chamados (projeto ams) - Lembrar da visibilidade para o usuário client
+- [ ] Criar detalhes do chamado (usar tela referencia antiga / detalhes + mensagens)
+- [ ] Criar detalhes de mensagem (usar tela referencia antiga / detalhes + mensagens)
+
+Backlog Gestão Atividades:
+- [ ] Criar página para exibir tabela de projetos (projeto tkey / bshop) - Lembrar da visibilidade para o usuário client
+- [ ] Criar detalhes do projeto (dashboard com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
+- [ ] Criar detalhes da atividade (usar tela referencia antiga / detalhes + mensagens)
+- [ ] Criar detalhes de mensagem (lembrar que atividade nao tem mensagem para o cliente)
+
+Backlog Timesheet:
+  Se Deus quiser
+Backlog Timeflow:
+  Se Deus quiser
 
 <a href="https://demo-nextjs-with-supabase.vercel.app/">
   <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">

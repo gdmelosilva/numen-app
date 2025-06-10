@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 type ProjectStatus = {
   id?: string;
   name?: string;
+  color?: string;
 };
 
 function mapProjectRow(row: unknown) {
@@ -24,6 +25,7 @@ function mapProjectRow(row: unknown) {
         ? {
                 id: projectStatus.id ?? "",
                 name: projectStatus.name ?? "",
+                color: projectStatus.color ?? "",
             }
         : { id: "", name: "" },
     is_wildcard: r.is_wildcard,
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = new URL(req.url);
 
-  let query = supabase.from("project").select("*, partner_name: fk_project_partner(partner_desc), project_status: fk_project_status(id, name)", { count: "exact" });
+  let query = supabase.from("project").select("*, partner_name: fk_project_partner(partner_desc), project_status: fk_project_status(id, name, color)", { count: "exact" });
 
   // Filtering
   if (searchParams.get("projectExtId")) {

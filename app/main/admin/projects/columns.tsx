@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale"
 
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
+import { Badge } from "@/components/ui/badge"
 
 export type Project = {
   id?: string | number;
@@ -17,7 +18,10 @@ export type Project = {
     partner_desc: string;
   };
   project_type: string;
-  project_status: string;
+  project_status: {
+    name: string;
+    color: string;
+  };
   is_wildcard: boolean | null;
   is_247: boolean | null;
   start_date: string;
@@ -62,10 +66,28 @@ export const columns: ColumnDef<Project>[] = [
     ),
   },
   {
-    accessorKey: "project_status",
+    accessorKey: "project_status.name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
+    cell: ({ row }) => {
+      const status = row.original.project_status;
+      const name = status?.name || "-";
+      const color = status?.color || "default";
+      const variantMap: Record<string, "default" | "destructive" | "secondary" | "outline" | "ghost" | "approved" | "accent"> = {
+        success: "approved",
+        warning: "accent",
+        error: "destructive",
+        info: "secondary",
+        default: "outline",
+      };
+      const variant = variantMap[color] ?? "outline";
+      return (
+        <Badge variant={variant}>
+          {name}
+        </Badge>
+      );
+    },
   },
   {
     accessorKey: "is_wildcard",
@@ -107,16 +129,16 @@ export const columns: ColumnDef<Project>[] = [
       return value ? format(new Date(value), "dd/MM/yyyy", { locale: ptBR }) : "-";
     },
   },
-    {
-      id: "actions",
-      cell: ({ row }) => <DataTableRowActions row={row} />,
-    },
-    {
-      accessorKey: "id",
-      header: () => null,
-      cell: () => null,
-      enableHiding: false,
-      enableSorting: false,
-      meta: { hidden: true },
-    }
+  {
+    id: "actions",
+    cell: ({ row }) => <DataTableRowActions row={row} />,
+  },
+  {
+    accessorKey: "id",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    enableSorting: false,
+    meta: { hidden: true },
+  }
 ]
