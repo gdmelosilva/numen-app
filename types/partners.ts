@@ -6,6 +6,7 @@ export interface Partner {
   partner_email: string;
   partner_tel: string;
   partner_segment: {
+    id: string;
     name: string;
   };
   is_compadm: boolean;
