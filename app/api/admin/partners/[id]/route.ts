@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { authenticateRequest, requireRole, USER_ROLES } from "@/lib/api-auth";
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
-  // Await params as per Next.js dynamic API route requirements
   const { id } = await context.params;
 
   // Autenticar usuário
@@ -23,7 +22,14 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       partner_tel,
       partner_mkt_sg, // string (id ou nome do segmento)
       is_active,
-      is_compadm
+      is_compadm,
+      partner_cep,
+      partner_addrs,
+      partner_compl,
+      partner_distr,
+      partner_city,
+      partner_state,
+      partner_cntry
     } = await request.json();
 
     // Buscar parceiro pelo id
@@ -44,7 +50,14 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       partner_tel,
       partner_mkt_sg,
       is_active,
-      is_compadm
+      is_compadm,
+      partner_cep,
+      partner_addrs,
+      partner_compl,
+      partner_distr,
+      partner_city,
+      partner_state,
+      partner_cntry
     };
     const { error: updateError } = await supabase
       .from("partner")
@@ -62,8 +75,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   }
 }
 
-export async function GET(request: Request, context: { params: { id: string } }) {
-  const { id } = context.params;
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
     const supabase = await createClient();
     const { data, error } = await supabase

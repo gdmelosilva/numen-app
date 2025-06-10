@@ -11,4 +11,12 @@ export interface Partner {
   };
   is_compadm: boolean;
   is_active: boolean;
+  // Endereço
+  partner_cep?: string;
+  partner_addrs?: string;
+  partner_compl?: string;
+  partner_distr?: string;
+  partner_city?: string;
+  partner_state?: string;
+  partner_cntry?: string;
 }

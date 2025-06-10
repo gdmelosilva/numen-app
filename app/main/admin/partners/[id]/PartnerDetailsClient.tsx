@@ -117,6 +117,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
     partner_email: "",
     partner_tel: "",
     partner_mkt_sg: { id: "", name: "" },
+    partner_cep: "",
+    partner_addrs: "",
+    partner_compl: "",
+    partner_distr: "",
+    partner_city: "",
+    partner_state: "",
+    partner_cntry: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [marketSegments, setMarketSegments] = useState<MarketingInterface[]>([]);
@@ -149,6 +156,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
             partner_mkt_sg: segment
               ? { id: segment.id.toString(), name: segment.name }
               : { id: "", name: p.partner_segment?.name || "" },
+            partner_cep: p.partner_cep || "",
+            partner_addrs: p.partner_addrs || "",
+            partner_compl: p.partner_compl || "",
+            partner_distr: p.partner_distr || "",
+            partner_city: p.partner_city || "",
+            partner_state: p.partner_state || "",
+            partner_cntry: p.partner_cntry || "",
           });
         }
       } catch (err: unknown) {
@@ -176,6 +190,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
         partner_email: partner.partner_email,
         partner_tel: partner.partner_tel,
         partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: partner.partner_segment?.name || "" },
+        partner_cep: partner.partner_cep || "",
+        partner_addrs: partner.partner_addrs || "",
+        partner_compl: partner.partner_compl || "",
+        partner_distr: partner.partner_distr || "",
+        partner_city: partner.partner_city || "",
+        partner_state: partner.partner_state || "",
+        partner_cntry: partner.partner_cntry || "",
       });
     }
     setEditMode(false);
@@ -198,6 +219,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
           partner_email: form.partner_email,
           partner_tel: form.partner_tel,
           partner_mkt_sg: form.partner_mkt_sg.id ? Number(form.partner_mkt_sg.id) : null,
+          partner_cep: form.partner_cep,
+          partner_addrs: form.partner_addrs,
+          partner_compl: form.partner_compl,
+          partner_distr: form.partner_distr,
+          partner_city: form.partner_city,
+          partner_state: form.partner_state,
+          partner_cntry: form.partner_cntry,
         }),
       });
       if (!response.ok) {
@@ -221,6 +249,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
         partner_email: p.partner_email,
         partner_tel: p.partner_tel,
         partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: p.partner_segment?.name || "" },
+        partner_cep: p.partner_cep || "",
+        partner_addrs: p.partner_addrs || "",
+        partner_compl: p.partner_compl || "",
+        partner_distr: p.partner_distr || "",
+        partner_city: p.partner_city || "",
+        partner_state: p.partner_state || "",
+        partner_cntry: p.partner_cntry || "",
       });
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -289,107 +324,133 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
           )}
         </div>
       </div>
+      {/* Card-styled partner details */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-12">
-            <div className="space-y-2 col-span-3">
-              <Label htmlFor="partner_desc" className="text-sm font-medium text-foreground">Nome</Label>
-              {editMode ? (
-                <Input 
-                  id="partner_desc" 
-                  name="partner_desc" 
-                  value={form.partner_desc} 
-                  onChange={handleChange}
-                  className="h-9"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center">
-                  {partner.partner_desc || "-"}
-                </div>
-              )}
+          <form onSubmit={handleSave} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Nome */}
+            <div>
+              <Label htmlFor="partner_desc" className="text-xs text-muted-foreground">Nome</Label>
+              <Input id="partner_desc" name="partner_desc" value={form.partner_desc} onChange={handleChange} className="h-9" disabled={!editMode} />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="partner_ident" className="text-sm font-medium text-foreground">Identificação</Label>
-              {editMode ? (
-                <Input 
-                  id="partner_ident" 
-                  name="partner_ident" 
-                  value={form.partner_ident} 
-                  onChange={handleChange}
-                  className="h-9"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center font-mono">
-                  {partner.partner_ident ? formatCpfCnpj(partner.partner_ident) : "-"}
-                </div>
-              )}
+            {/* Identificação */}
+            <div>
+              <Label htmlFor="partner_ident" className="text-xs text-muted-foreground">Identificação</Label>
+              <Input
+                id="partner_ident"
+                name="partner_ident"
+                value={formatCpfCnpj(form.partner_ident)}
+                onChange={e => {
+                  // Mantém apenas números no estado
+                  const raw = e.target.value.replace(/\D/g, "");
+                  setForm(prev => ({ ...prev, partner_ident: raw }));
+                }}
+                className="h-9 font-mono"
+                disabled={!editMode}
+                inputMode="numeric"
+                maxLength={18}
+              />
             </div>
-            <div className="space-y-2 col-span-3">
-              <Label htmlFor="partner_email" className="text-sm font-medium text-foreground">Email</Label>
-              {editMode ? (
-                <Input 
-                  id="partner_email" 
-                  name="partner_email" 
-                  type="email"
-                  value={form.partner_email} 
-                  onChange={handleChange}
-                  className="h-9"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center">
-                  {partner.partner_email || "-"}
-                </div>
-              )}
+            {/* Email */}
+            <div>
+              <Label htmlFor="partner_email" className="text-xs text-muted-foreground">Email</Label>
+              <Input id="partner_email" name="partner_email" value={form.partner_email} onChange={handleChange} className="h-9" disabled={!editMode} />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="partner_tel" className="text-sm font-medium text-foreground">Telefone</Label>
-              {editMode ? (
-                <Input 
-                  id="partner_tel" 
-                  name="partner_tel" 
-                  type="tel"
-                  value={form.partner_tel} 
-                  onChange={handleChange}
-                  className="h-9"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center font-mono">
-                  {partner.partner_tel ? formatPhoneNumber(partner.partner_tel) : "-"}
-                </div>
-              )}
+            {/* Telefone */}
+            <div>
+              <Label htmlFor="partner_tel" className="text-xs text-muted-foreground">Telefone</Label>
+              <Input
+                id="partner_tel"
+                name="partner_tel"
+                value={formatPhoneNumber(form.partner_tel)}
+                onChange={e => {
+                  // Mantém apenas números no estado
+                  const raw = e.target.value.replace(/\D/g, "");
+                  setForm(prev => ({ ...prev, partner_tel: raw }));
+                }}
+                className="h-9 font-mono"
+                disabled={!editMode}
+                inputMode="numeric"
+                maxLength={15}
+              />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="partner_mkt_sg" className="text-sm font-medium text-foreground">Segmento</Label>
-              {editMode ? (
-                <Select
-                  value={form.partner_mkt_sg.id}
-                  onValueChange={(value) => {
-                    const seg = marketSegments.find(s => s.id.toString() === value);
-                    setForm(f => ({
-                      ...f,
-                      partner_mkt_sg: seg ? { id: seg.id.toString(), name: seg.name } : { id: value, name: "" },
-                    }));
-                  }}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Selecione um segmento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {marketSegments.map((segment) => (
-                      <SelectItem key={segment.id} value={segment.id.toString()}>
-                        {segment.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center">
-                  {form.partner_mkt_sg.name || "-"}
-                </div>
-              )}
+            {/* Segmento */}
+            <div>
+              <Label htmlFor="partner_mkt_sg" className="text-xs text-muted-foreground">Segmento de Mercado</Label>
+              <Select
+                name="partner_mkt_sg"
+                value={form.partner_mkt_sg.id}
+                onValueChange={(value) => {
+                  const segment = marketSegments.find(s => s.id.toString() === value);
+                  setForm((prev) => ({ ...prev, partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: "" } }));
+                }}
+                disabled={!editMode}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione um segmento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {marketSegments.map((segment) => (
+                    <SelectItem key={segment.id} value={segment.id.toString()}>
+                      {segment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            {/* Remover badges do grid */}
-          </div>
+            {/* Ativo */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Ativo</Label>
+              <Input value={partner.is_active ? 'Sim' : 'Não'} disabled className="h-9" />
+            </div>
+            {/* Administrativo */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Administrativo</Label>
+              <Input value={partner.is_compadm ? 'Sim' : 'Não'} disabled className="h-9" />
+            </div>
+            {/* Endereço */}
+            <div>
+              <Label htmlFor="partner_addrs" className="text-xs text-muted-foreground">Endereço</Label>
+              <Input id="partner_addrs" name="partner_addrs" value={form.partner_addrs} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_compl" className="text-xs text-muted-foreground">Complemento</Label>
+              <Input id="partner_compl" name="partner_compl" value={form.partner_compl} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_distr" className="text-xs text-muted-foreground">Bairro</Label>
+              <Input id="partner_distr" name="partner_distr" value={form.partner_distr} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_city" className="text-xs text-muted-foreground">Cidade</Label>
+              <Input id="partner_city" name="partner_city" value={form.partner_city} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_state" className="text-xs text-muted-foreground">Estado</Label>
+              <Input id="partner_state" name="partner_state" value={form.partner_state} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_cep" className="text-xs text-muted-foreground">CEP</Label>
+              <Input
+                id="partner_cep"
+                name="partner_cep"
+                value={form.partner_cep.replace(/(\d{5})(\d{3})/, "$1-$2")}
+                onChange={e => {
+                  // Mantém apenas números no estado
+                  const raw = e.target.value.replace(/\D/g, "");
+                  setForm(prev => ({ ...prev, partner_cep: raw }));
+                }}
+                className="h-9"
+                disabled={!editMode}
+                inputMode="numeric"
+                maxLength={9}
+              />
+            </div>
+            <div>
+              <Label htmlFor="partner_cntry" className="text-xs text-muted-foreground">País</Label>
+              <Input id="partner_cntry" name="partner_cntry" value={form.partner_cntry} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+          </form>
         </CardContent>
       </Card>
       <h1 className="text-md pt-4 pb-1 font-bold">Usuários alocados</h1>
