@@ -169,8 +169,8 @@ export function AppSidebar() {
       isActive: true,
       newTab: false,
       items: [
-        { title: "Administrar Chamados", url: "/main/tickets/management", newTab: false },
-        { title: "Abrir Chamado", url: "/main/tickets/create", newTab: false },
+        { title: "Administrar Chamados", url: "/main/smartcare/management", newTab: false },
+        { title: "Abrir Chamado", url: "/main/smartcare/create", newTab: false },
       ],
     },
     {
@@ -180,7 +180,7 @@ export function AppSidebar() {
       isActive: true,
       newTab: false,
       items: [
-        { title: "Gestão de Atividades", url: "/main/projects/management", newTab: false },
+        { title: "Gestão de Atividades", url: "/main/smartbuild/management", newTab: false },
       ],
     },
     { type: "separator" },

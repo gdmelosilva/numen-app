@@ -33,6 +33,20 @@ Feitos:
 - [X] Fazer campo de filtro BUSCAR funcionar para só o nome do usuário
 - [X] Botão limpar todos os filtros
 - [X] Limitar first_name para somente uma palavra (não pode espaço e mais de 40 caracteres)
+- [X] Remover filtro Buscar
+- [X] Alterar ID Externo por Id.Parceiro
+- [X] Alterar Descrição por Nome
+- [X] Ajustar selects de Comp.Adm. e Ativo
+- [X] Ajustar campos na criação (limite de caracteres e formatação)
+- [X] Ajustar campo identificação na tabela (se 14 char = 00.000.000/0000-00 se menos = 000.000.000-00)
+- [X] Ajustar campo telefone na tabela (sempre 8 ou 9 caracteres formato ddd+telefone)
+- [X] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
+- [X] Alterar PROJETOS para CONTRATOS
+- [X] Ajustar filtro id parceiro para trazer o select da api
+- [X] Ajustar filtro tipo de projeto para trazer o select do enum
+- [X] Ajustar filtro status de projeto para trazer o select da tabela
+- [X] Ajustar Coluna Tipo de Projeto para trazer a Badge conforme enum (AMS, Bodyshop ou Turnkey)
+- [X] Ajustar Coluna booleana para ter uma badge de sim / não
 
 Vai ficar pra ver com o Felipe:
 - [ ] Encerrar a Sessão automáticamente com 1h de uso (Supabase // Precisamos do plano Pro)
@@ -51,25 +65,12 @@ Backlog Users: (Finalizado!)
 - [ ] Fetch dividido (para paginação) *
 
 Backlog Parceiros:
-- [ ] Remover filtro Buscar
-- [ ] Alterar ID Externo por Id.Parceiro
-- [ ] Alterar Descrição por Nome
-- [ ] Ajustar selects de Comp.Adm. e Ativo
-- [ ] Ajustar campos na criação (limite de caracteres e formatação)
-- [ ] Ajustar campo identificação na tabela (se 14 char = 00.000.000/0000-00 se menos = 000.000.000-00)
-- [ ] Ajustar campo telefone na tabela (sempre 8 ou 9 caracteres formato ddd+telefone)
+- [ ] Fetch após inativar / ativar / alterar *
 - [ ] Criar botão "Exportar Excel"
 - [ ] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
-- [ ] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
-- [ ] Fetch após inativar / ativar / alterar
+- [ ] Adicionar vincular recurso (dialogo com tabela + filtro de busca por nome / email)
 
 Backlog Contratos: (pegar referencia no projeto antigo)
-- [X] Alterar PROJETOS para CONTRATOS
-- [X] Ajustar filtro id parceiro para trazer o select da api
-- [X] Ajustar filtro tipo de projeto para trazer o select do enum
-- [X] Ajustar filtro status de projeto para trazer o select da tabela
-- [X] Ajustar Coluna Tipo de Projeto para trazer a Badge conforme enum (AMS, Bodyshop ou Turnkey)
-- [X] Ajustar Coluna booleana para ter uma badge de sim / não
 - [ ] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
 - [ ] Criar funções: Alocar Recurso, Editar Projeto (dados do projeto + campos adicionais), 
 
