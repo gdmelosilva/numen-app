@@ -13,6 +13,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { getMarketSegments } from "@/hooks/useOptions";
 import type { MarketingInterface } from "@/types/marketing_segments";
+import { formatCpfCnpj, formatPhoneNumber } from "@/lib/utils";
 
 async function getPartner(id: string): Promise<PartnerWithUsers | null> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/partners?id=${id}`);
@@ -319,7 +320,7 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
                 />
               ) : (
                 <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center font-mono">
-                  {partner.partner_ident || "-"}
+                  {partner.partner_ident ? formatCpfCnpj(partner.partner_ident) : "-"}
                 </div>
               )}
             </div>
@@ -353,7 +354,7 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
                 />
               ) : (
                 <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center font-mono">
-                  {partner.partner_tel || "-"}
+                  {partner.partner_tel ? formatPhoneNumber(partner.partner_tel) : "-"}
                 </div>
               )}
             </div>
