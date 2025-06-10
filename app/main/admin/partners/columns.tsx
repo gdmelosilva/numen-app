@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { DataTableRowActions } from "@/components/ui/data-table-row-actions";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 export type Partner = {
   id: string,
@@ -77,13 +78,18 @@ export const columns: ColumnDef<Partner>[] = [
       <DataTableColumnHeader column={column} title="Status" />
     ),
     cell: ({ row }) => {
-      const value = row.getValue("is_active") as boolean;
-      const label = value ? "Ativo" : "Inativo";
+      const active = row.getValue("is_active") as boolean
+
       return (
-        <Badge variant={value ? "approved" : "secondary"}>
-          {label}
+        <Badge variant={active ? "approved" : "destructive"}>
+          {active ? (
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+          ) : (
+            <XCircle className="mr-1 h-3 w-3" />
+          )}
+          {active ? "Ativo" : "Inativo"}
         </Badge>
-      );
+      )
     },
   },
   {
