@@ -63,7 +63,7 @@ Backlog Parceiros:
 - [X] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
 - [ ] Fetch após inativar / ativar / alterar
 - [ ] Consertar o campo de Segmento no exportar Excel
-- [ ] Adicionar botões de Vincular / Desvincular usuário ao parceiro
+- [X] Adicionar botões de Vincular / Desvincular usuário ao parceiro
 
 Backlog Contratos: (pegar referencia no projeto antigo)
 - [X] Alterar PROJETOS para CONTRATOS
