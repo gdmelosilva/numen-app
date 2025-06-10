@@ -51,17 +51,19 @@ Backlog Users: (Finalizado!)
 - [ ] Fetch dividido (para paginação) *
 
 Backlog Parceiros:
-- [ ] Remover filtro Buscar
-- [ ] Alterar ID Externo por Id.Parceiro
-- [ ] Alterar Descrição por Nome
-- [ ] Ajustar selects de Comp.Adm. e Ativo
-- [ ] Ajustar campos na criação (limite de caracteres e formatação)
-- [ ] Ajustar campo identificação na tabela (se 14 char = 00.000.000/0000-00 se menos = 000.000.000-00)
-- [ ] Ajustar campo telefone na tabela (sempre 8 ou 9 caracteres formato ddd+telefone)
-- [ ] Criar botão "Exportar Excel"
-- [ ] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
-- [ ] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
+- [X] Remover filtro Buscar
+- [X] Alterar ID Externo por Id.Parceiro
+- [X] Alterar Descrição por Nome
+- [X] Ajustar selects de Comp.Adm. e Ativo
+- [X] Ajustar campos na criação (limite de caracteres e formatação)
+- [X] Ajustar campo identificação na tabela (se 14 char = 00.000.000/0000-00 se menos = 000.000.000-00)
+- [X] Ajustar campo telefone na tabela (sempre 8 ou 9 caracteres formato ddd+telefone)
+- [X] Criar botão "Exportar Excel"
+- [X] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
+- [X] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
 - [ ] Fetch após inativar / ativar / alterar
+- [ ] Consertar o campo de Segmento no exportar Excel
+- [ ] Adicionar botões de Vincular / Desvincular usuário ao parceiro
 
 Backlog Contratos: (pegar referencia no projeto antigo)
 - [X] Alterar PROJETOS para CONTRATOS
