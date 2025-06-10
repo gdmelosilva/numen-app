@@ -79,9 +79,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   try {
     const supabase = await createClient();
+    console.log(id);
     const { data, error } = await supabase
       .from("partner")
-      .select("*, partner_segment(id, name)")
+      .select("*, partner_segment: partner_partner_mkt_sg_fkey(*)")
       .eq("id", id)
       .single();
     if (error || !data) {

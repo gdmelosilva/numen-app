@@ -16,12 +16,11 @@ import type { MarketingInterface } from "@/types/marketing_segments";
 import { formatCpfCnpj, formatPhoneNumber } from "@/lib/utils";
 
 async function getPartner(id: string): Promise<PartnerWithUsers | null> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/partners?id=${id}`);
+  const res = await fetch(`/api/admin/partners/${id}`);
   if (!res.ok) return null;
-  const data = await res.json();
-  const partner = data[0] || null;
+  const partner = await res.json();
   if (!partner) return null;
-  // Fetch users for this partner (filtrando já na query)
+  // Fetch users for this partner (filtering already in the query)
   const usersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/users?partner_id=${id}`);
   const users = usersRes.ok ? await usersRes.json() : [];
   partner.users = users;
