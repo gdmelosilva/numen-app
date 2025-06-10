@@ -5,29 +5,12 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
-import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
+import { ContractTableRowActions } from "@/components/contract-table-row-actions"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, XCircle } from "lucide-react"
+import type { Contract } from "@/types/contracts"
 
-export type Contract = {
-  id?: string | number;
-  projectExtId: string;
-  projectName: string;
-  projectDesc: string;
-  partnerId: string;
-  partner_name: {
-    partner_desc: string;
-  };
-  project_type: string;
-  project_status: {
-    name: string;
-    color: string;
-  };
-  is_wildcard: boolean | null;
-  is_247: boolean | null;
-  start_date: string;
-  end_at: string;
-};
+
 
 // Add types for actions
 export interface ContractTableActionsContext {
@@ -176,7 +159,7 @@ export const columns: ColumnDef<Contract>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => <ContractTableRowActions row={row} />,
   },
   {
     accessorKey: "id",
