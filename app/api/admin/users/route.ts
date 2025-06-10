@@ -37,6 +37,7 @@ export async function GET(request: Request) {
         email,
         is_client,
         tel_contact,
+        partner_id,
         role,
         partner_name: users_partner_id_fkey(
           partner_desc

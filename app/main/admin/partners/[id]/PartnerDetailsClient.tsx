@@ -14,15 +14,22 @@ import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@
 import { getMarketSegments } from "@/hooks/useOptions";
 import type { MarketingInterface } from "@/types/marketing_segments";
 import { formatCpfCnpj, formatPhoneNumber } from "@/lib/utils";
+import { UnlinkUserButton } from "@/components/UnlinkUserButton";
+import { LinkUserButton } from "@/components/LinkUserButton";
+
+interface PartnerDetailsClientProps {
+  partnerId: string;
+}
 
 async function getPartner(id: string): Promise<PartnerWithUsers | null> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/partners?id=${id}`);
+  // Use sempre a mesma baseURL para evitar duplicidade de requests
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+  const res = await fetch(`${baseUrl}/api/admin/partners/${id}`);
   if (!res.ok) return null;
-  const data = await res.json();
-  const partner = data[0] || null;
+  const partner = await res.json();
   if (!partner) return null;
-  // Fetch users for this partner (filtrando já na query)
-  const usersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/users?partner_id=${id}`);
+  // Fetch users for this partner (filtering already in the query)
+  const usersRes = await fetch(`${baseUrl}/api/admin/users?partner_id=${id}`);
   const users = usersRes.ok ? await usersRes.json() : [];
   partner.users = users;
   return partner;
@@ -30,6 +37,7 @@ async function getPartner(id: string): Promise<PartnerWithUsers | null> {
 
 interface PartnerWithUsers extends Partner {
   users: Array<{
+    id: string;
     first_name: string;
     last_name: string;
     email: string;
@@ -51,62 +59,6 @@ type UserRow = {
   is_client: boolean;
 };
 
-const userColumns: ColumnDef<UserRow>[] = [
-  {
-    accessorKey: "first_name",
-    header: "Nome",
-    cell: ({ row }) => `${row.original.first_name} ${row.original.last_name}`,
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "tel_contact",
-    header: "Telefone",
-    cell: ({ row }) => row.original.tel_contact || "-",
-  },
-  {
-    accessorKey: "role",
-    header: "Função",
-    cell: ({ row }) =>
-      row.original.role === 1
-        ? "Administrador"
-        : row.original.role === 2
-        ? "Gerente"
-        : row.original.is_client
-        ? "Key-User"
-        : "Funcional",
-  },
-  {
-    accessorKey: "is_client",
-    header: "Tipo",
-    cell: ({ row }) => (
-      <Badge variant={row.original.is_client ? "secondary" : "default"}>
-        {row.original.is_client ? "Cliente" : "Administrativo"}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "is_active",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge variant={row.original.is_active ? "approved" : "destructive"}>
-        {row.original.is_active ? (
-          <CheckCircle2 className="mr-1 h-3 w-3 inline" />
-        ) : (
-          <XCircle className="mr-1 h-3 w-3 inline" />
-        )}
-        {row.original.is_active ? "Ativo" : "Inativo"}
-      </Badge>
-    ),
-  },
-];
-
-interface PartnerDetailsClientProps {
-  partnerId: string;
-}
-
 export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClientProps) {
   const [partner, setPartner] = useState<PartnerWithUsers | null>(null);
   const [loading, setLoading] = useState(true);
@@ -117,6 +69,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
     partner_email: "",
     partner_tel: "",
     partner_mkt_sg: { id: "", name: "" },
+    partner_cep: "",
+    partner_addrs: "",
+    partner_compl: "",
+    partner_distr: "",
+    partner_city: "",
+    partner_state: "",
+    partner_cntry: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [marketSegments, setMarketSegments] = useState<MarketingInterface[]>([]);
@@ -149,6 +108,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
             partner_mkt_sg: segment
               ? { id: segment.id.toString(), name: segment.name }
               : { id: "", name: p.partner_segment?.name || "" },
+            partner_cep: p.partner_cep || "",
+            partner_addrs: p.partner_addrs || "",
+            partner_compl: p.partner_compl || "",
+            partner_distr: p.partner_distr || "",
+            partner_city: p.partner_city || "",
+            partner_state: p.partner_state || "",
+            partner_cntry: p.partner_cntry || "",
           });
         }
       } catch (err: unknown) {
@@ -176,6 +142,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
         partner_email: partner.partner_email,
         partner_tel: partner.partner_tel,
         partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: partner.partner_segment?.name || "" },
+        partner_cep: partner.partner_cep || "",
+        partner_addrs: partner.partner_addrs || "",
+        partner_compl: partner.partner_compl || "",
+        partner_distr: partner.partner_distr || "",
+        partner_city: partner.partner_city || "",
+        partner_state: partner.partner_state || "",
+        partner_cntry: partner.partner_cntry || "",
       });
     }
     setEditMode(false);
@@ -198,6 +171,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
           partner_email: form.partner_email,
           partner_tel: form.partner_tel,
           partner_mkt_sg: form.partner_mkt_sg.id ? Number(form.partner_mkt_sg.id) : null,
+          partner_cep: form.partner_cep,
+          partner_addrs: form.partner_addrs,
+          partner_compl: form.partner_compl,
+          partner_distr: form.partner_distr,
+          partner_city: form.partner_city,
+          partner_state: form.partner_state,
+          partner_cntry: form.partner_cntry,
         }),
       });
       if (!response.ok) {
@@ -221,6 +201,13 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
         partner_email: p.partner_email,
         partner_tel: p.partner_tel,
         partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: p.partner_segment?.name || "" },
+        partner_cep: p.partner_cep || "",
+        partner_addrs: p.partner_addrs || "",
+        partner_compl: p.partner_compl || "",
+        partner_distr: p.partner_distr || "",
+        partner_city: p.partner_city || "",
+        partner_state: p.partner_state || "",
+        partner_cntry: p.partner_cntry || "",
       });
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -228,6 +215,79 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
       setLoading(false);
     }
   };
+
+  const userColumns: ColumnDef<UserRow>[] = [
+    {
+      accessorKey: "first_name",
+      header: "Nome",
+      cell: ({ row }) => `${row.original.first_name} ${row.original.last_name}`,
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+    },
+    {
+      accessorKey: "tel_contact",
+      header: "Telefone",
+      cell: ({ row }) => row.original.tel_contact || "-",
+    },
+    {
+      accessorKey: "role",
+      header: "Função",
+      cell: ({ row }) =>
+        row.original.role === 1
+          ? "Administrador"
+          : row.original.role === 2
+          ? "Gerente"
+          : row.original.is_client
+          ? "Key-User"
+          : "Funcional",
+    },
+    {
+      accessorKey: "is_client",
+      header: "Tipo",
+      cell: ({ row }) => (
+        <Badge variant={row.original.is_client ? "secondary" : "default"}>
+          {row.original.is_client ? "Cliente" : "Administrativo"}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "is_active",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant={row.original.is_active ? "approved" : "destructive"}>
+          {row.original.is_active ? (
+            <CheckCircle2 className="mr-1 h-3 w-3 inline" />
+          ) : (
+            <XCircle className="mr-1 h-3 w-3 inline" />
+          )}
+          {row.original.is_active ? "Ativo" : "Inativo"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        partner ? (
+          <UnlinkUserButton
+            user={row.original}
+            partnerId={partner.id}
+            onUnlinked={async () => {
+              setLoading(true);
+              setError(null);
+              const p = await getPartner(partnerId);
+              setPartner(p);
+              setLoading(false);
+            }}
+          />
+        ) : null
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+  ];
 
   if (loading) {
     return (
@@ -289,113 +349,156 @@ export default function PartnerDetailsClient({ partnerId }: PartnerDetailsClient
           )}
         </div>
       </div>
+      {/* Card-styled partner details */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-12">
-            <div className="space-y-2 col-span-3">
-              <Label htmlFor="partner_desc" className="text-sm font-medium text-foreground">Nome</Label>
-              {editMode ? (
-                <Input 
-                  id="partner_desc" 
-                  name="partner_desc" 
-                  value={form.partner_desc} 
-                  onChange={handleChange}
-                  className="h-9"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center">
-                  {partner.partner_desc || "-"}
-                </div>
-              )}
+          <form onSubmit={handleSave} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Nome */}
+            <div>
+              <Label htmlFor="partner_desc" className="text-xs text-muted-foreground">Nome</Label>
+              <Input id="partner_desc" name="partner_desc" value={form.partner_desc} onChange={handleChange} className="h-9" disabled={!editMode} />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="partner_ident" className="text-sm font-medium text-foreground">Identificação</Label>
-              {editMode ? (
-                <Input 
-                  id="partner_ident" 
-                  name="partner_ident" 
-                  value={form.partner_ident} 
-                  onChange={handleChange}
-                  className="h-9"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center font-mono">
-                  {partner.partner_ident ? formatCpfCnpj(partner.partner_ident) : "-"}
-                </div>
-              )}
+            {/* Identificação */}
+            <div>
+              <Label htmlFor="partner_ident" className="text-xs text-muted-foreground">Identificação</Label>
+              <Input
+                id="partner_ident"
+                name="partner_ident"
+                value={formatCpfCnpj(form.partner_ident)}
+                onChange={e => {
+                  // Mantém apenas números no estado
+                  const raw = e.target.value.replace(/\D/g, "");
+                  setForm(prev => ({ ...prev, partner_ident: raw }));
+                }}
+                className="h-9 font-mono"
+                disabled={!editMode}
+                inputMode="numeric"
+                maxLength={18}
+              />
             </div>
-            <div className="space-y-2 col-span-3">
-              <Label htmlFor="partner_email" className="text-sm font-medium text-foreground">Email</Label>
-              {editMode ? (
-                <Input 
-                  id="partner_email" 
-                  name="partner_email" 
-                  type="email"
-                  value={form.partner_email} 
-                  onChange={handleChange}
-                  className="h-9"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center">
-                  {partner.partner_email || "-"}
-                </div>
-              )}
+            {/* Email */}
+            <div>
+              <Label htmlFor="partner_email" className="text-xs text-muted-foreground">Email</Label>
+              <Input id="partner_email" name="partner_email" value={form.partner_email} onChange={handleChange} className="h-9" disabled={!editMode} />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="partner_tel" className="text-sm font-medium text-foreground">Telefone</Label>
-              {editMode ? (
-                <Input 
-                  id="partner_tel" 
-                  name="partner_tel" 
-                  type="tel"
-                  value={form.partner_tel} 
-                  onChange={handleChange}
-                  className="h-9"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center font-mono">
-                  {partner.partner_tel ? formatPhoneNumber(partner.partner_tel) : "-"}
-                </div>
-              )}
+            {/* Telefone */}
+            <div>
+              <Label htmlFor="partner_tel" className="text-xs text-muted-foreground">Telefone</Label>
+              <Input
+                id="partner_tel"
+                name="partner_tel"
+                value={formatPhoneNumber(form.partner_tel)}
+                onChange={e => {
+                  // Mantém apenas números no estado
+                  const raw = e.target.value.replace(/\D/g, "");
+                  setForm(prev => ({ ...prev, partner_tel: raw }));
+                }}
+                className="h-9 font-mono"
+                disabled={!editMode}
+                inputMode="numeric"
+                maxLength={15}
+              />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="partner_mkt_sg" className="text-sm font-medium text-foreground">Segmento</Label>
-              {editMode ? (
-                <Select
-                  value={form.partner_mkt_sg.id}
-                  onValueChange={(value) => {
-                    const seg = marketSegments.find(s => s.id.toString() === value);
-                    setForm(f => ({
-                      ...f,
-                      partner_mkt_sg: seg ? { id: seg.id.toString(), name: seg.name } : { id: value, name: "" },
-                    }));
-                  }}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Selecione um segmento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {marketSegments.map((segment) => (
-                      <SelectItem key={segment.id} value={segment.id.toString()}>
-                        {segment.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 min-h-[36px] flex items-center">
-                  {form.partner_mkt_sg.name || "-"}
-                </div>
-              )}
+            {/* Segmento */}
+            <div>
+              <Label htmlFor="partner_mkt_sg" className="text-xs text-muted-foreground">Segmento de Mercado</Label>
+              <Select
+                name="partner_mkt_sg"
+                value={form.partner_mkt_sg.id}
+                onValueChange={(value) => {
+                  const segment = marketSegments.find(s => s.id.toString() === value);
+                  setForm((prev) => ({ ...prev, partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: "" } }));
+                }}
+                disabled={!editMode}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione um segmento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {marketSegments.map((segment) => (
+                    <SelectItem key={segment.id} value={segment.id.toString()}>
+                      {segment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            {/* Remover badges do grid */}
-          </div>
+            {/* Ativo */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Ativo</Label>
+              <Input value={partner.is_active ? 'Sim' : 'Não'} disabled className="h-9" />
+            </div>
+            {/* Administrativo */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Administrativo</Label>
+              <Input value={partner.is_compadm ? 'Sim' : 'Não'} disabled className="h-9" />
+            </div>
+            {/* Endereço */}
+            <div>
+              <Label htmlFor="partner_addrs" className="text-xs text-muted-foreground">Endereço</Label>
+              <Input id="partner_addrs" name="partner_addrs" value={form.partner_addrs} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_compl" className="text-xs text-muted-foreground">Complemento</Label>
+              <Input id="partner_compl" name="partner_compl" value={form.partner_compl} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_distr" className="text-xs text-muted-foreground">Bairro</Label>
+              <Input id="partner_distr" name="partner_distr" value={form.partner_distr} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_city" className="text-xs text-muted-foreground">Cidade</Label>
+              <Input id="partner_city" name="partner_city" value={form.partner_city} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_state" className="text-xs text-muted-foreground">Estado</Label>
+              <Input id="partner_state" name="partner_state" value={form.partner_state} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            <div>
+              <Label htmlFor="partner_cep" className="text-xs text-muted-foreground">CEP</Label>
+              <Input
+                id="partner_cep"
+                name="partner_cep"
+                value={form.partner_cep.replace(/(\d{5})(\d{3})/, "$1-$2")}
+                onChange={e => {
+                  // Mantém apenas números no estado
+                  const raw = e.target.value.replace(/\D/g, "");
+                  setForm(prev => ({ ...prev, partner_cep: raw }));
+                }}
+                className="h-9"
+                disabled={!editMode}
+                inputMode="numeric"
+                maxLength={9}
+              />
+            </div>
+            <div>
+              <Label htmlFor="partner_cntry" className="text-xs text-muted-foreground">País</Label>
+              <Input id="partner_cntry" name="partner_cntry" value={form.partner_cntry} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+          </form>
         </CardContent>
       </Card>
-      <h1 className="text-md pt-4 pb-1 font-bold">Usuários alocados</h1>
+      <h1 className="text-md pt-4 pb-1 font-bold flex items-center justify-between">
+        Usuários alocados
+        <div>
+          {/* Adicionar usuário button à direita */}
+          {partner && (
+            <LinkUserButton
+              partnerId={partner.id}
+              onLinked={async () => {
+                setLoading(true);
+                setError(null);
+                const p = await getPartner(partnerId);
+                setPartner(p);
+                setLoading(false);
+              }}
+            />
+          )}
+        </div>
+      </h1>
       <CardContent className="p-0">
         {partner.users && partner.users.length > 0 ? (
-          <DataTable columns={userColumns} data={partner.users.map(u => ({ id: u.email, ...u }))} />
+          <DataTable columns={userColumns} data={partner.users} />
         ) : (
           <div className="text-gray-500">Nenhum usuário alocado para este parceiro.</div>
         )}

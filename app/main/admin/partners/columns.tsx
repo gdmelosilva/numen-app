@@ -94,4 +94,5 @@ export const columns: ColumnDef<Partner>[] = [
 		id: "actions",
 		cell: ({ row }) => <PartnerTableRowActions row={row} />,
 	},
+	
 ];

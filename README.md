@@ -69,6 +69,19 @@ Backlog Parceiros:
 - [ ] Criar botão "Exportar Excel"
 - [ ] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
 - [ ] Adicionar vincular recurso (dialogo com tabela + filtro de busca por nome / email)
+- [X] Remover filtro Buscar
+- [X] Alterar ID Externo por Id.Parceiro
+- [X] Alterar Descrição por Nome
+- [X] Ajustar selects de Comp.Adm. e Ativo
+- [X] Ajustar campos na criação (limite de caracteres e formatação)
+- [X] Ajustar campo identificação na tabela (se 14 char = 00.000.000/0000-00 se menos = 000.000.000-00)
+- [X] Ajustar campo telefone na tabela (sempre 8 ou 9 caracteres formato ddd+telefone)
+- [X] Criar botão "Exportar Excel"
+- [X] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
+- [X] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
+- [ ] Fetch após inativar / ativar / alterar
+- [ ] Consertar o campo de Segmento no exportar Excel
+- [X] Adicionar botões de Vincular / Desvincular usuário ao parceiro
 
 Backlog Contratos: (pegar referencia no projeto antigo)
 - [ ] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
