@@ -47,6 +47,10 @@ export default function ContractsPage() {
   const [partnerOptions, setPartnerOptions] = useState<{ id: string; name: string }[]>([]);
   const [loadingPartners, setLoadingPartners] = useState(false);
   const [partnersLoaded, setPartnersLoaded] = useState(false);
+  const statusOptionsRef = useRef<{ id: string; name: string }[]>([]);
+  const [statusOptions, setStatusOptions] = useState<{ id: string; name: string }[]>([]);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const [statusLoaded, setStatusLoaded] = useState(false);
 
   const buildProjectQueryParams = (customFilters: Filters) => {
     const queryParams = new URLSearchParams();
@@ -134,6 +138,22 @@ export default function ContractsPage() {
     }
   };
 
+  const handleOpenStatusSelect = async () => {
+    if (statusLoaded) return;
+    setLoadingStatus(true);
+    try {
+      const res = await fetch("/api/options?type=project_status");
+      const data = await res.json();
+      statusOptionsRef.current = Array.isArray(data) ? data : [];
+      setStatusOptions(statusOptionsRef.current);
+      setStatusLoaded(true);
+    } catch {
+      setStatusOptions([]);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -200,14 +220,14 @@ export default function ContractsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partnerId">Parceiro</Label>
+              <Label className="mb-0">Parceiro</Label>
               <Select
                 value={pendingFilters.partnerId || "__all__"}
                 onValueChange={value => handleFilterChange("partnerId", value === "__all__" ? "" : value)}
                 disabled={isEditDialogOpen || loadingPartners}
                 onOpenChange={open => { if (open) handleOpenPartnerSelect(); }}
               >
-                <SelectTrigger id="partnerId" disabled={isEditDialogOpen || loadingPartners}>
+                <SelectTrigger id="partnerId" aria-labelledby="partnerId-label" disabled={isEditDialogOpen || loadingPartners}>
                   <SelectValue placeholder="Filtrar por parceiro" />
                 </SelectTrigger>
                 <SelectContent>
@@ -219,33 +239,50 @@ export default function ContractsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project_type">Tipo de Contrato</Label>
-              <Input
-                id="project_type"
-                placeholder="Filtrar por tipo de projeto"
-                value={pendingFilters.project_type}
-                onChange={e => handleFilterChange("project_type", e.target.value)}
+              <Label className="mb-0">Tipo de Contrato</Label>
+              <Select
+                value={pendingFilters.project_type || "__all__"}
+                onValueChange={value => handleFilterChange("project_type", value === "__all__" ? "" : value)}
                 disabled={isEditDialogOpen}
-              />
+              >
+                <SelectTrigger id="project_type" aria-labelledby="project_type-label" disabled={isEditDialogOpen}>
+                  <SelectValue placeholder="Filtrar por tipo de contrato" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos</SelectItem>
+                  <SelectItem value="AMS">AMS</SelectItem>
+                  <SelectItem value="TKEY">Turnkey</SelectItem>
+                  <SelectItem value="BSHOP">Bodyshop</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project_status">Status do Contrato</Label>
-              <Input
-                id="project_status"
-                placeholder="Filtrar por status do projeto"
-                value={pendingFilters.project_status}
-                onChange={e => handleFilterChange("project_status", e.target.value)}
-                disabled={isEditDialogOpen}
-              />
+              <Label className="mb-0">Status do Contrato</Label>
+              <Select
+                value={pendingFilters.project_status || "__all__"}
+                onValueChange={value => handleFilterChange("project_status", value === "__all__" ? "" : value)}
+                disabled={isEditDialogOpen || loadingStatus}
+                onOpenChange={open => { if (open) handleOpenStatusSelect(); }}
+              >
+                <SelectTrigger id="project_status" aria-labelledby="project_status-label" disabled={isEditDialogOpen || loadingStatus}>
+                  <SelectValue placeholder="Filtrar por status do contrato" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos</SelectItem>
+                  {statusOptions.map(status => (
+                    <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="is_wildcard">Wildcard?</Label>
+              <Label className="mb-0">Wildcard?</Label>
               <Select
                 value={pendingFilters.is_wildcard === null ? "all" : pendingFilters.is_wildcard ? "true" : "false"}
                 onValueChange={value => handleFilterChange("is_wildcard", value === "all" ? null : value === "true")}
                 disabled={isEditDialogOpen}
               >
-                <SelectTrigger id="is_wildcard" disabled={isEditDialogOpen}>
+                <SelectTrigger id="is_wildcard" aria-labelledby="is_wildcard-label" disabled={isEditDialogOpen}>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,13 +293,13 @@ export default function ContractsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="is_247">24/7?</Label>
+              <Label className="mb-0">24/7?</Label>
               <Select
                 value={pendingFilters.is_247 === null ? "all" : pendingFilters.is_247 ? "true" : "false"}
                 onValueChange={value => handleFilterChange("is_247", value === "all" ? null : value === "true")}
                 disabled={isEditDialogOpen}
               >
-                <SelectTrigger id="is_247" disabled={isEditDialogOpen}>
+                <SelectTrigger id="is_247" aria-labelledby="is_247-label" disabled={isEditDialogOpen}>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
