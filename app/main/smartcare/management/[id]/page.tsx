@@ -279,18 +279,37 @@ export default function TicketDetailsPage() {
                     >
                       Comparar paths dos anexos (debug)
                     </button>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Anexos das Mensagens:</h4>
-                    <ul className="list-none space-y-2 text-sm ml-4">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Anexos das Mensagens:</h4>                    <ul className="list-none space-y-2 text-sm ml-4">
                       {messageAttachments.map((file) => (
                         <li key={file.id} className="border-l-2 border-gray-300 pl-3">
                           <div className="flex flex-col">
-                            <a
-                              href={`/api/download?path=${encodeURIComponent(file.path)}`}
-                              className="hover:underline text-blue-600"
-                              download={file.name}
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`/api/download?path=${encodeURIComponent(file.path)}`);
+                                  if (!response.ok) {
+                                    throw new Error('Erro ao baixar arquivo');
+                                  }
+                                  
+                                  const blob = await response.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.style.display = 'none';
+                                  a.href = url;
+                                  a.download = file.name;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  window.URL.revokeObjectURL(url);
+                                  document.body.removeChild(a);
+                                } catch (error) {
+                                  console.error('Erro ao baixar arquivo:', error);
+                                  alert('Erro ao baixar arquivo. Tente novamente.');
+                                }
+                              }}
+                              className="hover:underline text-blue-600 text-left cursor-pointer bg-transparent border-none p-0"
                             >
                               {file.name}
-                            </a>
+                            </button>
                             <span className="text-xs text-muted-foreground">
                               {file.userName} - {file.messageDate ? new Date(file.messageDate).toLocaleString("pt-BR") : ""}
                             </span>

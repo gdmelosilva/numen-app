@@ -57,17 +57,36 @@ export function MessageCard({ msg }: MessageCardProps) {
       <div className="text-sm whitespace-pre-wrap">{msg.msgBody}</div>
       {(msg.attachments && msg.attachments.length > 0) && (
         <div className="pt-2 space-y-1">
-          <div className="text-xs text-muted-foreground font-medium">Anexos:</div>
-          <ul className="list-inside text-sm text-blue-400 space-y-0.5 list-none">
+          <div className="text-xs text-muted-foreground font-medium">Anexos:</div>          <ul className="list-inside text-sm text-blue-400 space-y-0.5 list-none">
             {(msg.attachments ?? []).map((file) => (
               <li key={file.id}>
-                <a
-                  href={`/api/download?path=${encodeURIComponent(file.path)}`}
-                  className="hover:underline"
-                  download={file.name}
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/download?path=${encodeURIComponent(file.path)}`);
+                      if (!response.ok) {
+                        throw new Error('Erro ao baixar arquivo');
+                      }
+                      
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.style.display = 'none';
+                      a.href = url;
+                      a.download = file.name;
+                      document.body.appendChild(a);
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                    } catch (error) {
+                      console.error('Erro ao baixar arquivo:', error);
+                      alert('Erro ao baixar arquivo. Tente novamente.');
+                    }
+                  }}
+                  className="hover:underline text-blue-400 cursor-pointer bg-transparent border-none p-0"
                 >
                   {file.name}
-                </a>
+                </button>
               </li>
             ))}
           </ul>
