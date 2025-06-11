@@ -20,11 +20,11 @@ export function ContractCreateDialog({ onSuccess }: ContractCreateDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="mr-2 h-4 w-4" /> Novo Projeto
+          <Plus className="mr-2 h-4 w-4" /> Novo Contrato
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
-        <DialogTitle className="sr-only">Criar Novo Projeto</DialogTitle>
+        <DialogTitle className="sr-only">Criar Novo Contrato</DialogTitle>
         <CreateContractForm onCreate={() => {
           setOpen(false);
           onSuccess?.();

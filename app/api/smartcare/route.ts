@@ -65,19 +65,6 @@ function mapTicketRow(row: unknown) {
   };
 }
 
-//   let query = supabase
-//     .from("ticket")
-//     .select(`*,
-//     module:fk_module(*),
-//     partner:fk_partner(*),
-//     priority:fk_priority(*),
-//     category:fk_category(*),
-//     status:fk_status(*),
-//     type:fk_type(*),
-//     project:fk_project(*),
-//     created_by_user: fk_created_by_user(*)
-//     `, { count: "exact" });
-
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = new URL(req.url);
@@ -93,7 +80,8 @@ export async function GET(req: NextRequest) {
     type:fk_type(*),
     project:fk_project(*),
     created_by: ticket_created_by_fkey(*)
-    `, { count: "exact" });
+    `, { count: "exact" })
+    .eq("type_id", 1);
 
   // Filtering
   if (searchParams.get("external_id")) {

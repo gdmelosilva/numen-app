@@ -75,7 +75,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <CardHeader>
-        <CardTitle className="text-2xl">Criar Novo Projeto</CardTitle>
+        <CardTitle className="text-2xl">Criar Novo Contrato</CardTitle>
         <CardDescription>Preencha os dados abaixo para criar um novo projeto</CardDescription>
       </CardHeader>
       <CardContent>
