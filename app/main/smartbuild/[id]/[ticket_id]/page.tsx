@@ -84,8 +84,10 @@ export default function TicketDetailsPage() {
       try {
         // Busca dados do ticket pelo novo endpoint
         const response = await fetch(`/api/smartbuild/tickets/${ticket_id}`);
-        if (!response.ok) throw new Error("Erro ao buscar detalhes do chamado");
         const data = await response.json();
+        if (!response.ok || !data || !data.data) {
+          throw new Error("Chamado não encontrado");
+        }
         const ticketData = data.data;
         setTicket(ticketData);
         // Busca mensagens reais do ticket

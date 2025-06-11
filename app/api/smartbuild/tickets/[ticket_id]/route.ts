@@ -2,9 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  // Extrai o ticket_id do path params
+  // Extrai o ticket_id do path da URL
   const { pathname } = new URL(request.url);
-  // O path será algo como /api/smartbuild/tickets/<ticket_id>
   const pathParts = pathname.split("/");
   const ticket_id = pathParts[pathParts.length - 1];
 
@@ -45,11 +44,11 @@ export async function GET(request: NextRequest) {
       created_by_user:ticket_created_by_fkey(id, first_name, last_name)
     `)
     .eq("id", ticket_id)
-    .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
   return NextResponse.json(data ? { data } : { data: null });
 }

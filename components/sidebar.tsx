@@ -180,7 +180,7 @@ export function AppSidebar() {
       isActive: true,
       newTab: false,
       items: [
-        { title: "Gestão de Projetos", url: "/main/smartbuild/management", newTab: false },
+        { title: "Gestão de Projetos", url: "/main/smartbuild", newTab: false },
       ],
     },
     { type: "separator" },

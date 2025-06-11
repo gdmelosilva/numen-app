@@ -27,7 +27,7 @@ export function ContractTableRowActions<TData extends Contract>({
     if (contractId) {
       // Armazenar os dados do projeto no sessionStorage
       sessionStorage.setItem(`project-${contractId}`, JSON.stringify(row.original));
-      router.push(`/main/smartbuild/management/${contractId}`);
+      router.push(`/main/smartbuild/${contractId}`);
     }
   }
   const handleCloseProject = async () => {
