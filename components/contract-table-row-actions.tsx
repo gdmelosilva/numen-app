@@ -22,11 +22,12 @@ interface ContractTableRowActionsProps<TData> {
 export function ContractTableRowActions<TData extends Contract>({
   row,
 }: ContractTableRowActionsProps<TData>) {
-  const router = useRouter();
-  const handleOpenDetails = () => {
+  const router = useRouter();  const handleOpenDetails = () => {
     const contractId = row.original.id;
     if (contractId) {
-      router.push(`/main/admin/contracts/${contractId}`);
+      // Armazenar os dados do projeto no sessionStorage
+      sessionStorage.setItem(`project-${contractId}`, JSON.stringify(row.original));
+      router.push(`/main/smartbuild/management/${contractId}`);
     }
   }
   const handleCloseProject = async () => {
