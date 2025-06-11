@@ -29,6 +29,7 @@ interface DataTableProps<TData extends { id?: number|string }, TValue> {
   data: TData[]
   meta?: Record<string, unknown>
   onSelectionChange?: (ids: (number|string)[]) => void
+  onRowClick?: (row: TData) => void
 }
 
 export function DataTable<TData extends { id?: number|string }, TValue>({
@@ -36,6 +37,7 @@ export function DataTable<TData extends { id?: number|string }, TValue>({
   data,
   meta,
   onSelectionChange,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -99,6 +101,8 @@ export function DataTable<TData extends { id?: number|string }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={onRowClick ? "cursor-pointer hover:bg-accent" : undefined}
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
