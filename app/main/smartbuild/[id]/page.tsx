@@ -48,6 +48,8 @@ export default function ProjectDetailPage() {
         }
 
         setProject(projectData);
+        // Salva no sessionStorage para navegação rápida futura
+        sessionStorage.setItem(`project-${id}`, JSON.stringify(projectData));
         setLoading(false);
       } catch (err) {
         console.error("Erro ao carregar projeto:", err);
@@ -56,7 +58,14 @@ export default function ProjectDetailPage() {
       }
     };
 
-    loadProjectData();
+    // Sempre tenta pegar do sessionStorage primeiro
+    const cachedData = sessionStorage.getItem(`project-${id}`);
+    if (cachedData) {
+      setProject(JSON.parse(cachedData));
+      setLoading(false);
+    } else {
+      loadProjectData();
+    }
   }, [id]);
 
   if (loading) {

@@ -18,7 +18,9 @@ import { MessageCard } from "@/components/message-card";
 
 export default function TicketDetailsPage() {
   const params = useParams();
-  const ticket_id = params.ticket_id as string;
+  // Corrige para pegar o ticket_id do param correto
+  // Para rotas aninhadas, o parâmetro pode ser chamado apenas 'id'
+  const ticket_id = params.ticket_id || params.id as string;
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export default function TicketDetailsPage() {
   const messagesPerPage = 6; // Altera para 6 mensagens por página
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
-  const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
+  const mapMessageBackendToFrontend = React.useCallback((msg: Record<string, unknown>): Message => ({
     id: String(msg.id),
     ticket_id: typeof msg.ticket_id === 'string' ? msg.ticket_id : undefined,
     msgStatus: msg.status_id ? String(msg.status_id) : undefined,
@@ -55,7 +57,7 @@ export default function TicketDetailsPage() {
     is_system: Boolean(msg.is_system), // Mapeia is_system
     msg_ref: typeof msg.msg_ref === 'string' ? msg.msg_ref : undefined,
     ref_msg_id: typeof msg.ref_msg_id === 'string' ? msg.ref_msg_id : undefined,
-  });
+  }), []);
 
   // Calcular total de horas das mensagens
   const totalHours = allMessages.reduce((total, msg) => {
@@ -80,10 +82,11 @@ export default function TicketDetailsPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/smartbuild/?external_id=${ticket_id}`);
+        // Busca dados do ticket pelo novo endpoint
+        const response = await fetch(`/api/smartbuild/tickets/${ticket_id}`);
         if (!response.ok) throw new Error("Erro ao buscar detalhes do chamado");
         const data = await response.json();
-        const ticketData = Array.isArray(data) ? data[0] : data;
+        const ticketData = data.data;
         setTicket(ticketData);
         // Busca mensagens reais do ticket
         if (ticketData?.id) {
@@ -105,8 +108,7 @@ export default function TicketDetailsPage() {
       }
     }
     if (ticket_id) fetchTicketAndMessages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticket_id]);
+  }, [ticket_id, mapMessageBackendToFrontend]);
 
   // Paginação
   const goToPage = (page: number) => {
