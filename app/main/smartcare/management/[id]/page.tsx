@@ -256,29 +256,6 @@ export default function TicketDetailsPage() {
               return (
                 <div className="space-y-4">
                   <div>
-                    {/* Botão provisório para comparar paths dos anexos */}
-                    <button
-                      type="button"
-                      className="mb-2 px-3 py-1 bg-yellow-200 text-yellow-900 rounded hover:bg-yellow-300"
-                      onClick={async () => {
-                        const paths = messageAttachments.map(f => f.path);
-                        try {
-                          const res = await fetch("/api/compare-attachment-paths", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ paths })
-                          });
-                          const data = await res.json();
-                          // Exibe resultado no console
-                          console.log("[Comparação de anexos]", data);
-                          alert("Resultado da comparação exibido no console.");
-                        } catch (e) {
-                          alert(e);
-                        }
-                      }}
-                    >
-                      Comparar paths dos anexos (debug)
-                    </button>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2">Anexos das Mensagens:</h4>                    <ul className="list-none space-y-2 text-sm ml-4">
                       {messageAttachments.map((file) => (
                         <li key={file.id} className="border-l-2 border-gray-300 pl-3">

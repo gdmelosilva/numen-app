@@ -52,3 +52,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const message_id = searchParams.get("message_id");
+    if (!message_id) {
+      return NextResponse.json({ error: "message_id é obrigatório" }, { status: 400 });
+    }
+    const { data, error } = await supabase
+      .from("ticket_hours")
+      .select("*")
+      .eq("message_id", message_id); // Corrigido para message_id
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json(data || []);
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : "Erro desconhecido.";
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
+  }
+}

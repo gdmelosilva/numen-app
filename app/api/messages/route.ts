@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   // Busca mensagens
   const { data: messagesData, error: messagesError } = await supabase
     .from("message")
-    .select(`id, ext_id, body, hours, is_private, created_at, created_by, ticket_id, status_id, user:created_by(id, first_name, last_name, is_client), is_system`) 
+    .select(`id, ext_id, body, hours, is_private, created_at, created_by, ticket_id, status_id, user:created_by(id, first_name, last_name, is_client), is_system, ref_msg_id`)
     .eq("ticket_id", ticket_id)
     .order("created_at", { ascending: true });
     
@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
       ...msg,
       user,
       attachments: messageAttachments,
+      ref_msg_id: msg.ref_msg_id // garante que o campo é retornado
     } as unknown as Message;
   });
   return NextResponse.json(messages as Message[]);
