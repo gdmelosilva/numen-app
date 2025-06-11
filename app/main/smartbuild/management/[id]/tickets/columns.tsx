@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
+import Link from "next/link";
 
 export const columns: ColumnDef<Ticket>[] = [
   {
@@ -71,11 +72,11 @@ export const columns: ColumnDef<Ticket>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[160px]">
             <DropdownMenuItem asChild>
-              <a
+              <Link
                 href={`/main/smartbuild/management/${ticket.project_id}/tickets/${ticket.id}`}
               >
                 Detalhes
-              </a>
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
