@@ -1,7 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, UserCircle, Clock } from "lucide-react";
-import { useSystemMessageHours } from "@/hooks/useSystemMessageHours";
 
 export type MessageCardProps = {
   msg: {
@@ -17,16 +16,13 @@ export type MessageCardProps = {
     is_system?: boolean; // Adiciona flag para mensagens do sistema
     msg_ref?: string; // Referência a outra mensagem, se aplicável
     ref_msg_id?: string; // Garante compatibilidade com backend
+    system_hours?: number | null; // Campo opcional para horas sistêmicas
   };
 };
 
 export function MessageCard({ msg }: MessageCardProps) {
-  // Hooks para horas
-  const systemHours = useSystemMessageHours(msg.id, msg.ticket_id);
-
-  // Decide qual usar
-  const hours = msg.is_system ? systemHours.hours : null;
-  const loading = msg.is_system ? systemHours.loading : false;
+  // Exibe horas sistêmicas diretamente do campo system_hours
+  const hours = msg.is_system ? msg.system_hours ?? null : null;
 
   return (
     <div
@@ -58,9 +54,7 @@ export function MessageCard({ msg }: MessageCardProps) {
             {msg.user?.name || "Usuário desconhecido"}
             {/* Exibe horas ao lado do nome se sistêmica */}
             {msg.is_system && (
-              loading ? (
-                <span className="ml-2 text-xs text-gray-400">Carregando horas...</span>
-              ) : hours != null ? (
+              hours != null ? (
                 <span className="ml-2 text-xs text-blue-700 font-semibold">| {hours.toFixed(2)}h apontadas</span>
               ) : (
                 <span className="ml-2 text-xs text-gray-400">| Nenhuma hora</span>

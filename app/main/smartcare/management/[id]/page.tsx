@@ -39,6 +39,9 @@ export default function TicketDetailsPage() {
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const messagesPerPage = 6; // Altera para 6 mensagens por página
+  const [activeTab, setActiveTab] = useState<string>("details");
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesLoaded, setMessagesLoaded] = useState(false);
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
@@ -61,21 +64,26 @@ export default function TicketDetailsPage() {
     return total + (msg.msgHours ? parseFloat(msg.msgHours.toString()) : 0);
   }, 0);
 
-  // Fetch messages (agora busca do endpoint real)
+  // Busca apenas as mensagens do ticket
   const refreshMessages = async () => {
     if (!ticket) return;
+    setMessagesLoading(true);
     try {
       const res = await fetch(`/api/messages?ticket_id=${ticket.id}`);
       if (!res.ok) throw new Error("Erro ao buscar mensagens");
       const msgs = await res.json();
       setAllMessages(Array.isArray(msgs) ? msgs.map(mapMessageBackendToFrontend) : []);
+      setMessagesLoaded(true);
     } catch {
       setAllMessages([]);
+    } finally {
+      setMessagesLoading(false);
     }
-  }
+  };
 
+  // Carrega apenas o ticket no início
   useEffect(() => {
-    async function fetchTicketAndMessages() {
+    async function fetchTicket() {
       setLoading(true);
       setError(null);
       try {
@@ -84,28 +92,23 @@ export default function TicketDetailsPage() {
         const data = await response.json();
         const ticketData = Array.isArray(data) ? data[0] : data;
         setTicket(ticketData);
-        // Busca mensagens reais do ticket
-        if (ticketData?.id) {
-          const res = await fetch(`/api/messages?ticket_id=${ticketData.id}`);
-          if (res.ok) {
-            const msgs = await res.json();
-            setAllMessages(Array.isArray(msgs) ? msgs.map(mapMessageBackendToFrontend) : []);
-          } else {
-            setAllMessages([]);
-          }
-        } else {
-          setAllMessages([]);
-        }
       } catch {
         setError("Erro ao buscar detalhes do chamado");
-        setAllMessages([]);
       } finally {
         setLoading(false);
       }
     }
-    if (id) fetchTicketAndMessages();
+    if (id) fetchTicket();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Busca mensagens apenas ao ativar a aba 'messages' e se ainda não carregou
+  useEffect(() => {
+    if (activeTab === "messages" && ticket && !messagesLoaded) {
+      refreshMessages();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, ticket]);
 
   // Paginação
   const goToPage = (page: number) => {
@@ -156,10 +159,12 @@ export default function TicketDetailsPage() {
   ];
 
   return (
-    <Tabs defaultValue="details" className="w-full h-full">
+    <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
       <TabsList className="mb-4">
         <TabsTrigger value="details">Detalhes</TabsTrigger>
-        <TabsTrigger value="messages">Mensagens ({totalMessages})</TabsTrigger>
+        <TabsTrigger value="messages">
+          {totalMessages > 0 ? `Mensagens (${totalMessages})` : "Mensagens"}
+        </TabsTrigger>
       </TabsList>
       <Card className="p-6 rounded-md w-full h-full">
         <TabsContent value="details">
@@ -309,71 +314,80 @@ export default function TicketDetailsPage() {
         </TabsContent>
         <TabsContent value="messages">
           <div className="space-y-4">
-            {/* Controles de paginação - Topo */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="text-sm text-muted-foreground">
-                  Página {currentPage} de {totalPages} - Mostrando {currentMessages.length} de {totalMessages} mensagens
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
-                    <ChevronLeft className="w-4 h-4" /> Anterior
-                  </Button>
-                  <div className="flex gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-                      return (
-                        <Button
-                          key={pageNumber}
-                          variant={currentPage === pageNumber ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => goToPage(pageNumber)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {pageNumber}
-                        </Button>
-                      );
-                    })}
+            {messagesLoading ? (
+              <div className="flex items-center justify-center min-h-[200px]">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">Carregando mensagens...</span>
+              </div>
+            ) : (
+              <>
+                {/* Controles de paginação - Topo */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div className="text-sm text-muted-foreground">
+                      Página {currentPage} de {totalPages} - Mostrando {currentMessages.length} de {totalMessages} mensagens
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
+                        <ChevronLeft className="w-4 h-4" /> Anterior
+                      </Button>
+                      <div className="flex gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNumber;
+                          if (totalPages <= 5) {
+                            pageNumber = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + i;
+                          } else {
+                            pageNumber = currentPage - 2 + i;
+                          }
+                          return (
+                            <Button
+                              key={pageNumber}
+                              variant={currentPage === pageNumber ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => goToPage(pageNumber)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {pageNumber}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
+                        Próxima <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
-                    Próxima <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+                )}
+                {/* Lista de mensagens da página atual */}
+                {currentMessages.length === 0 && (
+                  <div className="text-muted-foreground text-center py-8">Nenhuma mensagem encontrada para este chamado.</div>
+                )}
+                {currentMessages.map((msg) => (
+                  <MessageCard key={msg.id} msg={msg} />
+                ))}
+                {/* Controles de paginação - Bottom */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
+                        <ChevronLeft className="w-4 h-4" /> Anterior
+                      </Button>
+                      <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
+                      <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
+                        Próxima <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                <Separator className="my-4" />
+                {/* Área de nova mensagem */}
+                <MessageForm ticket={ticket} onMessageSent={async () => { setMessagesLoaded(false); await refreshMessages(); }} statusOptions={statusOptions} />
+              </>
             )}
-            {/* Lista de mensagens da página atual */}
-            {currentMessages.length === 0 && (
-              <div className="text-muted-foreground text-center py-8">Nenhuma mensagem encontrada para este chamado.</div>
-            )}
-            {currentMessages.map((msg) => (
-              <MessageCard key={msg.id} msg={msg} />
-            ))}
-            {/* Controles de paginação - Bottom */}
-            {totalPages > 1 && (
-              <div className="flex justify-center">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
-                    <ChevronLeft className="w-4 h-4" /> Anterior
-                  </Button>
-                  <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
-                  <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
-                    Próxima <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-            <Separator className="my-4" />
-            {/* Área de nova mensagem */}
-            <MessageForm ticket={ticket} onMessageSent={refreshMessages} statusOptions={statusOptions} />
           </div>
         </TabsContent>
       </Card>

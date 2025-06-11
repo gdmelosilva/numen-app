@@ -49,6 +49,31 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Busca horas para mensagens do sistema (ref_msg_id)
+  // Mapeia: ref_msg_id (da mensagem do sistema) -> id da mensagem original
+  const systemMsgRefIds: string[] = (messagesData || [])
+    .filter((msg: { is_system?: boolean; ref_msg_id?: string }) => msg.is_system && typeof msg.ref_msg_id === 'string')
+    .map((msg: { ref_msg_id?: string }) => msg.ref_msg_id!)
+    .filter(Boolean);
+
+  // systemHoursMap: id da mensagem original -> horas
+  const systemHoursMap: Record<string, number> = {};
+  if (systemMsgRefIds.length > 0) {
+    // Busca ticket_hours dessas mensagens originais
+    const { data: hoursData, error: hoursErr } = await supabase
+      .from("ticket_hours")
+      .select("message_id, minutes")
+      .in("message_id", systemMsgRefIds);
+    if (!hoursErr && hoursData) {
+      for (const refId of systemMsgRefIds) {
+        const totalMinutes = hoursData
+          .filter((h: { message_id: string }) => h.message_id === refId)
+          .reduce((sum: number, h: { minutes?: number }) => sum + (h.minutes || 0), 0);
+        systemHoursMap[refId] = totalMinutes / 60;
+      }
+    }
+  }
+
   // Corrige o formato do campo user para ser um objeto (não array) e une o nome e adiciona anexos
   const messages = (messagesData || []).map((msg: Record<string, unknown>) => {
     let user = { name: '', is_client: false };
@@ -59,19 +84,23 @@ export async function GET(req: NextRequest) {
       const u = msg.user as { first_name?: string; last_name?: string; id?: string; is_client?: boolean };
       user = { ...u, name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(), is_client: !!u.is_client };
     }
-    
     // Adiciona anexos da mensagem
     const messageAttachments = attachmentsData.filter(att => att.message_id === msg.id);
-    
-    // Retorna todos os campos originais + user corrigido + anexos
+    // Adiciona system_hours se for mensagem do sistema
+    let system_hours = null;
+    if (msg.is_system && typeof msg.ref_msg_id === 'string' && systemHoursMap[msg.ref_msg_id] !== undefined) {
+      system_hours = systemHoursMap[msg.ref_msg_id];
+    }
+    // Retorna todos os campos originais + user corrigido + anexos + system_hours
     return {
       ...msg,
       user,
       attachments: messageAttachments,
-      ref_msg_id: msg.ref_msg_id // garante que o campo é retornado
-    } as unknown as Message;
+      ref_msg_id: msg.ref_msg_id, // garante que o campo é retornado
+      system_hours,
+    } as unknown as Message & { system_hours?: number };
   });
-  return NextResponse.json(messages as Message[]);
+  return NextResponse.json(messages as (Message & { system_hours?: number })[]);
 }
 
 // POST: Cria uma nova mensagem
