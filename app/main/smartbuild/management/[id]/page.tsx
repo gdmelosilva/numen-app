@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { notFound, useParams } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Loader2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { Contract } from "@/types/contracts";
+import ProjectDetailsTab from "./details";
+import ProjectDashboardTab from "./dashboard";
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -15,6 +14,9 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Contract | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [mainTab, setMainTab] = useState("detalhes");
+  const [detailsTab, setDetailsTab] = useState("tickets");
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     const loadProjectData = async () => {
@@ -70,21 +72,25 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto mt-8">
-      <Card>
-        <CardContent className="space-y-4 pt-6">
-          <h2 className="text-2xl font-bold mb-2">Detalhes do Projeto</h2>          <div><strong>ID:</strong> {project.id}</div>
-          <div><strong>Nome:</strong> {project.projectName || '-'}</div>
-          <div><strong>Descrição:</strong> {project.projectDesc || '-'}</div>
-          <div><strong>Parceiro:</strong> {project.partner?.partner_desc || '-'}</div>
-          <div><strong>Início:</strong> {project.start_date ? format(new Date(project.start_date), "dd/MM/yyyy", { locale: ptBR }) : '-'}</div>
-          <div><strong>Fim:</strong> {project.end_at ? format(new Date(project.end_at), "dd/MM/yyyy", { locale: ptBR }) : '-'}</div>
-          <div><strong>Tipo:</strong> {project.project_type || '-'}</div>
-          <div><strong>Status:</strong> {project.project_status?.name || '-'}</div>
-          <div><strong>Wildcard?</strong> {project.is_wildcard ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
-          <div><strong>24/7?</strong> {project.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
-        </CardContent>
-      </Card>
+    <div className="w-full mx-auto mt-8 space-y-6">
+      <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+        </TabsList>
+        <TabsContent value="detalhes">
+          <ProjectDetailsTab
+            project={project}
+            editMode={editMode}
+            setEditMode={setEditMode}
+            tab={detailsTab}
+            setTab={setDetailsTab}
+          />
+        </TabsContent>
+        <TabsContent value="dashboard">
+          <ProjectDashboardTab project={project} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
