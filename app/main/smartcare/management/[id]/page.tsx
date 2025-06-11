@@ -10,17 +10,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 // import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { BookOpenText, Calendar, Clock, Info, UserCircle, ChevronLeft, ChevronRight } from "lucide-react";
-// import { Input } from "@/components/ui/input";
-// import { Switch } from "@/components/ui/switch";
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
 import React from "react";
+import MessageForm from "@/components/message-form";
+import { MessageCard } from "@/components/message-card";
 
 export default function TicketDetailsPage() {
   const { id } = useParams();
@@ -35,32 +29,47 @@ export default function TicketDetailsPage() {
     msgHours?: number | string;
     msgBody?: string;
     createdAt?: string;
-    user?: { name?: string };
+    user?: { name?: string; is_client?: boolean };
     attachments?: { id: string; name: string; path: string }[];
+    is_system?: boolean; // Adiciona flag para mensagens do sistema
   };
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const messagesPerPage = 10;
-//   const [newMessage, setNewMessage] = useState("");
-//   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-//   const [isPrivate, setIsPrivate] = useState(false);
-//   const [messageHours, setMessageHours] = useState("");
-//   const [selectedStatus, setSelectedStatus] = useState("");
+  const messagesPerPage = 6; // Altera para 6 mensagens por página
 
-  // Calcular mensagens da página atual
-  const totalMessages = allMessages.length;
-  const totalPages = Math.ceil(totalMessages / messagesPerPage);
-  const startIndex = (currentPage - 1) * messagesPerPage;
-  const endIndex = startIndex + messagesPerPage;
-  const currentMessages = allMessages.slice(startIndex, endIndex);
+  // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
+  const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
+    id: String(msg.id),
+    msgStatus: msg.status_id ? String(msg.status_id) : undefined,
+    msgPrivate: Boolean(msg.is_private),
+    msgHours: typeof msg.hours === 'number' || typeof msg.hours === 'string' ? msg.hours : undefined,
+    msgBody: typeof msg.body === 'string' ? msg.body : '',
+    createdAt: typeof msg.created_at === 'string' ? msg.created_at : '',
+    user: typeof msg.user === 'object' && msg.user !== null ? (msg.user as { name?: string }) : { name: '' },
+    attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
+    is_system: Boolean(msg.is_system), // Mapeia is_system
+  });
 
   // Calcular total de horas das mensagens
   const totalHours = allMessages.reduce((total, msg) => {
     return total + (msg.msgHours ? parseFloat(msg.msgHours.toString()) : 0);
   }, 0);
 
+  // Fetch messages (agora busca do endpoint real)
+  const refreshMessages = async () => {
+    if (!ticket) return;
+    try {
+      const res = await fetch(`/api/messages?ticket_id=${ticket.id}`);
+      if (!res.ok) throw new Error("Erro ao buscar mensagens");
+      const msgs = await res.json();
+      setAllMessages(Array.isArray(msgs) ? msgs.map(mapMessageBackendToFrontend) : []);
+    } catch {
+      setAllMessages([]);
+    }
+  }
+
   useEffect(() => {
-    async function fetchTicket() {
+    async function fetchTicketAndMessages() {
       setLoading(true);
       setError(null);
       try {
@@ -69,15 +78,27 @@ export default function TicketDetailsPage() {
         const data = await response.json();
         const ticketData = Array.isArray(data) ? data[0] : data;
         setTicket(ticketData);
-        // TODO: buscar mensagens do chamado (mock vazio por enquanto)
-        setAllMessages([]); // Substitua por fetch real se houver endpoint
+        // Busca mensagens reais do ticket
+        if (ticketData?.id) {
+          const res = await fetch(`/api/messages?ticket_id=${ticketData.id}`);
+          if (res.ok) {
+            const msgs = await res.json();
+            setAllMessages(Array.isArray(msgs) ? msgs.map(mapMessageBackendToFrontend) : []);
+          } else {
+            setAllMessages([]);
+          }
+        } else {
+          setAllMessages([]);
+        }
       } catch {
         setError("Erro ao buscar detalhes do chamado");
+        setAllMessages([]);
       } finally {
         setLoading(false);
       }
     }
-    if (id) fetchTicket();
+    if (id) fetchTicketAndMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Paginação
@@ -97,6 +118,18 @@ export default function TicketDetailsPage() {
     }
   };
 
+  // Ordena mensagens da mais nova para a mais antiga
+  const sortedMessages = [...allMessages].sort((a, b) => {
+    if (!a.createdAt || !b.createdAt) return 0;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  // Paginação baseada nas mensagens ordenadas
+  const totalMessages = sortedMessages.length;
+  const totalPages = Math.ceil(totalMessages / messagesPerPage);
+  const startIndex = (currentPage - 1) * messagesPerPage;
+  const endIndex = startIndex + messagesPerPage;
+  const currentMessages = sortedMessages.slice(startIndex, endIndex);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -108,146 +141,6 @@ export default function TicketDetailsPage() {
     return <div className="p-6 text-destructive">{error || "Chamado não encontrado."}</div>;
   }
 
-  // Inline SendMessageArea component
-  function SendMessageArea({
-    ticket,
-    onMessageSent,
-    statusOptions = [],
-  }: {
-    ticket: Ticket;
-    onMessageSent: () => Promise<void>;
-    statusOptions?: { value: string; label: string }[];
-  }) {
-    const [newMessage, setNewMessage] = useState("");
-    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const [isPrivate, setIsPrivate] = useState(false);
-    const [messageHours, setMessageHours] = useState("");
-    const [selectedStatus, setSelectedStatus] = useState("");
-    const [sending, setSending] = useState(false);
-
-    const fileNameDisplay = selectedFiles.length > 0 ? (
-      <div className="mb-2 text-sm text-muted-foreground">
-        Arquivos selecionados: <span className="font-medium">{selectedFiles.map((file) => file.name).join(", ")}</span>
-      </div>
-    ) : null;
-
-    async function handleSend() {
-      if (!newMessage.trim()) return;
-      setSending(true);
-      try {
-        // 1. Send message
-        const res = await fetch(`/api/smartcare/${ticket.external_id}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            msgBody: newMessage,
-            msgPrivate: isPrivate,
-            msgHours: messageHours ? parseFloat(messageHours) : null,
-            msgStatus: selectedStatus || undefined,
-          }),
-        });
-        if (!res.ok) throw new Error("Erro ao criar mensagem");
-        const createdMsg = await res.json();
-
-        // 2. Upload attachments if any
-        if (selectedFiles.length > 0) {
-          const formData = new FormData();
-          selectedFiles.forEach((file) => {
-            formData.append("mediaFile", file);
-          });
-          formData.append("messageId", createdMsg.id);
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-          if (!uploadRes.ok) throw new Error("Erro no upload dos anexos");
-        }
-
-        setNewMessage("");
-        setSelectedFiles([]);
-        setMessageHours("");
-        setSelectedStatus("");
-        toast.success("Mensagem enviada com sucesso!");
-        await onMessageSent();
-      } catch (e: unknown) {
-        const errorMsg = e instanceof Error ? e.message : 'Erro ao enviar mensagem';
-        toast.error(errorMsg);
-      } finally {
-        setSending(false);
-      }
-    }
-
-    return (
-      <div className="w-full space-y-2 mt-4">
-        {fileNameDisplay}
-        <Card className="w-full py-2 rounded-md">
-          <CardContent className="flex flex-col md:flex-row justify-start items-center gap-6 py-0 px-6">
-            <div className="flex items-center gap-2">
-              <label htmlFor="privateSwitch" className="text-sm text-muted-foreground font-medium">
-                Mensagem Privada
-              </label>
-              <Switch id="privateSwitch" checked={isPrivate} onCheckedChange={setIsPrivate} />
-            </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="hoursInput" className="text-sm text-muted-foreground font-medium">
-                Horas Apontadas
-              </label>
-              <Input
-                id="hoursInput"
-                type="number"
-                step="0.1"
-                min="0"
-                placeholder="0.0"
-                value={messageHours}
-                onChange={(e) => setMessageHours(e.target.value)}
-                className="w-20"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="statusSelect" className="text-sm text-muted-foreground font-medium">
-                Status
-              </label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Selecionar status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.length > 0
-                    ? statusOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))
-                    : null}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-        <Textarea
-          placeholder="Digite sua mensagem..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          disabled={sending}
-        />
-        <div className="flex items-center gap-2">
-          <input
-            type="file"
-            multiple
-            onChange={(e) => {
-              const files = Array.from(e.target.files || []);
-              setSelectedFiles(files);
-            }}
-            className="text-sm"
-            disabled={sending}
-          />
-          <Button onClick={handleSend} disabled={!newMessage.trim() || sending}>
-            {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Enviar Mensagem
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   // Status options for Select
   const statusOptions = [
     ...(ticket && ticket.status && typeof ticket.status === "object" && "name" in ticket.status && ticket.status_id
@@ -256,26 +149,13 @@ export default function TicketDetailsPage() {
     // Add more status options here if available from API
   ];
 
-  // Fetch messages (mock: empty array, replace with real fetch if available)
-  async function refreshMessages() {
-    try {
-      // TODO: Replace with real fetch if endpoint exists
-      // const res = await fetch(`/api/smartcare/${id}/messages`);
-      // const msgs = await res.json();
-      // setAllMessages(msgs);
-      setAllMessages([]); // keep as empty for now
-    } catch {
-      setAllMessages([]);
-    }
-  }
-
   return (
-    <Tabs defaultValue="details" className="w-full">
+    <Tabs defaultValue="details" className="w-full h-full">
       <TabsList className="mb-4">
         <TabsTrigger value="details">Detalhes</TabsTrigger>
         <TabsTrigger value="messages">Mensagens ({totalMessages})</TabsTrigger>
       </TabsList>
-      <Card>
+      <Card className="p-6 rounded-md w-full h-full">
         <TabsContent value="details">
           <CardHeader className="flex flex-col gap-2">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-2">
@@ -347,6 +227,82 @@ export default function TicketDetailsPage() {
                   : (typeof ticket.partner_id === 'string' || typeof ticket.partner_id === 'number' ? ticket.partner_id : '-')}</span>
               </div>
             </div>
+            <Separator className="my-4 mb-4" />
+            <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium mb-4">
+              <File className="w-4 h-4" />
+              Anexos do Chamado
+            </div>
+            {/* Exibição de anexos apenas das mensagens */}
+            {(() => {
+              const messageAttachments = allMessages.reduce((acc: { id: string; name: string; path: string; messageId: string; messageDate: string; userName: string }[], msg) => {
+                if (msg.attachments && msg.attachments.length > 0) {
+                  const attachmentsWithMessageInfo = msg.attachments.map(attachment => ({
+                    ...attachment,
+                    messageId: msg.id,
+                    messageDate: msg.createdAt || '',
+                    userName: msg.user?.name || "Usuário desconhecido"
+                  }));
+                  return [...acc, ...attachmentsWithMessageInfo];
+                }
+                return acc;
+              }, []);
+              if (messageAttachments.length === 0) {
+                return (
+                  <div className="text-sm text-muted-foreground italic">
+                    Nenhum anexo encontrado neste chamado.
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-4">
+                  <div>
+                    {/* Botão provisório para comparar paths dos anexos */}
+                    <button
+                      type="button"
+                      className="mb-2 px-3 py-1 bg-yellow-200 text-yellow-900 rounded hover:bg-yellow-300"
+                      onClick={async () => {
+                        const paths = messageAttachments.map(f => f.path);
+                        try {
+                          const res = await fetch("/api/compare-attachment-paths", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ paths })
+                          });
+                          const data = await res.json();
+                          // Exibe resultado no console
+                          console.log("[Comparação de anexos]", data);
+                          alert("Resultado da comparação exibido no console.");
+                        } catch (e) {
+                          alert(e);
+                        }
+                      }}
+                    >
+                      Comparar paths dos anexos (debug)
+                    </button>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Anexos das Mensagens:</h4>
+                    <ul className="list-none space-y-2 text-sm ml-4">
+                      {messageAttachments.map((file) => (
+                        <li key={file.id} className="border-l-2 border-gray-300 pl-3">
+                          <div className="flex flex-col">
+                            <a
+                              href={`/api/download?path=${encodeURIComponent(file.path)}`}
+                              className="hover:underline text-blue-600"
+                              download={file.name}
+                            >
+                              {file.name}
+                            </a>
+                            <span className="text-xs text-muted-foreground">
+                              {file.userName} - {file.messageDate ? new Date(file.messageDate).toLocaleString("pt-BR") : ""}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              );
+            })()}
+            <Separator className="my-4 mb-4" />
           </CardContent>
         </TabsContent>
         <TabsContent value="messages">
@@ -397,46 +353,7 @@ export default function TicketDetailsPage() {
               <div className="text-muted-foreground text-center py-8">Nenhuma mensagem encontrada para este chamado.</div>
             )}
             {currentMessages.map((msg) => (
-              <div key={msg.id} className="p-4 rounded border space-y-2 border-l-4 border-l-blue-600">
-                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  <div className="flex gap-2 flex-wrap">
-                    <Badge variant="outline" className="w-fit">{msg.msgStatus || "Sem status"}</Badge>
-                    {msg.msgPrivate && <Badge variant="destructive" className="w-fit">Privado</Badge>}
-                    <Badge variant="outline" className="w-fit text-normal bg-blue-600/25 text-white">Parceiro</Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {msg.createdAt ? new Date(msg.createdAt).toLocaleString("pt-BR") : "-"}
-                    </div>
-                    <div className="flex items-center gap-1 italic">
-                      <UserCircle className="w-4 h-4" />
-                      {msg.user?.name || "Usuário desconhecido"}
-                    </div>
-                    {msg.msgHours && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        Apontadas {msg.msgHours} hora(s)
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="text-sm whitespace-pre-wrap">{msg.msgBody}</div>
-                {(msg.attachments && msg.attachments.length > 0) && (
-                  <div className="pt-2 space-y-1">
-                    <div className="text-xs text-muted-foreground font-medium">Anexos:</div>
-                    <ul className="list-inside text-sm text-blue-400 space-y-0.5 list-none">
-                      {(msg.attachments ?? []).map((file: { id: string; name: string; path: string }) => (
-                        <li key={file.id}>
-                          <a href={`/api/${file.path}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                            {file.name}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+              <MessageCard key={msg.id} msg={msg} />
             ))}
             {/* Controles de paginação - Bottom */}
             {totalPages > 1 && (
@@ -454,7 +371,7 @@ export default function TicketDetailsPage() {
             )}
             <Separator className="my-4" />
             {/* Área de nova mensagem */}
-            <SendMessageArea ticket={ticket} onMessageSent={refreshMessages} statusOptions={statusOptions} />
+            <MessageForm ticket={ticket} onMessageSent={refreshMessages} statusOptions={statusOptions} />
           </div>
         </TabsContent>
       </Card>

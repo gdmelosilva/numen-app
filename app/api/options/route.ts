@@ -29,5 +29,16 @@ export async function GET(request: Request) {
     return NextResponse.json(data || [], { status: 200 });
   }
 
+    if (type === "ticket_status") {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("ticket_status")
+      .select("id, name");
+    if (error) {
+      return NextResponse.json([], { status: 200 });
+    }
+    return NextResponse.json(data || [], { status: 200 });
+  }
+
   return NextResponse.json({ message: "OK" });
 }

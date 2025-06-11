@@ -30,6 +30,7 @@ interface TicketRow {
   partner?: { id: string; partnerDesc: string };
   project?: { id: string; projectName: string };
   created_by_user?: { id: string; name: string };
+  attachments?: { id: string; name: string; path: string }[];
 }
 
 function mapTicketRow(row: unknown) {
@@ -62,14 +63,13 @@ function mapTicketRow(row: unknown) {
     partner: r.partner,
     project: r.project,
     created_by_user: r.created_by_user,
+    attachments: r.attachments || [], // Adiciona anexos se vierem do backend
   };
 }
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
-  const { searchParams } = new URL(req.url);
-
-  let query = supabase
+  const { searchParams } = new URL(req.url);  let query = supabase
     .from("ticket")
     .select(`*,
     module:fk_module(*),
@@ -132,8 +132,7 @@ export async function GET(req: NextRequest) {
     query = query.gte("planned_end_date", searchParams.get("planned_end_date"));
   }
   if (searchParams.get("actual_end_date")) {
-    query = query.gte("actual_end_date", searchParams.get("actual_end_date"));
-  }
+    query = query.gte("actual_end_date", searchParams.get("actual_end_date"));  }
 
   const { data, error } = await query;
 
@@ -141,7 +140,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Map DB rows to frontend shape
+  // Map DB rows to frontend shape (sem buscar anexos diretamente do ticket)
   const tickets = (data || []).map(mapTicketRow);
   return NextResponse.json(tickets);
 }

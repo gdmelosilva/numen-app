@@ -79,7 +79,8 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
         .from("project")
-        .select(`*, partner:partnerId(*), project_status:project_status(*)`, { count: "exact" });    // Filtering
+        .select(`*, partner:partnerId(*), project_status:project_status(*)`, { count: "exact" })
+        .in("project_type", ["TKEY", "BSHOP"])
     if (searchParams.get("id")) {
         query = query.eq("id", searchParams.get("id"));
     }
@@ -94,9 +95,6 @@ export async function GET(req: NextRequest) {
     }
     if (searchParams.get("partnerId")) {
         query = query.eq("partnerId", searchParams.get("partnerId"));
-    }
-    if (searchParams.get("project_type")) {
-        query = query.eq("project_type", searchParams.get("project_type"));
     }
     if (searchParams.get("project_status")) {
         query = query.eq("project_status", searchParams.get("project_status"));

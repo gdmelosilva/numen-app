@@ -1,3 +1,9 @@
+export type TicketAttachment = {
+  id: string;
+  name: string;
+  path: string;
+};
+
 export type Ticket = {
   id: string;
   external_id: string;
@@ -27,4 +33,5 @@ export type Ticket = {
   partner?: { id: string; partner_desc: string };
   project?: { id: string; projectName: string };
   created_by_user?: { id: string; name: string };
+  attachments?: TicketAttachment[];
 };
