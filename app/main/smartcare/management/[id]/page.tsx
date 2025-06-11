@@ -24,6 +24,7 @@ export default function TicketDetailsPage() {
   // Mensagens e paginação
   type Message = {
     id: string;
+    ticket_id?: string;
     msgStatus?: string;
     msgPrivate?: boolean;
     msgHours?: number | string;
@@ -32,6 +33,8 @@ export default function TicketDetailsPage() {
     user?: { name?: string; is_client?: boolean };
     attachments?: { id: string; name: string; path: string }[];
     is_system?: boolean; // Adiciona flag para mensagens do sistema
+    msg_ref?: string;
+    ref_msg_id?: string;
   };
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,6 +43,7 @@ export default function TicketDetailsPage() {
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
     id: String(msg.id),
+    ticket_id: typeof msg.ticket_id === 'string' ? msg.ticket_id : undefined,
     msgStatus: msg.status_id ? String(msg.status_id) : undefined,
     msgPrivate: Boolean(msg.is_private),
     msgHours: typeof msg.hours === 'number' || typeof msg.hours === 'string' ? msg.hours : undefined,
@@ -48,6 +52,8 @@ export default function TicketDetailsPage() {
     user: typeof msg.user === 'object' && msg.user !== null ? (msg.user as { name?: string }) : { name: '' },
     attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
     is_system: Boolean(msg.is_system), // Mapeia is_system
+    msg_ref: typeof msg.msg_ref === 'string' ? msg.msg_ref : undefined,
+    ref_msg_id: typeof msg.ref_msg_id === 'string' ? msg.ref_msg_id : undefined,
   });
 
   // Calcular total de horas das mensagens

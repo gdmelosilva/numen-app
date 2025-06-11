@@ -7,16 +7,29 @@ import { authenticateRequest } from "@/lib/api-auth";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const ticket_id = searchParams.get("ticket_id");
-  if (!ticket_id) {
-    return NextResponse.json({ error: "ticket_id é obrigatório" }, { status: 400 });  }
+  const ref_msg_id = searchParams.get("ref_msg_id");
+
+  if (!ticket_id && !ref_msg_id) {
+    return NextResponse.json({ error: "ticket_id ou ref_msg_id é obrigatório" }, { status: 400 });
+  }
   const supabase = await createClient();
-  
-  // Busca mensagens
-  const { data: messagesData, error: messagesError } = await supabase
+
+  // Monta a query dinâmica
+  let query = supabase
     .from("message")
     .select(`id, ext_id, body, hours, is_private, created_at, created_by, ticket_id, status_id, user:created_by(id, first_name, last_name, is_client), is_system, ref_msg_id`)
-    .eq("ticket_id", ticket_id)
     .order("created_at", { ascending: true });
+
+  if (ref_msg_id) {
+    query = query.eq("ref_msg_id", ref_msg_id);
+    if (ticket_id) {
+      query = query.eq("ticket_id", ticket_id);
+    }
+  } else if (ticket_id) {
+    query = query.eq("ticket_id", ticket_id);
+  }
+
+  const { data: messagesData, error: messagesError } = await query;
     
   if (messagesError) {
     return NextResponse.json({ error: messagesError.message }, { status: 500 });
