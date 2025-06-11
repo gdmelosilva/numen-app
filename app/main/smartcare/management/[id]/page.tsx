@@ -15,6 +15,12 @@ import { BookOpenText, Calendar, Clock, Info, UserCircle, ChevronLeft, ChevronRi
 // import { Switch } from "@/components/ui/switch";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import React from "react";
 
 export default function TicketDetailsPage() {
   const { id } = useParams();
@@ -102,193 +108,356 @@ export default function TicketDetailsPage() {
     return <div className="p-6 text-destructive">{error || "Chamado não encontrado."}</div>;
   }
 
-  return (
+  // Inline SendMessageArea component
+  function SendMessageArea({
+    ticket,
+    onMessageSent,
+    statusOptions = [],
+  }: {
+    ticket: Ticket;
+    onMessageSent: () => Promise<void>;
+    statusOptions?: { value: string; label: string }[];
+  }) {
+    const [newMessage, setNewMessage] = useState("");
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [isPrivate, setIsPrivate] = useState(false);
+    const [messageHours, setMessageHours] = useState("");
+    const [selectedStatus, setSelectedStatus] = useState("");
+    const [sending, setSending] = useState(false);
 
+    const fileNameDisplay = selectedFiles.length > 0 ? (
+      <div className="mb-2 text-sm text-muted-foreground">
+        Arquivos selecionados: <span className="font-medium">{selectedFiles.map((file) => file.name).join(", ")}</span>
+      </div>
+    ) : null;
+
+    async function handleSend() {
+      if (!newMessage.trim()) return;
+      setSending(true);
+      try {
+        // 1. Send message
+        const res = await fetch(`/api/smartcare/${ticket.external_id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            msgBody: newMessage,
+            msgPrivate: isPrivate,
+            msgHours: messageHours ? parseFloat(messageHours) : null,
+            msgStatus: selectedStatus || undefined,
+          }),
+        });
+        if (!res.ok) throw new Error("Erro ao criar mensagem");
+        const createdMsg = await res.json();
+
+        // 2. Upload attachments if any
+        if (selectedFiles.length > 0) {
+          const formData = new FormData();
+          selectedFiles.forEach((file) => {
+            formData.append("mediaFile", file);
+          });
+          formData.append("messageId", createdMsg.id);
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          if (!uploadRes.ok) throw new Error("Erro no upload dos anexos");
+        }
+
+        setNewMessage("");
+        setSelectedFiles([]);
+        setMessageHours("");
+        setSelectedStatus("");
+        toast.success("Mensagem enviada com sucesso!");
+        await onMessageSent();
+      } catch (e: unknown) {
+        const errorMsg = e instanceof Error ? e.message : 'Erro ao enviar mensagem';
+        toast.error(errorMsg);
+      } finally {
+        setSending(false);
+      }
+    }
+
+    return (
+      <div className="w-full space-y-2 mt-4">
+        {fileNameDisplay}
+        <Card className="w-full py-2 rounded-md">
+          <CardContent className="flex flex-col md:flex-row justify-start items-center gap-6 py-0 px-6">
+            <div className="flex items-center gap-2">
+              <label htmlFor="privateSwitch" className="text-sm text-muted-foreground font-medium">
+                Mensagem Privada
+              </label>
+              <Switch id="privateSwitch" checked={isPrivate} onCheckedChange={setIsPrivate} />
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="hoursInput" className="text-sm text-muted-foreground font-medium">
+                Horas Apontadas
+              </label>
+              <Input
+                id="hoursInput"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0.0"
+                value={messageHours}
+                onChange={(e) => setMessageHours(e.target.value)}
+                className="w-20"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="statusSelect" className="text-sm text-muted-foreground font-medium">
+                Status
+              </label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Selecionar status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.length > 0
+                    ? statusOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))
+                    : null}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+        <Textarea
+          placeholder="Digite sua mensagem..."
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          disabled={sending}
+        />
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            multiple
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              setSelectedFiles(files);
+            }}
+            className="text-sm"
+            disabled={sending}
+          />
+          <Button onClick={handleSend} disabled={!newMessage.trim() || sending}>
+            {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            Enviar Mensagem
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Status options for Select
+  const statusOptions = [
+    ...(ticket && ticket.status && typeof ticket.status === "object" && "name" in ticket.status && ticket.status_id
+      ? [{ value: String(ticket.status_id), label: ticket.status.name }]
+      : []),
+    // Add more status options here if available from API
+  ];
+
+  // Fetch messages (mock: empty array, replace with real fetch if available)
+  async function refreshMessages() {
+    try {
+      // TODO: Replace with real fetch if endpoint exists
+      // const res = await fetch(`/api/smartcare/${id}/messages`);
+      // const msgs = await res.json();
+      // setAllMessages(msgs);
+      setAllMessages([]); // keep as empty for now
+    } catch {
+      setAllMessages([]);
+    }
+  }
+
+  return (
     <Tabs defaultValue="details" className="w-full">
       <TabsList className="mb-4">
         <TabsTrigger value="details">Detalhes</TabsTrigger>
         <TabsTrigger value="messages">Mensagens ({totalMessages})</TabsTrigger>
       </TabsList>
-        <Card>
-      <TabsContent value="details">
-        <CardHeader className="flex flex-col gap-2">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-2">
-            <div className="text-xl font-semibold flex-1">
-              {String(ticket.external_id).padStart(5, "0")} - {ticket.title}
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-4 text-md text-muted-foreground">
-              <div className="inline-flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString("pt-BR") : "-"}
+      <Card>
+        <TabsContent value="details">
+          <CardHeader className="flex flex-col gap-2">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-2">
+              <div className="text-xl font-semibold flex-1">
+                {String(ticket.external_id).padStart(5, "0")} - {ticket.title}
               </div>
-              <div className="inline-flex items-center gap-1 italic text-md">
-                <UserCircle className="w-4 h-4" />
-                {typeof ticket.created_by_user === "object" && ticket.created_by_user !== null && 'name' in ticket.created_by_user
-                  ? ticket.created_by_user.name
-                  : (typeof ticket.created_by === 'string' ? ticket.created_by : '-')}
-              </div>
-              <Badge variant="default" className="text-md">{(typeof ticket.status === 'object' && ticket.status && 'name' in ticket.status) ? ticket.status.name : (typeof ticket.status_id === 'string' || typeof ticket.status_id === 'number' ? ticket.status_id : '-')}</Badge>
-            </div>
-            <div className="flex flex-col items-end align-middle justify-center">
-              <span className="text-muted-foreground text-xs font-medium mb-1"></span>
-              <Badge variant="secondary" className="text-sm px-3 py-1">
-                {totalHours > 0 ? `${totalHours.toFixed(1)}h` : "0h"}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <Separator className="my-4 mb-4" />
-          <div className="flex flex-col">
-            <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium mb-2">
-              <BookOpenText className="w-4 h-4" />
-              Descrição
-            </div>
-            {typeof ticket.description === 'string' ? ticket.description : '-'}
-          </div>
-        </CardContent>
-        <CardContent>
-          <Separator className="my-4 mb-4" />
-          <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium mb-4">
-            <Info className="w-4 h-4" />
-            Informações do Chamado
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-xs font-medium">Tipo</span>
-              <span>{(typeof ticket.type === 'object' && ticket.type && 'name' in ticket.type) ? ticket.type.name : (typeof ticket.type_id === 'string' || typeof ticket.type_id === 'number' ? ticket.type_id : '-')}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-xs font-medium">Categoria</span>
-              <span>{(typeof ticket.category === 'object' && ticket.category && 'name' in ticket.category) ? ticket.category.name : (typeof ticket.category_id === 'string' || typeof ticket.category_id === 'number' ? ticket.category_id : '-')}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-xs font-medium">Módulo</span>
-              <span>{(typeof ticket.module === 'object' && ticket.module && 'name' in ticket.module) ? ticket.module.name : (typeof ticket.module_id === 'string' || typeof ticket.module_id === 'number' ? ticket.module_id : '-')}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-xs font-medium">Prioridade</span>
-              <span>{(typeof ticket.priority === 'object' && ticket.priority && 'name' in ticket.priority) ? ticket.priority.name : (typeof ticket.priority_id === 'string' || typeof ticket.priority_id === 'number' ? ticket.priority_id : '-')}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-xs font-medium">Projeto</span>
-              <span>{(typeof ticket.project === 'object' && ticket.project && 'projectName' in ticket.project) ? ticket.project.projectName : (typeof ticket.project_id === 'string' || typeof ticket.project_id === 'number' ? ticket.project_id : '-')}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-xs font-medium">Parceiro</span>
-              <span>{(typeof ticket.partner === 'object' && ticket.partner && 'partner_desc' in ticket.partner)
-                ? ticket.partner.partner_desc
-                : (typeof ticket.partner_id === 'string' || typeof ticket.partner_id === 'number' ? ticket.partner_id : '-')}</span>
-            </div>
-          </div>
-        </CardContent>
-      </TabsContent>
-      <TabsContent value="messages">
-        <div className="space-y-4">
-          {/* Controles de paginação - Topo */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages} - Mostrando {currentMessages.length} de {totalMessages} mensagens
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
-                  <ChevronLeft className="w-4 h-4" /> Anterior
-                </Button>
-                <div className="flex gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNumber;
-                    if (totalPages <= 5) {
-                      pageNumber = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNumber = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
-                    } else {
-                      pageNumber = currentPage - 2 + i;
-                    }
-                    return (
-                      <Button
-                        key={pageNumber}
-                        variant={currentPage === pageNumber ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => goToPage(pageNumber)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {pageNumber}
-                      </Button>
-                    );
-                  })}
+              <div className="flex flex-wrap items-center justify-end gap-4 text-md text-muted-foreground">
+                <div className="inline-flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString("pt-BR") : "-"}
                 </div>
-                <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
-                  Próxima <ChevronRight className="w-4 h-4" />
-                </Button>
+                <div className="inline-flex items-center gap-1 italic text-md">
+                  <UserCircle className="w-4 h-4" />
+                  {typeof ticket.created_by_user === "object" && ticket.created_by_user !== null && 'name' in ticket.created_by_user
+                    ? ticket.created_by_user.name
+                    : (typeof ticket.created_by === 'string' ? ticket.created_by : '-')}
+                </div>
+                <Badge variant="default" className="text-md">{(typeof ticket.status === 'object' && ticket.status && 'name' in ticket.status) ? ticket.status.name : (typeof ticket.status_id === 'string' || typeof ticket.status_id === 'number' ? ticket.status_id : '-')}</Badge>
+              </div>
+              <div className="flex flex-col items-end align-middle justify-center">
+                <span className="text-muted-foreground text-xs font-medium mb-1"></span>
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                  {totalHours > 0 ? `${totalHours.toFixed(1)}h` : "0h"}
+                </Badge>
               </div>
             </div>
-          )}
-          {/* Lista de mensagens da página atual */}
-          {currentMessages.length === 0 && (
-            <div className="text-muted-foreground text-center py-8">Nenhuma mensagem encontrada para este chamado.</div>
-          )}
-          {currentMessages.map((msg) => (
-            <div key={msg.id} className="p-4 rounded border space-y-2 border-l-4 border-l-blue-600">
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                <div className="flex gap-2 flex-wrap">
-                  <Badge variant="outline" className="w-fit">{msg.msgStatus || "Sem status"}</Badge>
-                  {msg.msgPrivate && <Badge variant="destructive" className="w-fit">Privado</Badge>}
-                  <Badge variant="outline" className="w-fit text-normal bg-blue-600/25 text-white">Parceiro</Badge>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Separator className="my-4 mb-4" />
+            <div className="flex flex-col">
+              <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium mb-2">
+                <BookOpenText className="w-4 h-4" />
+                Descrição
+              </div>
+              {typeof ticket.description === 'string' ? ticket.description : '-'}
+            </div>
+          </CardContent>
+          <CardContent>
+            <Separator className="my-4 mb-4" />
+            <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium mb-4">
+              <Info className="w-4 h-4" />
+              Informações do Chamado
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Tipo</span>
+                <span>{(typeof ticket.type === 'object' && ticket.type && 'name' in ticket.type) ? ticket.type.name : (typeof ticket.type_id === 'string' || typeof ticket.type_id === 'number' ? ticket.type_id : '-')}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Categoria</span>
+                <span>{(typeof ticket.category === 'object' && ticket.category && 'name' in ticket.category) ? ticket.category.name : (typeof ticket.category_id === 'string' || typeof ticket.category_id === 'number' ? ticket.category_id : '-')}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Módulo</span>
+                <span>{(typeof ticket.module === 'object' && ticket.module && 'name' in ticket.module) ? ticket.module.name : (typeof ticket.module_id === 'string' || typeof ticket.module_id === 'number' ? ticket.module_id : '-')}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Prioridade</span>
+                <span>{(typeof ticket.priority === 'object' && ticket.priority && 'name' in ticket.priority) ? ticket.priority.name : (typeof ticket.priority_id === 'string' || typeof ticket.priority_id === 'number' ? ticket.priority_id : '-')}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Projeto</span>
+                <span>{(typeof ticket.project === 'object' && ticket.project && 'projectName' in ticket.project) ? ticket.project.projectName : (typeof ticket.project_id === 'string' || typeof ticket.project_id === 'number' ? ticket.project_id : '-')}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Parceiro</span>
+                <span>{(typeof ticket.partner === 'object' && ticket.partner && 'partner_desc' in ticket.partner)
+                  ? ticket.partner.partner_desc
+                  : (typeof ticket.partner_id === 'string' || typeof ticket.partner_id === 'number' ? ticket.partner_id : '-')}</span>
+              </div>
+            </div>
+          </CardContent>
+        </TabsContent>
+        <TabsContent value="messages">
+          <div className="space-y-4">
+            {/* Controles de paginação - Topo */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages} - Mostrando {currentMessages.length} de {totalMessages} mensagens
                 </div>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {msg.createdAt ? new Date(msg.createdAt).toLocaleString("pt-BR") : "-"}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
+                    <ChevronLeft className="w-4 h-4" /> Anterior
+                  </Button>
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+                      return (
+                        <Button
+                          key={pageNumber}
+                          variant={currentPage === pageNumber ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(pageNumber)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNumber}
+                        </Button>
+                      );
+                    })}
                   </div>
-                  <div className="flex items-center gap-1 italic">
-                    <UserCircle className="w-4 h-4" />
-                    {msg.user?.name || "Usuário desconhecido"}
+                  <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
+                    Próxima <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            {/* Lista de mensagens da página atual */}
+            {currentMessages.length === 0 && (
+              <div className="text-muted-foreground text-center py-8">Nenhuma mensagem encontrada para este chamado.</div>
+            )}
+            {currentMessages.map((msg) => (
+              <div key={msg.id} className="p-4 rounded border space-y-2 border-l-4 border-l-blue-600">
+                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  <div className="flex gap-2 flex-wrap">
+                    <Badge variant="outline" className="w-fit">{msg.msgStatus || "Sem status"}</Badge>
+                    {msg.msgPrivate && <Badge variant="destructive" className="w-fit">Privado</Badge>}
+                    <Badge variant="outline" className="w-fit text-normal bg-blue-600/25 text-white">Parceiro</Badge>
                   </div>
-                  {msg.msgHours && (
+                  <div className="flex flex-wrap gap-4">
                     <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      Apontadas {msg.msgHours} hora(s)
+                      <Calendar className="w-4 h-4" />
+                      {msg.createdAt ? new Date(msg.createdAt).toLocaleString("pt-BR") : "-"}
                     </div>
-                  )}
+                    <div className="flex items-center gap-1 italic">
+                      <UserCircle className="w-4 h-4" />
+                      {msg.user?.name || "Usuário desconhecido"}
+                    </div>
+                    {msg.msgHours && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        Apontadas {msg.msgHours} hora(s)
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="text-sm whitespace-pre-wrap">{msg.msgBody}</div>
+                {(msg.attachments && msg.attachments.length > 0) && (
+                  <div className="pt-2 space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium">Anexos:</div>
+                    <ul className="list-inside text-sm text-blue-400 space-y-0.5 list-none">
+                      {(msg.attachments ?? []).map((file: { id: string; name: string; path: string }) => (
+                        <li key={file.id}>
+                          <a href={`/api/${file.path}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                            {file.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+            {/* Controles de paginação - Bottom */}
+            {totalPages > 1 && (
+              <div className="flex justify-center">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
+                    <ChevronLeft className="w-4 h-4" /> Anterior
+                  </Button>
+                  <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
+                    Próxima <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-              <div className="text-sm whitespace-pre-wrap">{msg.msgBody}</div>
-              {(msg.attachments && msg.attachments.length > 0) && (
-                <div className="pt-2 space-y-1">
-                  <div className="text-xs text-muted-foreground font-medium">Anexos:</div>
-                  <ul className="list-inside text-sm text-blue-400 space-y-0.5 list-none">
-                    {(msg.attachments ?? []).map((file: { id: string; name: string; path: string }) => (
-                      <li key={file.id}>
-                        <a href={`/api/${file.path}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                          {file.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
-          {/* Controles de paginação - Bottom */}
-          {totalPages > 1 && (
-            <div className="flex justify-center">
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
-                  <ChevronLeft className="w-4 h-4" /> Anterior
-                </Button>
-                <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
-                <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
-                  Próxima <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </TabsContent>
-          </Card>
+            )}
+            <Separator className="my-4" />
+            {/* Área de nova mensagem */}
+            <SendMessageArea ticket={ticket} onMessageSent={refreshMessages} statusOptions={statusOptions} />
+          </div>
+        </TabsContent>
+      </Card>
     </Tabs>
   );
 }
