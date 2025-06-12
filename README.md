@@ -1,3 +1,17 @@
+Backlog Utilitarios: **Deixar por ultimo!
+- [ ] Cargos - Depois de criar, atualizar tabela (adicionar Fetch)
+- [ ] Cargos - Verificar Politica de Delete (cacete do caralho)
+- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
+
+Backlog Users: (Finalizado!)
+- [ ] Fetch após inativar / ativar / alterar *
+- [ ] Fetch dividido (para paginação) *
+
+Backlog Parceiros: (Finalizado!)
+- [ ] Fetch após inativar / ativar / alterar *
+- [ ] Consertar o campo de Segmento no exportar Excel *
+
+
 Feitos:
 - [X] Adicionar verificaçao de role e client na sidebar para exibir:
       (admin e cliente) == Nao <Admin - Parceiros e Contratos> e <Utilitarios> e <TimeSheet> e <TimeFlow>
@@ -61,6 +75,7 @@ Feitos:
 - [X] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
 - [X] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
 - [X] Adicionar botões de Vincular / Desvincular usuário ao parceiro
+- [X] Mensagens do Sistema (alteração de status) no chamado - (usuário: mensagem automatica do sistema)
 
 Vai ficar pra ver com o Felipe:
 - [ ] Encerrar a Sessão automáticamente com 1h de uso (Supabase // Precisamos do plano Pro)
@@ -73,37 +88,46 @@ Backlog geral:
 - [ ] Verificar visão do cliente para as abas pertinentes (inclusive para onde ele está sendo       redirecionado)
 - [ ] Validações de registro
 - [ ] Ajustar TODOS os selects
-
-Backlog Utilitarios: **Deixar por ultimo!
-- [ ] Cargos - Depois de criar, atualizar tabela (adicionar Fetch)
-- [ ] Cargos - Verificar Politica de Delete (cacete do caralho)
-- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
-
-Backlog Users: (Finalizado!)
-- [ ] Fetch após inativar / ativar / alterar *
-- [ ] Fetch dividido (para paginação) *
-
-Backlog Parceiros: (Finalizado!)
-- [ ] Fetch após inativar / ativar / alterar *
-- [ ] Consertar o campo de Segmento no exportar Excel
+- [ ] Verificar estrutura de pastas de arquivo
 
 Backlog Contratos: (pegar referencia no projeto antigo)
 - [ ] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
 - [ ] Criar funções: Alocar Recurso, Editar Projeto (dados do projeto + campos adicionais), 
+- [ ] Se contrato AMS incluir campo Horas_max (maximo de horas para melhoria) - se maior, avisar ao gerente.
+- [ ] Se contrato AMS incluir campo prd_credito (maximo de horas para melhoria) - se maior, avisar ao gerente.
+- [ ] Se contrato AMS incluir campos de valor / hora.
+- [ ] Se contrato AMS incluir campos de Baseline.
+- [ ] 4 Primeiras letras do nome do cliente / Tipo do contrato (AMS, TKEY, BODY) / ANO-0000 (seq) MEDI.AMS.2025-001 // Id Automatico do Contrato
+- [ ] implementar encerramento do contrato - dialog com data de término e encerrar TODOS OS CHAMADOS RELACIONADOS.
+- [ ] Criar alteração de status no contrato, criar status paralisado para o status de contrato Em Mobilização
+- [ ] Limite total de horas por membro (adicionar) na alocação
+- [ ] validação de ter somente 1 contrato AMS por parceiro
+- [ ] Liberação de Horas no Projeto (liberado horas para atividade) - Horas do recurso na atividade CAMPO SOMENTE LEITURA DE HORAS TOTAIS UTILIZADAS DO RECURSO NO PROJETO e Botão para liberar mais horas
+
 
 Backlog Administrar Chamados:
+- [ ] Inlcuir tela de gestão de projetos numa aba Gestão AMS
+- [ ] Criar um card de melhorias com horas extrapoladas
+- [ ] Criar um card de horas faturáveis
 - [ ] Criar página para exibir tabela de chamados (projeto ams) - Lembrar da visibilidade para o usuário client
 - [ ] Criar detalhes do chamado (usar tela referencia antiga / detalhes + mensagens)
 - [ ] Criar detalhes de mensagem (usar tela referencia antiga / detalhes + mensagens)
+- [ ] Tirar horas faturadas no chamado - visão do cliente
+- [ ] Incluir Trava de Mensageria para Recurso não alocado no chamado
+- [ ] Horas Faturáveis (chamado) - Inserir junto ao anexo
+- [ ] Qualificar o anexo - Evidencia de Erro, Evidencia de Teste, Especificação, Detalhamento de Chamado
+- [ ] Tipo de Chamado Atendimento Plantão
 
 Backlog Gestão Atividades:
+- [ ] Criar um card de melhorias com horas extrapoladas totais
 - [ ] Criar página para exibir tabela de projetos (projeto tkey / bshop) - Lembrar da visibilidade para o usuário client
 - [ ] Criar detalhes do projeto (dashboard com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
 - [ ] Criar detalhes da atividade (usar tela referencia antiga / detalhes + mensagens)
 - [ ] Criar detalhes de mensagem (lembrar que atividade nao tem mensagem para o cliente)
+- [ ] Incluir Tarefa Chave
 
 Backlog Timesheet:
-  Se Deus quiser
+  - [ ] Ajustar dash de projetos e de chamados, no de chamados precisamos incluir horas baseline e botão para tirar relatório de horas.
 Backlog Timeflow:
   Se Deus quiser
 
