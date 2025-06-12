@@ -122,7 +122,7 @@ Backlog Gestão Atividades:
 - [ ] Criar um card de melhorias com horas extrapoladas totais
 - [ ] Criar página para exibir tabela de projetos (projeto tkey / bshop) - Lembrar da visibilidade para o usuário client
 - [ ] Criar detalhes do projeto (dashboard com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
-- [ ] Criar detalhes da atividade (usar tela referencia antiga / detalhes + mensagens)
+- [X] Criar detalhes da atividade (usar tela referencia antiga / detalhes + mensagens)
 - [ ] Criar detalhes de mensagem (lembrar que atividade nao tem mensagem para o cliente)
 - [ ] Incluir Tarefa Chave
 

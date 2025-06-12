@@ -5,7 +5,9 @@ export async function PUT(req: NextRequest) {
   const supabase = await createClient();
   try {
     const body = await req.json();
-    const { id, projectName, projectDesc, partnerId, project_type, project_status, is_wildcard, is_247, start_date, end_at } = body;
+    const { id, projectName, projectDesc, partnerId, project_type, project_status, is_wildcard, is_247, start_date, end_at,
+      hours_max, cred_exp_period, value_hr_normal, value_hr_excdn, value_hr_except, value_hr_warn, baseline_hours, opening_time, closing_time
+    } = body;
     if (!id) {
       return NextResponse.json({ error: "ID do projeto é obrigatório" }, { status: 400 });
     }
@@ -21,6 +23,15 @@ export async function PUT(req: NextRequest) {
         is_247,
         start_date: start_date ? new Date(start_date).toISOString() : null,
         end_at: end_at ? new Date(end_at).toISOString() : null,
+        hours_max,
+        cred_exp_period,
+        value_hr_normal,
+        value_hr_excdn,
+        value_hr_except,
+        value_hr_warn,
+        baseline_hours,
+        opening_time,
+        closing_time,
       })
       .eq("id", id)
       .select();

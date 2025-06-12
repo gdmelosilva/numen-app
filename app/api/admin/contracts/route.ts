@@ -22,16 +22,28 @@ function mapProjectRow(row: unknown) {
     partner_name: r.partner_name ?? "",
     project_type: r.project_type ?? "",
     project_status: projectStatus
-        ? {
-                id: projectStatus.id ?? "",
-                name: projectStatus.name ?? "",
-                color: projectStatus.color ?? "",
-            }
-        : { id: "", name: "" },
+      ? {
+          id: projectStatus.id ?? "",
+          name: projectStatus.name ?? "",
+          color: projectStatus.color ?? "",
+        }
+      : { id: "", name: "" },
     is_wildcard: r.is_wildcard,
     is_247: r.is_247,
-    start_date: r.start_date ? new Date(r.start_date as string).toISOString() : "",
+    start_date: r.start_date
+      ? new Date(r.start_date as string).toISOString()
+      : "",
     end_at: r.end_at ? new Date(r.end_at as string).toISOString() : "",
+    // Campos de cobrança
+    hours_max: r.hours_max ?? null,
+    cred_exp_period: r.cred_exp_period ?? null,
+    value_hr_normal: r.value_hr_normal ?? null,
+    value_hr_excdn: r.value_hr_excdn ?? null,
+    value_hr_except: r.value_hr_except ?? null,
+    value_hr_warn: r.value_hr_warn ?? null,
+    baseline_hours: r.baseline_hours ?? null,
+    opening_time: r.opening_time ?? null,
+    closing_time: r.closing_time ?? null,
   };
 }
 
@@ -39,7 +51,12 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = new URL(req.url);
 
-  let query = supabase.from("project").select("*, partner_name: fk_project_partner(partner_desc), project_status: fk_project_status(id, name, color)", { count: "exact" });
+  let query = supabase
+    .from("project")
+    .select(
+      "id, projectExtId, projectName, projectDesc, partnerId, project_type, project_status:fk_project_status(id, name, color), is_wildcard, is_247, start_date, end_at, hours_max, cred_exp_period, value_hr_normal, value_hr_excdn, value_hr_except, value_hr_warn, baseline_hours, opening_time, closing_time, partner_name:fk_project_partner(partner_desc)",
+      { count: "exact" },
+    );
 
   // Filtering
   if (searchParams.get("id")) {
@@ -65,11 +82,13 @@ export async function GET(req: NextRequest) {
   }
   if (searchParams.get("is_wildcard") !== null) {
     const val = searchParams.get("is_wildcard");
-    if (val === "true" || val === "false") query = query.eq("is_wildcard", val === "true");
+    if (val === "true" || val === "false")
+      query = query.eq("is_wildcard", val === "true");
   }
   if (searchParams.get("is_247") !== null) {
     const val = searchParams.get("is_247");
-    if (val === "true" || val === "false") query = query.eq("is_247", val === "true");
+    if (val === "true" || val === "false")
+      query = query.eq("is_247", val === "true");
   }
   if (searchParams.get("start_date")) {
     query = query.gte("start_date", searchParams.get("start_date"));
@@ -127,6 +146,9 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json(data?.[0] ?? {}, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Erro ao criar projeto" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao criar projeto" },
+      { status: 500 },
+    );
   }
 }

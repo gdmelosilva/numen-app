@@ -16,6 +16,7 @@ interface ProjectDetailsTabProps {
 }
 
 export default function ProjectDetailsTab({ project, editMode, setEditMode }: ProjectDetailsTabProps) {
+  console.log('[ProjectDetailsTab] project recebido:', project);
   const [form, setForm] = useState({
     projectName: project.projectName || "",
     projectDesc: project.projectDesc || "",
@@ -27,16 +28,45 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       : (typeof project.project_status === "string" ? project.project_status : ""),
     is_wildcard: project.is_wildcard || false,
     is_247: project.is_247 || false,
-    hours_max: project.hours_max || "",
-    cred_exp_period: project.cred_exp_period || "",
-    value_hr_normal: project.value_hr_normal || "",
-    value_hr_excdn: project.value_hr_excdn || "",
-    value_hr_except: project.value_hr_except || "",
-    value_hr_warn: project.value_hr_warn || "",
-    baseline_hours: project.baseline_hours || "",
-    opening_time: project.opening_time || "",
-    closing_time: project.closing_time || "",
+    hours_max: project.hours_max ?? "",
+    cred_exp_period: project.cred_exp_period ?? "",
+    value_hr_normal: project.value_hr_normal ?? "",
+    value_hr_excdn: project.value_hr_excdn ?? "",
+    value_hr_except: project.value_hr_except ?? "",
+    value_hr_warn: project.value_hr_warn ?? "",
+    baseline_hours: project.baseline_hours ?? "",
+    opening_time: project.opening_time ?? "",
+    closing_time: project.closing_time ?? "",
   });
+  console.log('[ProjectDetailsTab] form inicial:', form);
+
+  // Atualiza o form sempre que o project mudar
+  useEffect(() => {
+    const novoForm = {
+      projectName: project.projectName || "",
+      projectDesc: project.projectDesc || "",
+      start_date: project.start_date || "",
+      end_at: project.end_at || "",
+      project_type: project.project_type || "",
+      project_status: (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status)
+        ? project.project_status.id || ""
+        : (typeof project.project_status === "string" ? project.project_status : ""),
+      is_wildcard: project.is_wildcard || false,
+      is_247: project.is_247 || false,
+      hours_max: project.hours_max ?? "",
+      cred_exp_period: project.cred_exp_period ?? "",
+      value_hr_normal: project.value_hr_normal ?? "",
+      value_hr_excdn: project.value_hr_excdn ?? "",
+      value_hr_except: project.value_hr_except ?? "",
+      value_hr_warn: project.value_hr_warn ?? "",
+      baseline_hours: project.baseline_hours ?? "",
+      opening_time: project.opening_time ?? "",
+      closing_time: project.closing_time ?? "",
+    };
+    console.log('[ProjectDetailsTab] useEffect project mudou, novo form:', novoForm);
+    setForm(novoForm);
+  }, [project]);
+
   const [statusOptions, setStatusOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,20 +128,23 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
         : (typeof project.project_status === "string" ? project.project_status : ""),
       is_wildcard: project.is_wildcard || false,
       is_247: project.is_247 || false,
-      hours_max: project.hours_max || "",
-      cred_exp_period: project.cred_exp_period || "",
-      value_hr_normal: project.value_hr_normal || "",
-      value_hr_excdn: project.value_hr_excdn || "",
-      value_hr_except: project.value_hr_except || "",
-      value_hr_warn: project.value_hr_warn || "",
-      baseline_hours: project.baseline_hours || "",
-      opening_time: project.opening_time || "",
-      closing_time: project.closing_time || "",
+      hours_max: project.hours_max ?? "",
+      cred_exp_period: project.cred_exp_period ?? "",
+      value_hr_normal: project.value_hr_normal ?? "",
+      value_hr_excdn: project.value_hr_excdn ?? "",
+      value_hr_except: project.value_hr_except ?? "",
+      value_hr_warn: project.value_hr_warn ?? "",
+      baseline_hours: project.baseline_hours ?? "",
+      opening_time: project.opening_time ?? "",
+      closing_time: project.closing_time ?? "",
     });
     setEditMode(false);
     setError(null);
     setSuccess(null);
   };
+
+  // Logar valor do input de cobrança antes do return
+  console.log('[ProjectDetailsTab] render input hours_max:', form.hours_max);
 
   return (
     <>
