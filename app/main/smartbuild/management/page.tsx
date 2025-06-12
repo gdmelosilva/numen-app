@@ -25,7 +25,7 @@ export default function SmartbuildManagementPage() {
       setError(null);
       try {
         if (!user?.partner_id) throw new Error("Usuário sem projeto vinculado");
-        const response = await fetch(`/api/smartbuild/tickets?project_id=${user.partner_id}`);
+        const response = await fetch(`/api/smartbuild/tickets?partner_id=${user.partner_id}`);
         if (!response.ok) throw new Error("Erro ao buscar tickets");
         const data = await response.json();
         setTickets(Array.isArray(data) ? data : data?.data || []);
@@ -80,7 +80,7 @@ export default function SmartbuildManagementPage() {
                         </div>
                         <div className="inline-flex items-center gap-1 italic text-md">
                           <UserCircle className="w-4 h-4" />
-                          {ticket.created_by_user?.name || ticket.created_by || "-"}
+                          {ticket.created_by_user ? `${ticket.created_by_user.first_name || ""} ${ticket.created_by_user.last_name || ""}`.trim() || "-" : ticket.created_by || "-"}
                         </div>
                         <Badge variant="default" className="text-md">{ticket.status?.name || ticket.status_id || "-"}</Badge>
                       </div>

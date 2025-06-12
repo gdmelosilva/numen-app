@@ -32,6 +32,9 @@ export type Ticket = {
   priority?: { id: number; name: string };
   partner?: { id: string; partner_desc: string };
   project?: { id: string; projectName: string };
-  created_by_user?: { id: string; name: string };
+  created_by_user?: {
+    last_name: string;
+    first_name: string; id: string; name: string 
+};
   attachments?: TicketAttachment[];
 };
