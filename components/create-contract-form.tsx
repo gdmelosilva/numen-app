@@ -22,11 +22,11 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
   const [end_at, setEndAt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
+  const [partners, setPartners] = useState<{ id: string; name: string; partner_desc?: string; partner_ext_id?: string }[]>([]);
   const [statuses, setStatuses] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    // Buscar parceiros
+    // Buscar parceiros (agora trazendo partner_desc e partner_ext_id)
     fetch("/api/options?type=partners")
       .then((res) => res.json())
       .then((data) => setPartners(data || []));
@@ -45,7 +45,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          projectName,
+          projectName: "", // O backend irá gerar o nome correto
           projectDesc,
           partnerId,
           project_type,
@@ -60,6 +60,8 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
         const data = await response.json();
         throw new Error(data.error || "Erro ao criar projeto");
       }
+      const data = await response.json();
+      setProjectName(data.projectName || ""); // Mostra o nome gerado pelo backend
       if (onCreate) onCreate();
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -83,7 +85,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
           <div className="mb-6 grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>Nome do Projeto</Label>
-              <Input id="projectName" value={projectName} onChange={e => setProjectName(e.target.value)} required />
+              <Input id="projectName" value={projectName} readOnly className="bg-secondary" />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="projectDesc">Descrição</Label>
