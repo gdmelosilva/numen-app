@@ -15,19 +15,19 @@ import {
 import type { Contract } from "@/types/contracts";
 import { toast } from "sonner"
 
-interface ContractTableRowActionsProps<TData> {
+interface SmartbuildTableRowActionsProps<TData> {
   row: Row<TData>
 }
 
-export function ContractTableRowActions<TData extends Contract>({
+export function SmartbuildTableRowActions<TData extends Contract>({
   row,
-}: ContractTableRowActionsProps<TData>) {
+}: SmartbuildTableRowActionsProps<TData>) {
   const router = useRouter();  const handleOpenDetails = () => {
     const contractId = row.original.id;
     if (contractId) {
       // Armazenar os dados do projeto no sessionStorage
       sessionStorage.setItem(`project-${contractId}`, JSON.stringify(row.original));
-      router.push(`/main/admin/contracts/${contractId}`);
+      router.push(`/main/smartbuild/${contractId}`);
     }
   }
   const handleCloseProject = async () => {
