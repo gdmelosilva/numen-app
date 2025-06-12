@@ -89,10 +89,10 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
               <Label htmlFor="projectDesc">Descrição</Label>
               <Input id="projectDesc" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} />
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 w-full w-max-full">
               <Label>ID do Parceiro</Label>
               <Select value={partnerId} onValueChange={setPartnerId} required>
-                <SelectTrigger id="partnerId">
+                <SelectTrigger id="partnerId" className="w-full w-max-full">
                   <SelectValue placeholder="Selecione o parceiro" />
                 </SelectTrigger>
                 <SelectContent>
@@ -102,10 +102,10 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 w-full w-max-full">
               <Label>Tipo de Projeto</Label>
               <Select value={project_type} onValueChange={setProjectType} required>
-                <SelectTrigger id="project_type">
+                <SelectTrigger id="project_type" className="w-full w-max-full">
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -115,10 +115,10 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 w-full w-max-full">
               <Label>Status do Projeto</Label>
               <Select value={project_status} onValueChange={setProjectStatus} required>
-                <SelectTrigger id="project_status">
+                <SelectTrigger id="project_status" className="w-full w-max-full">
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -128,7 +128,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 w-full w-max-full">
               <Label className="flex items-center gap-1">
                 Wildcard?
                 <TooltipProvider>
@@ -145,7 +145,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
                 </TooltipProvider>
               </Label>
               <Select value={is_wildcard === null ? "all" : is_wildcard ? "true" : "false"} onValueChange={v => setIsWildcard(v === "all" ? null : v === "true") }>
-                <SelectTrigger id="is_wildcard"><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectTrigger className="w-full w-max-full" id="is_wildcard"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="true">Sim</SelectItem>
@@ -153,10 +153,10 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 w-full w-max-full">
               <Label>24/7?</Label>
               <Select value={is_247 === null ? "all" : is_247 ? "true" : "false"} onValueChange={v => setIs247(v === "all" ? null : v === "true") }>
-                <SelectTrigger id="is_247"><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectTrigger id="is_247" className="w-full w-max-full"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="true">Sim</SelectItem>

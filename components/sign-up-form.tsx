@@ -197,10 +197,10 @@ export function SignUpForm({
                   }}
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2 w-full w-max-full">
                 <Label htmlFor="role">Função</Label>
                 <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full w-max-full">
                   <SelectValue placeholder="Selecione uma função" />
                   </SelectTrigger>
                   <SelectContent>
@@ -218,14 +218,14 @@ export function SignUpForm({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2 w-full w-max-full">
                 <Label htmlFor="partner">Parceiro</Label>
                 <Select
                   value={partnerId || "none"}
                   onValueChange={v => setPartnerId(v === "none" ? null : v)}
                   disabled={!!(currentUser && currentUser.is_client && currentUser.role === 1)}
                 >
-                  <SelectTrigger disabled={!!(currentUser && currentUser.is_client && currentUser.role === 1)}>
+                  <SelectTrigger disabled={!!(currentUser && currentUser.is_client && currentUser.role === 1)} className="w-full w-max-full">
                     <SelectValue placeholder={isClient ? "Opcional para Usuário Cliente" : "Selecione um parceiro"} />
                   </SelectTrigger>
                   <SelectContent>

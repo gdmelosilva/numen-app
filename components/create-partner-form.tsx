@@ -154,9 +154,6 @@ export function CreatePartnerForm({
                     ))}
                   </SelectContent>
                 </Select>
-                {partner_mkt_sg.id && (
-                  <div className="text-xs text-muted-foreground mt-1">{partner_mkt_sg.name}</div>
-                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="is_compadm">Tipo Parceiro</Label>

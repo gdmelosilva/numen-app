@@ -182,8 +182,8 @@ export function AppSidebar() {
       isActive: true,
       newTab: false,
       items: [
-        { title: "Gestão de Horas", url: "/main/projects/management", newTab: false },
-        { title: "Apontamento de Horas", url: "/main/projects/create", newTab: false },
+        { title: "Gestão de Horas", url: "/main/timesheet/management", newTab: false },
+        { title: "Apontamento de Horas", url: "/main/timesheet/create", newTab: false },
       ],
     },
     { type: "separator" },
@@ -193,6 +193,10 @@ export function AppSidebar() {
       icon: HandCoins,
       isActive: true,
       newTab: false,
+      items: [  
+        { title: "Relatório de Fechamentos", url: "/main/timeflow/management", newTab: false },
+        { title: "Fechamento de Período", url: "/main/timeflow/create", newTab: false },
+      ]
     },
     { type: "separator" },
     {
@@ -201,10 +205,10 @@ export function AppSidebar() {
       icon: WrenchIcon,
       isActive: true,
       newTab: false,
-      items: [
-        { title: "Cargos", url: "/main/utils/roles", newTab: false },
-        { title: "Teste", url: "/main/utils/test", newTab: false }
-      ],
+      // items: [
+      //   { title: "Cargos", url: "/main/utils/roles", newTab: false },
+      //   { title: "Teste", url: "/main/utils/test", newTab: false }
+      // ],
       roles: ["ADMIN"],
     }
   ], []);
