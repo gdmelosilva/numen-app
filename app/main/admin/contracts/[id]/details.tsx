@@ -21,8 +21,8 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
   const [form, setForm] = useState({
     projectName: project.projectName || "",
     projectDesc: project.projectDesc || "",
-    start_date: project.start_date || "",
-    end_at: project.end_at || "",
+    start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
+    end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
     project_type: project.project_type || "",
     project_status: (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status)
       ? project.project_status.id || ""
@@ -46,8 +46,8 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     const novoForm = {
       projectName: project.projectName || "",
       projectDesc: project.projectDesc || "",
-      start_date: project.start_date || "",
-      end_at: project.end_at || "",
+      start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
+      end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
       project_type: project.project_type || "",
       project_status: (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status)
         ? project.project_status.id || ""
@@ -140,6 +140,16 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       changedFields.id = project.id;
       changedFields.partnerId = project.partnerId || project.partner?.id || null;
       changedFields.updated_at = new Date().toISOString();
+      // Garante que todos os campos essenciais sejam enviados
+      changedFields.start_date = form.start_date || (project.start_date ? String(project.start_date).slice(0, 10) : "");
+      changedFields.end_at = form.end_at || (project.end_at ? String(project.end_at).slice(0, 10) : "");
+      changedFields.projectName = form.projectName || project.projectName || "";
+      changedFields.projectDesc = form.projectDesc || project.projectDesc || "";
+      changedFields.partnerId = project.partnerId || (project.partner && project.partner.id) || "";
+      changedFields.project_type = form.project_type || project.project_type || "";
+      changedFields.is_wildcard = form.is_wildcard ?? project.is_wildcard ?? false;
+      changedFields.is_247 = form.is_247 ?? project.is_247 ?? false;
+      changedFields.project_status = form.project_status || (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status ? project.project_status.id : project.project_status) || "";
       const response = await fetch("/api/admin/contracts/update", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -163,8 +173,8 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     setForm({
       projectName: project.projectName || "",
       projectDesc: project.projectDesc || "",
-      start_date: project.start_date || "",
-      end_at: project.end_at || "",
+      start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
+      end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
       project_type: project.project_type || "",
       project_status: (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status)
         ? project.project_status.id || ""

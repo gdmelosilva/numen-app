@@ -25,8 +25,6 @@ export function ContractTableRowActions<TData extends Contract>({
   const router = useRouter();  const handleOpenDetails = () => {
     const contractId = row.original.id;
     if (contractId) {
-      // Armazenar os dados do projeto no sessionStorage
-      sessionStorage.setItem(`project-${contractId}`, JSON.stringify(row.original));
       router.push(`/main/admin/contracts/${contractId}`);
     }
   }
@@ -49,6 +47,14 @@ export function ContractTableRowActions<TData extends Contract>({
       // Atualizar contrato
       const now = new Date();
       const endAt = now.toISOString().slice(0, 10); // YYYY-MM-DD
+      // Garante que todos os campos essenciais sejam enviados
+      const startDate = row.original.start_date ? String(row.original.start_date).slice(0, 10) : "";
+      const projectName = row.original.projectName || "";
+      const projectDesc = row.original.projectDesc || "";
+      const partnerId = row.original.partnerId || (row.original.partner && row.original.partner.id) || "";
+      const project_type = row.original.project_type || "";
+      const is_wildcard = row.original.is_wildcard ?? false;
+      const is_247 = row.original.is_247 ?? false;
       const res = await fetch("/api/admin/contracts/update", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -56,6 +62,13 @@ export function ContractTableRowActions<TData extends Contract>({
           id: contractId,
           project_status: encerrado.id,
           end_at: endAt,
+          start_date: startDate,
+          projectName,
+          projectDesc,
+          partnerId,
+          project_type,
+          is_wildcard,
+          is_247,
         }),
       });
       if (!res.ok) {
