@@ -82,12 +82,12 @@ Vai ficar pra ver com o Felipe:
 - [ ] Verificar a adicao de roles
 
 Backlog geral:
-- [ ] Tirar texto "numen" do arquivo svg e manter a proporção quadradinha
+- [X] Tirar texto "numen" do arquivo svg e manter a proporção quadradinha
 - [X] Alterar o email de envio, alterar as cores do email template pro padrão.
 - [ ] Ajustar o export para excel
 - [ ] Verificar visão do cliente para as abas pertinentes (inclusive para onde ele está sendo       redirecionado)
 - [ ] Validações de registro
-- [ ] Ajustar TODOS os selects
+- [X] Ajustar TODOS os selects
 - [ ] Verificar estrutura de pastas de arquivo
 
 Backlog Contratos: (pegar referencia no projeto antigo)

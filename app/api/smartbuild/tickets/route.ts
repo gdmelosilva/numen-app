@@ -4,13 +4,14 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const project_id = searchParams.get("project_id");
+  const partner_id = searchParams.get("partner_id");
 
-  if (!project_id) {
-    return NextResponse.json({ error: "project_id é obrigatório" }, { status: 400 });
+  if (!project_id && !partner_id) {
+    return NextResponse.json({ error: "project_id ou partner_id é obrigatório" }, { status: 400 });
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("ticket")
     .select(`
       id,
@@ -41,8 +42,36 @@ export async function GET(request: Request) {
       project:fk_project(id, projectName),
       created_by_user:ticket_created_by_fkey(id, first_name, last_name)
     `)
-    .eq("project_id", project_id)
     .order("created_at", { ascending: false });
+
+  if (project_id) {
+    query = query.eq("project_id", project_id);
+  }
+  if (partner_id) {
+    query = query.eq("partner_id", partner_id);
+  }
+
+  // Filtros adicionais
+  const filterableFields = [
+    "external_id",
+    "title",
+    "status_id",
+    "priority_id",
+    "type_id",
+    "category_id",
+    "is_closed",
+    "created_at",
+    "planned_end_date",
+    "actual_end_date"
+  ];
+  filterableFields.forEach((field) => {
+    const value = searchParams.get(field);
+    if (value) {
+      query = query.eq(field, value);
+    }
+  });
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

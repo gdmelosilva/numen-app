@@ -52,7 +52,41 @@ export default function TicketDetailsPage() {
     msgHours: typeof msg.hours === 'number' || typeof msg.hours === 'string' ? msg.hours : undefined,
     msgBody: typeof msg.body === 'string' ? msg.body : '',
     createdAt: typeof msg.created_at === 'string' ? msg.created_at : '',
-    user: typeof msg.user === 'object' && msg.user !== null ? (msg.user as { name?: string }) : { name: '' },
+    user: (() => {
+      // 1. user
+      if (typeof msg.user === 'object' && msg.user !== null) {
+        const u = msg.user as { name?: string; first_name?: string; last_name?: string };
+        if (u.first_name || u.last_name) {
+          return { name: `${u.first_name || ''} ${u.last_name || ''}`.trim() };
+        }
+        if (u.name) return { name: u.name };
+      }
+      // 2. created_by_user
+      if (typeof msg.created_by_user === 'object' && msg.created_by_user !== null) {
+        const u = msg.created_by_user as { name?: string; first_name?: string; last_name?: string };
+        if (u.first_name || u.last_name) {
+          return { name: `${u.first_name || ''} ${u.last_name || ''}`.trim() };
+        }
+        if (u.name) return { name: u.name };
+      }
+      // 3. created_by (objeto ou string)
+      if (typeof msg.created_by === 'object' && msg.created_by !== null) {
+        const u = msg.created_by as { name?: string; first_name?: string; last_name?: string };
+        if (u.first_name || u.last_name) {
+          return { name: `${u.first_name || ''} ${u.last_name || ''}`.trim() };
+        }
+        if (u.name) return { name: u.name };
+        // fallback: se tiver email
+        if ('email' in u && typeof (u as { email?: string }).email === 'string' && (u as { email?: string }).email) {
+          return { name: (u as { email?: string }).email! };
+        }
+      }
+      if (typeof msg.created_by === 'string') return { name: msg.created_by };
+      // 4. Se vier como string
+      if (typeof msg.user === 'string') return { name: msg.user };
+      if (typeof msg.created_by_user === 'string') return { name: msg.created_by_user };
+      return { name: '' };
+    })(),
     attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
     is_system: Boolean(msg.is_system), // Mapeia is_system
     msg_ref: typeof msg.msg_ref === 'string' ? msg.msg_ref : undefined,
@@ -99,7 +133,6 @@ export default function TicketDetailsPage() {
       }
     }
     if (id) fetchTicket();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Busca mensagens apenas ao ativar a aba 'messages' e se ainda não carregou
@@ -158,6 +191,30 @@ export default function TicketDetailsPage() {
     // Add more status options here if available from API
   ];
 
+  // Função utilitária para montar o nome do criador do ticket, igual ao padrão das mensagens
+  function getTicketCreatorName(ticket: Ticket): string {
+    // 1. created_by_user
+    if (typeof ticket.created_by_user === 'object' && ticket.created_by_user !== null) {
+      const u = ticket.created_by_user as { name?: string; first_name?: string; last_name?: string; email?: string };
+      if (u.first_name || u.last_name) {
+        return `${u.first_name || ''} ${u.last_name || ''}`.trim();
+      }
+      if (u.name) return u.name;
+      if (u.email) return u.email;
+    }
+    // 2. created_by (objeto ou string)
+    if (typeof ticket.created_by === 'object' && ticket.created_by !== null) {
+      const u = ticket.created_by as { name?: string; first_name?: string; last_name?: string; email?: string };
+      if (u.first_name || u.last_name) {
+        return `${u.first_name || ''} ${u.last_name || ''}`.trim();
+      }
+      if (u.name) return u.name;
+      if (u.email) return u.email;
+    }
+    if (typeof ticket.created_by === 'string') return ticket.created_by;
+    return '-';
+  }
+
   return (
     <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
       <TabsList className="mb-4">
@@ -180,9 +237,7 @@ export default function TicketDetailsPage() {
                 </div>
                 <div className="inline-flex items-center gap-1 italic text-md">
                   <UserCircle className="w-4 h-4" />
-                  {typeof ticket.created_by_user === "object" && ticket.created_by_user !== null && 'name' in ticket.created_by_user
-                    ? ticket.created_by_user.name
-                    : (typeof ticket.created_by === 'string' ? ticket.created_by : '-')}
+                  {getTicketCreatorName(ticket)}
                 </div>
                 <Badge variant="default" className="text-md">{(typeof ticket.status === 'object' && ticket.status && 'name' in ticket.status) ? ticket.status.name : (typeof ticket.status_id === 'string' || typeof ticket.status_id === 'number' ? ticket.status_id : '-')}</Badge>
               </div>

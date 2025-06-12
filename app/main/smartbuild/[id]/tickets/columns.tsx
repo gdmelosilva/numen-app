@@ -1,3 +1,5 @@
+"use client";
+
 import { ColumnDef } from "@tanstack/react-table";
 import type { Ticket } from "@/types/tickets";
 import { Badge } from "@/components/ui/badge";
