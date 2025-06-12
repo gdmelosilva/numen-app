@@ -20,6 +20,10 @@ const badgeVariants = cva(
           "border-transparent bg-approved text-approved-foreground hover:bg-approved/80",
         accent:
           "border-transparent bg-accent text-accent-foreground hover:bg-accent/80",
+        primary:
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        "primary-2":
+          "border-transparent bg-primary-2 text-primary-2-foreground hover:bg-primary-2/80",
       },
     },
     defaultVariants: {

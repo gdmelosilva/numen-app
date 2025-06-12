@@ -32,10 +32,10 @@ export const columns: ColumnDef<Contract>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("project_type") as string;
-      const typeColorMap: Record<string, "accent" | "secondary" | "outline" | "default"> = {
+      const typeColorMap: Record<string, "accent" | "secondary" | "outline" | "default" | "primary" | "approved"> = {
         "AMS": "accent",
-        "BSHOP": "secondary",
-        "TKEY": "outline",
+        "BSHOP": "primary",
+        "TKEY": "approved",
       };
       const typeLabelMap: Record<string, string> = {
         "AMS": "AMS",
@@ -78,12 +78,14 @@ export const columns: ColumnDef<Contract>[] = [
       const status = row.original.project_status;
       const name = status?.name || "-";
       const color = status?.color || "default";
-      const variantMap: Record<string, "default" | "destructive" | "secondary" | "outline" | "ghost" | "approved" | "accent"> = {
-        success: "approved",
-        warning: "accent",
-        error: "destructive",
-        info: "secondary",
-        default: "outline",
+      const variantMap: Record<string, "default" | "destructive" | "secondary" | "outline" | "ghost" | "approved" | "accent" |  "primary" | "primary-2"> = {
+        cyan: "approved",
+        purple: "accent",
+        red: "destructive",
+        gray: "secondary",
+        colorless: "outline",
+        orange: "primary",
+        blue: "primary-2"
       };
       const variant = variantMap[color] ?? "outline";
       return (
@@ -105,12 +107,12 @@ export const columns: ColumnDef<Contract>[] = [
         : value 
           ? (
               <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4 inline" />Sim
+                <CheckCircle2 className="w-4 h-4 inline text-approved" />Sim
               </span>
             )
           : (
               <span className="flex items-center gap-1">
-                <XCircle className="w-4 h-4 inline" />Não
+                <XCircle className="w-4 h-4 inline text-destructive" />Não
               </span>
             )
     },
@@ -127,12 +129,12 @@ export const columns: ColumnDef<Contract>[] = [
         : value 
           ? (
               <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4 inline" />Sim
+                <CheckCircle2 className="w-4 h-4 inline text-approved" />Sim
               </span>
             )
           : (
               <span className="flex items-center gap-1">
-                <XCircle className="w-4 h-4 inline" />Não
+                <XCircle className="w-4 h-4 inline text-destructive" />Não
               </span>
             )
     },
