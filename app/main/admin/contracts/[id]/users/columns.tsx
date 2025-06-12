@@ -1,6 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
-import type { User } from "@/types/users";
+import type { User as BaseUser } from "@/types/users";
 import { Badge } from "@/components/ui/badge";
+
+type User = BaseUser & {
+  horas_consumidas?: number;
+};
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -34,5 +38,15 @@ export const columns: ColumnDef<User>[] = [
     accessorKey: "is_active",
     header: "Ativo?",
     cell: ({ row }) => row.original.is_active ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>,
+  },
+  {
+    accessorKey: "hours_max",
+    header: "Horas Alocadas",
+    cell: ({ row }) => row.original.hours_max ?? "-",
+  },
+  {
+    id: "horas_consumidas",
+    header: "Horas Consumidas",
+    cell: ({ row }) => row.original.horas_consumidas ?? <span className="text-muted-foreground">...</span>,
   },
 ];

@@ -13,7 +13,8 @@ type ProjectStatus = {
 function mapProjectRow(row: unknown) {
   const r = row as Record<string, unknown>;
   const projectStatus = r.project_status as ProjectStatus | undefined;
-  return {
+  const isAMS = r.project_type === "AMS";
+  const base = {
     id: r.id,
     projectExtId: r.projectExtId?.toString() ?? "",
     projectName: r.projectName ?? "",
@@ -34,6 +35,14 @@ function mapProjectRow(row: unknown) {
       ? new Date(r.start_date as string).toISOString()
       : "",
     end_at: r.end_at ? new Date(r.end_at as string).toISOString() : "",
+    opening_time: r.opening_time ?? null,
+    closing_time: r.closing_time ?? null,
+  };
+  if (isAMS) {
+    return base;
+  }
+  return {
+    ...base,
     // Campos de cobrança
     hours_max: r.hours_max ?? null,
     cred_exp_period: r.cred_exp_period ?? null,
@@ -42,8 +51,6 @@ function mapProjectRow(row: unknown) {
     value_hr_except: r.value_hr_except ?? null,
     value_hr_warn: r.value_hr_warn ?? null,
     baseline_hours: r.baseline_hours ?? null,
-    opening_time: r.opening_time ?? null,
-    closing_time: r.closing_time ?? null,
   };
 }
 
@@ -123,22 +130,44 @@ export async function POST(req: NextRequest) {
       is_247,
       start_date,
       end_at,
+      hours_max,
+      cred_exp_period,
+      value_hr_normal,
+      value_hr_excdn,
+      value_hr_except,
+      value_hr_warn,
+      baseline_hours,
+      opening_time,
+      closing_time,
     } = body;
+    // Se for AMS, não insere campos de cobrança
+    const insertData: Record<string, unknown> = {
+      projectName,
+      projectDesc,
+      partnerId,
+      project_type,
+      project_status,
+      is_wildcard,
+      is_247,
+      start_date: start_date ? new Date(start_date).toISOString() : null,
+      end_at: end_at ? new Date(end_at).toISOString() : null,
+      opening_time,
+      closing_time,
+    };
+    if (project_type !== "AMS") {
+      insertData.hours_max = hours_max;
+      insertData.cred_exp_period = cred_exp_period;
+      insertData.value_hr_normal = value_hr_normal;
+      insertData.value_hr_excdn = value_hr_excdn;
+      insertData.value_hr_except = value_hr_except;
+      insertData.value_hr_warn = value_hr_warn;
+      insertData.baseline_hours = baseline_hours;
+    }
     // Insert into DB
     const { data, error } = await supabase
       .from("project")
       .insert([
-        {
-          projectName,
-          projectDesc,
-          partnerId,
-          project_type,
-          project_status,
-          is_wildcard,
-          is_247,
-          start_date: start_date ? new Date(start_date).toISOString() : null,
-          end_at: end_at ? new Date(end_at).toISOString() : null,
-        },
+        insertData,
       ])
       .select();
     if (error) {

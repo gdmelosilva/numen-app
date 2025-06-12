@@ -8,6 +8,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import ProjectUsersTab from "./users/ProjectUsersTab";
+import { toast } from "sonner";
 
 interface ProjectDetailsTabProps {
   project: Contract;
@@ -70,7 +71,6 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
   const [statusOptions, setStatusOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     // Fetch project status options
@@ -91,7 +91,6 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSuccess(null);
     try {
       // Monta objeto apenas com campos alterados
       const changedFields: Record<string, unknown> = {};
@@ -158,7 +157,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
         throw new Error(data.error || "Erro ao atualizar projeto");
       }
       setEditMode(false);
-      setSuccess("Projeto atualizado com sucesso.");
+      toast.success("Projeto atualizado com sucesso.");
       // Optionally: refetch project data here
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
@@ -191,7 +190,6 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     });
     setEditMode(false);
     setError(null);
-    setSuccess(null);
   };
 
   // Logar valor do input de cobrança antes do return
@@ -217,12 +215,13 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
         )}
       </div>
       {error && <div className="text-destructive px-1 pt-2">{error}</div>}
-      {success && <div className="text-green-600 px-1 pt-2">{success}</div>}
       {/* Cabeçalho para Informações do Contrato */}
       <Card className="mt-0">
-        <h2 className="flex items-center text-lg font-semibold px-1 pt-4 pl-5">
-          <Info className="w-4 h-4 mr-2" /> Informações do Contrato
-        </h2>
+        <div className="px-6 pb-4 pt-2">
+          <h2 className="flex items-center text-lg font-semibold">
+            <Info className="w-4 h-4 mr-2" /> Informações do Contrato
+          </h2>
+        </div>
         <CardContent className="pt-4">
           <form className="grid gap-6 md:grid-cols-3 lg:grid-cols-4" onSubmit={handleSave}>
             {/* Nome */}
@@ -264,97 +263,102 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
               <Label htmlFor="project_status" className="text-xs text-muted-foreground">Status</Label>
               <Input id="project_status" name="project_status" value={statusOptions.find(s => s.id === form.project_status)?.name || ""} className="h-9" disabled />
             </div>
-            {/* Wildcard e 24/7 ao final */}
-            <div className="flex gap-6 items-end md:col-span-2 lg:col-span-2">
+            {/* Horário de Abertura */}
+            <div>
+              <Label htmlFor="opening_time" className="text-xs text-muted-foreground">Horário de Abertura</Label>
+              <Input id="opening_time" name="opening_time" type="time" value={form.opening_time || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>
+            {/* Linha com Horário de Fechamento, Wildcard e 24/7 lado a lado */}
+            <div className="flex gap-4 items-end">
               <div>
-                <Label className="text-xs text-muted-foreground">Wildcard?</Label>
-                {editMode ? (
-                  <Select
+                <Label htmlFor="closing_time" className="text-xs text-muted-foreground">Horário de Fechamento</Label>
+                <Input id="closing_time" name="closing_time" type="time" value={form.closing_time || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+              </div>
+            </div>
+            <div className="flex gap-4 items-end">
+              <div>
+                  <Label className="text-xs text-muted-foreground">Wildcard?</Label>
+                  {editMode ? (
+                    <Select
                     value={form.is_wildcard ? "true" : "false"}
                     onValueChange={v => setForm(f => ({ ...f, is_wildcard: v === "true" }))}
                     disabled={!editMode}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Sim</SelectItem>
-                      <SelectItem value="false">Não</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div>{project.is_wildcard ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
-                )}
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">24/7?</Label>
-                {editMode ? (
-                  <Select
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Sim</SelectItem>
+                        <SelectItem value="false">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div>{project.is_wildcard ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">24/7?</Label>
+                  {editMode ? (
+                    <Select
                     value={form.is_247 ? "true" : "false"}
                     onValueChange={v => setForm(f => ({ ...f, is_247: v === "true" }))}
                     disabled={!editMode}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Sim</SelectItem>
-                      <SelectItem value="false">Não</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div>{project.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
-                )}
-              </div>
-            </div>
-            {/* Nova seção: Informações de Cobrança */}
-            <div className="md:col-span-4 pt-6">
-              <h2 className="flex items-center text-lg font-semibold pt-4 pb-3">
-                <CircleDollarSignIcon className="w-4 h-4 mr-2" />Informações de Cobrança
-              </h2>
-              {/* Linha 1: Horas Máx, Horas Baseline, Horário de Abertura, Horário de Fechamento */}
-              <div className="grid gap-6 md:grid-cols-4">
-                <div>
-                  <Label htmlFor="hours_max" className="text-xs text-muted-foreground">Horas Máx.</Label>
-                  <Input id="hours_max" name="hours_max" type="number" value={form.hours_max || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                </div>
-                <div>
-                  <Label htmlFor="baseline_hours" className="text-xs text-muted-foreground">Horas Baseline</Label>
-                  <Input id="baseline_hours" name="baseline_hours" type="number" value={form.baseline_hours || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                </div>
-                <div>
-                  <Label htmlFor="opening_time" className="text-xs text-muted-foreground">Horário de Abertura</Label>
-                  <Input id="opening_time" name="opening_time" type="time" value={form.opening_time || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                </div>
-                <div>
-                  <Label htmlFor="closing_time" className="text-xs text-muted-foreground">Horário de Fechamento</Label>
-                  <Input id="closing_time" name="closing_time" type="time" value={form.closing_time || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Sim</SelectItem>
+                        <SelectItem value="false">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div>{project.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
+                  )}
                 </div>
               </div>
-              {/* Linha 2: Valores e Período Exp. Crédito */}
-              <div className="grid gap-6 md:grid-cols-4 mt-6">
-                <div>
-                  <Label htmlFor="value_hr_normal" className="text-xs text-muted-foreground">Valor Hora Normal</Label>
-                  <Input id="value_hr_normal" name="value_hr_normal" type="number" step="0.01" value={form.value_hr_normal || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+            {/* Seção de cobrança só aparece se for AMS */}
+            {form.project_type === "AMS" && (
+              <div className="md:col-span-4 pt-6">
+                <h2 className="flex items-center text-lg font-semibold pt-4 pb-3">
+                  <CircleDollarSignIcon className="w-4 h-4 mr-2" />Informações de Cobrança
+                </h2>
+                {/* Linha 1: Horas Máx, Horas Baseline */}
+                <div className="grid gap-6 md:grid-cols-4">
+                  <div>
+                    <Label htmlFor="hours_max" className="text-xs text-muted-foreground">Horas Máx.</Label>
+                    <Input id="hours_max" name="hours_max" type="number" value={form.hours_max || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                  </div>
+                  <div>
+                    <Label htmlFor="baseline_hours" className="text-xs text-muted-foreground">Horas Baseline</Label>
+                    <Input id="baseline_hours" name="baseline_hours" type="number" value={form.baseline_hours || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="value_hr_excdn" className="text-xs text-muted-foreground">Valor Hora Excedente</Label>
-                  <Input id="value_hr_excdn" name="value_hr_excdn" type="number" step="0.01" value={form.value_hr_excdn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                </div>
-                <div>
-                  <Label htmlFor="value_hr_except" className="text-xs text-muted-foreground">Valor Hora Exceção</Label>
-                  <Input id="value_hr_except" name="value_hr_except" type="number" step="0.01" value={form.value_hr_except || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                </div>
-                <div>
-                  <Label htmlFor="value_hr_warn" className="text-xs text-muted-foreground">Valor Hora Aviso</Label>
-                  <Input id="value_hr_warn" name="value_hr_warn" type="number" step="0.01" value={form.value_hr_warn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                </div>
-                <div>
-                  <Label htmlFor="cred_exp_period" className="text-xs text-muted-foreground">Período Exp. Crédito (dias)</Label>
-                  <Input id="cred_exp_period" name="cred_exp_period" type="number" value={form.cred_exp_period || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                {/* Linha 2: Valores e Período Exp. Crédito */}
+                <div className="grid gap-6 md:grid-cols-4 mt-6">
+                  <div>
+                    <Label htmlFor="value_hr_normal" className="text-xs text-muted-foreground">Valor Hora Normal</Label>
+                    <Input id="value_hr_normal" name="value_hr_normal" type="number" step="0.01" value={form.value_hr_normal || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                  </div>
+                  <div>
+                    <Label htmlFor="value_hr_excdn" className="text-xs text-muted-foreground">Valor Hora Excedente</Label>
+                    <Input id="value_hr_excdn" name="value_hr_excdn" type="number" step="0.01" value={form.value_hr_excdn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                  </div>
+                  <div>
+                    <Label htmlFor="value_hr_except" className="text-xs text-muted-foreground">Valor Hora Exceção</Label>
+                    <Input id="value_hr_except" name="value_hr_except" type="number" step="0.01" value={form.value_hr_except || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                  </div>
+                  <div>
+                    <Label htmlFor="value_hr_warn" className="text-xs text-muted-foreground">Valor Hora Aviso</Label>
+                    <Input id="value_hr_warn" name="value_hr_warn" type="number" step="0.01" value={form.value_hr_warn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                  </div>
+                  <div>
+                    <Label htmlFor="cred_exp_period" className="text-xs text-muted-foreground">Período Exp. Crédito (dias)</Label>
+                    <Input id="cred_exp_period" name="cred_exp_period" type="number" value={form.cred_exp_period || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </form>
         </CardContent>
       </Card>
