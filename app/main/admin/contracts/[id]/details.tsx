@@ -18,6 +18,22 @@ interface ProjectDetailsTabProps {
 
 export default function ProjectDetailsTab({ project, editMode, setEditMode }: ProjectDetailsTabProps) {
   console.log('[ProjectDetailsTab] project recebido:', project);
+  // Determine if the project is closed (status 'Encerrado')
+  const isClosed = (() => {
+    let status = '';
+    if (typeof project.project_status === 'object' && project.project_status !== null) {
+      if ('name' in project.project_status && typeof project.project_status.name === 'string') {
+        status = project.project_status.name;
+      } else if ('label' in project.project_status && typeof project.project_status.label === 'string') {
+        status = project.project_status.label;
+      } else if ('id' in project.project_status && typeof project.project_status.id === 'string') {
+        status = project.project_status.id;
+      }
+    } else if (typeof project.project_status === 'string') {
+      status = project.project_status;
+    }
+    return status.trim().toLowerCase() === 'encerrado';
+  })();
   const [form, setForm] = useState({
     projectName: project.projectName || "",
     projectDesc: project.projectDesc || "",
@@ -212,7 +228,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             </Button>
           </div>
         ) : (
-          <Button size="sm" variant="outline" type="button" onClick={() => setEditMode((v) => !v)}>
+          <Button size="sm" variant="outline" type="button" onClick={() => { if (!isClosed) setEditMode((v) => !v); }} disabled={isClosed}>
             <Pencil className="w-4 h-4 mr-1" /> Editar
           </Button>
         )}
