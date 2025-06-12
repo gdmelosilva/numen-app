@@ -133,7 +133,6 @@ export default function TicketDetailsPage() {
       }
     }
     if (id) fetchTicket();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Busca mensagens apenas ao ativar a aba 'messages' e se ainda não carregou
