@@ -33,4 +33,14 @@ export type Contract = {
   is_247: boolean | null;
   start_date?: string | null;
   end_at: string;
+  // Campos de cobrança
+  hours_max?: number | null;
+  cred_exp_period?: number | null;
+  value_hr_normal?: number | null;
+  value_hr_excdn?: number | null;
+  value_hr_except?: number | null;
+  value_hr_warn?: number | null;
+  baseline_hours?: number | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
 };

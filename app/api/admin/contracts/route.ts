@@ -42,6 +42,9 @@ export async function GET(req: NextRequest) {
   let query = supabase.from("project").select("*, partner_name: fk_project_partner(partner_desc), project_status: fk_project_status(id, name, color)", { count: "exact" });
 
   // Filtering
+  if (searchParams.get("id")) {
+    query = query.eq("id", searchParams.get("id"));
+  }
   if (searchParams.get("projectExtId")) {
     query = query.eq("projectExtId", searchParams.get("projectExtId"));
   }
@@ -83,7 +86,7 @@ export async function GET(req: NextRequest) {
 
   // Map DB rows to frontend shape
   const projects = (data || []).map(mapProjectRow);
-  return NextResponse.json(projects);
+  return NextResponse.json({ data: projects });
 }
 
 export async function POST(req: NextRequest) {
