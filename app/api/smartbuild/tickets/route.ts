@@ -42,7 +42,8 @@ export async function GET(request: Request) {
       project:fk_project(id, projectName),
       created_by_user:ticket_created_by_fkey(id, first_name, last_name)
     `)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .eq("type_id", 2);
 
   if (project_id) {
     query = query.eq("project_id", project_id);
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
     query = query.eq("partner_id", partner_id);
   }
 
-  // Filtros adicionais
+  // Remover filtro fk_type_id do filterableFields, pois agora é obrigatório
   const filterableFields = [
     "external_id",
     "title",
