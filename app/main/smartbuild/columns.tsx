@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
-import { ContractTableRowActions } from "@/components/smartbuild-table-row-actions";
+import { SmartbuildTableRowActions } from "@/components/smartbuild-table-row-actions";
 import type { Contract } from "@/types/contracts";
 
 export const columns: ColumnDef<Contract>[] = [
@@ -95,6 +95,6 @@ export const columns: ColumnDef<Contract>[] = [
 	},
 	{
 		id: "actions",
-		cell: ({ row }) => <ContractTableRowActions row={row} />,
+		cell: ({ row }) => <SmartbuildTableRowActions row={row} />,
 	},
 ];
