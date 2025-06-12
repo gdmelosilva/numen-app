@@ -85,6 +85,22 @@ const BreadcrumbSeparator = ({
 );
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator";
 
+// Breadcrumb label dictionary for direct substitution
+const breadcrumbDictionary: Record<string, string> = {
+  Main: "Página Principal",
+  Admin: "Administrativo",
+  Smartbuild: "Smartbuild",
+  Smartcare: "Smartcare",
+  // Adicione mais substituições conforme necessário
+};
+
+/**
+ * Retorna o label substituído para o breadcrumb, ou o próprio valor se não houver substituição.
+ */
+export function getBreadcrumbLabel(key: string): string {
+  return breadcrumbDictionary[key] || key;
+}
+
 export {
   Breadcrumb,
   BreadcrumbList,
@@ -92,4 +108,4 @@ export {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-}; 
+};

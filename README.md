@@ -47,28 +47,9 @@ Feitos:
 - [X] Ajustar filtro status de projeto para trazer o select da tabela
 - [X] Ajustar Coluna Tipo de Projeto para trazer a Badge conforme enum (AMS, Bodyshop ou Turnkey)
 - [X] Ajustar Coluna booleana para ter uma badge de sim / não
-
-Vai ficar pra ver com o Felipe:
-- [ ] Encerrar a Sessão automáticamente com 1h de uso (Supabase // Precisamos do plano Pro)
-- [ ] Verificar a adicao de roles
-
-Backlog geral:
-- [ ] Tirar texto "numen" do arquivo svg e manter a proporção quadradinha
-
-Backlog Utilitarios: **Deixar por ultimo!
-- [ ] Cargos - Depois de criar, atualizar tabela (adicionar Fetch)
-- [ ] Cargos - Verificar Politica de Delete (cacete do caralho)
-- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
-
-Backlog Users: (Finalizado!)
-- [ ] Fetch após inativar / ativar / alterar *
-- [ ] Fetch dividido (para paginação) *
-
-Backlog Parceiros:
-- [ ] Fetch após inativar / ativar / alterar *
-- [ ] Criar botão "Exportar Excel"
-- [ ] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
-- [ ] Adicionar vincular recurso (dialogo com tabela + filtro de busca por nome / email)
+- [X] Criar botão "Exportar Excel"
+- [X] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
+- [X] Adicionar vincular recurso (dialogo com tabela + filtro de busca por nome / email)
 - [X] Remover filtro Buscar
 - [X] Alterar ID Externo por Id.Parceiro
 - [X] Alterar Descrição por Nome
@@ -79,9 +60,32 @@ Backlog Parceiros:
 - [X] Criar botão "Exportar Excel"
 - [X] Incluir campos de endereço nos detalhes do parceiro (colocar um divisor e os campos abaixo)
 - [X] Corrigir filtro de usuários por parceiro (ta trazendo todo mundo carai)
-- [ ] Fetch após inativar / ativar / alterar
-- [ ] Consertar o campo de Segmento no exportar Excel
 - [X] Adicionar botões de Vincular / Desvincular usuário ao parceiro
+
+Vai ficar pra ver com o Felipe:
+- [ ] Encerrar a Sessão automáticamente com 1h de uso (Supabase // Precisamos do plano Pro)
+- [ ] Verificar a adicao de roles
+
+Backlog geral:
+- [ ] Tirar texto "numen" do arquivo svg e manter a proporção quadradinha
+- [ ] Alterar o email de envio, alterar as cores do email template pro padrão.
+- [ ] Ajustar o export para excel
+- [ ] Verificar visão do cliente para as abas pertinentes (inclusive para onde ele está sendo       redirecionado)
+- [ ] Validações de registro
+- [ ] Ajustar TODOS os selects
+
+Backlog Utilitarios: **Deixar por ultimo!
+- [ ] Cargos - Depois de criar, atualizar tabela (adicionar Fetch)
+- [ ] Cargos - Verificar Politica de Delete (cacete do caralho)
+- [ ] Ajustar Deletar Cargo - Atualmente não está passando o id corretamente
+
+Backlog Users: (Finalizado!)
+- [ ] Fetch após inativar / ativar / alterar *
+- [ ] Fetch dividido (para paginação) *
+
+Backlog Parceiros: (Finalizado!)
+- [ ] Fetch após inativar / ativar / alterar *
+- [ ] Consertar o campo de Segmento no exportar Excel
 
 Backlog Contratos: (pegar referencia no projeto antigo)
 - [ ] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...

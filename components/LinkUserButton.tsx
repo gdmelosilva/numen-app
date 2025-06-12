@@ -11,6 +11,7 @@ import { Loader2, Link2 } from "lucide-react";
 import React, { useState } from "react";
 import type { User } from "@/types/users";
 import { Input } from "./ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface LinkUserButtonProps {
   partnerId: string;
@@ -157,8 +158,8 @@ export const LinkUserButton: React.FC<LinkUserButtonProps> = ({
                   <button
                     key={u.id}
                     type="button"
-                    className={`w-full text-left px-3 py-2 rounded hover:bg-accent ${
-                      selectedUser?.id === u.id ? "bg-accent text-primary" : ""
+                    className={`w-full text-left px-3 py-2 rounded hover:bg-secondary ${
+                      selectedUser?.id === u.id ? "border-2 border-primary" : ""
                     }`}
                     onClick={() => setSelectedUser(u)}
                     disabled={loading}
@@ -168,20 +169,14 @@ export const LinkUserButton: React.FC<LinkUserButtonProps> = ({
                         {u.first_name} {u.last_name}
                       </span>
                       <span className="col-span-2">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                            u.is_client
-                              ? "bg-secondary text-secondary-foreground"
-                              : "bg-default text-default-foreground"
-                          }`}
-                        >
+                        <Badge variant={u.is_client ? "accent" : "secondary"}>
                           {u.is_client ? "Cliente" : "Administrativo"}
-                        </span>
+                        </Badge>
                       </span>
                       <span className="col-span-2">
-                        <span className="inline-block px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
+                        <Badge variant={u.is_client ? "outline" : "default"}>
                           {getRoleLabel(u.role, u.is_client)}
-                        </span>
+                        </Badge>
                       </span>
                       <span className="col-span-4 block text-xs text-muted-foreground truncate">
                         {u.email}

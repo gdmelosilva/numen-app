@@ -143,7 +143,7 @@ export function CreatePartnerForm({
                   const seg = marketSegments.find(s => s.id.toString() === value);
                   setPartnerMktSg(seg ? { id: seg.id.toString(), name: seg.name } : { id: value, name: "" });
                 }}>
-                  <SelectTrigger className="space-y-2">
+                  <SelectTrigger className="space-y-2 w-full w-max-full">
                     <SelectValue placeholder="Segmento" />
                   </SelectTrigger>
                   <SelectContent>
@@ -161,7 +161,7 @@ export function CreatePartnerForm({
               <div className="grid gap-2">
                 <Label htmlFor="is_compadm">Tipo Parceiro</Label>
                 <Select value={is_compadm ? "true" : "false"} onValueChange={(value) => setIsCompadm(value === "true")}>
-                  <SelectTrigger id="is_compadm" className="border rounded px-2 py-1">
+                  <SelectTrigger id="is_compadm" className="space-y-2 w-full w-max-full">
                     {is_compadm ? "Administrativo" : "Cliente"}
                   </SelectTrigger>
                   <SelectContent>

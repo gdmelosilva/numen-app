@@ -226,33 +226,33 @@ export default function UsersPage() {
                 disabled={isEditDialogOpen}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 w-full max-w-full">
               <Label htmlFor="role">Função</Label>
               <Select
-                value={filters.role || "all"}
-                onValueChange={value => handleFilterChange("role", value === "all" ? "" : value)}
-                disabled={isEditDialogOpen}
-                onOpenChange={handleRoleSelectOpen}
+              value={filters.role || "all"}
+              onValueChange={value => handleFilterChange("role", value === "all" ? "" : value)}
+              disabled={isEditDialogOpen}
+              onOpenChange={handleRoleSelectOpen}
               >
-                <SelectTrigger id="role" disabled={isEditDialogOpen}>
-                  <SelectValue placeholder="Todas as funções" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {roleOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
+              <SelectTrigger id="role" disabled={isEditDialogOpen} className="w-full max-w-full">
+                <SelectValue placeholder="Todas as funções" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {roleOptions.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 w-full max-w-full">
               <Label htmlFor="is_client">Tipo</Label>
               <Select
                 value={filters.is_client || "all"}
                 onValueChange={value => handleFilterChange("is_client", value === "all" ? "" : value)}
                 disabled={isEditDialogOpen}
               >
-                <SelectTrigger id="is_client" disabled={isEditDialogOpen}>
+                <SelectTrigger id="is_client" disabled={isEditDialogOpen} className="w-full max-w-full">
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -262,7 +262,7 @@ export default function UsersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 w-full max-w-full">
               <Label htmlFor="active">Status</Label>
               <Select
                 value={filters.active === null ? "all" : filters.active ? "true" : "false"}
@@ -271,7 +271,7 @@ export default function UsersPage() {
                 }}
                 disabled={isEditDialogOpen}
               >
-                <SelectTrigger id="active" disabled={isEditDialogOpen}>
+                <SelectTrigger id="active" disabled={isEditDialogOpen} className="w-full max-w-full">
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>

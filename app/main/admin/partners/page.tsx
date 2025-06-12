@@ -126,7 +126,7 @@ export default function PartnersPage() {
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
           <PartnerCreateDialog onSuccess={fetchPartners} />
-          <Button onClick={handleExport} variant="outline">
+          <Button onClick={handleExport} variant="colored1">
             Exportar para Excel
           </Button>
         </div>
@@ -180,13 +180,13 @@ export default function PartnersPage() {
                 onChange={(e) => handleFilterChange("partner_tel", e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 w-full max-w-full">
               <Label htmlFor="partner_mkt_sg">Segmento</Label>
               <Select
                 value={filters.partner_mkt_sg}
                 onValueChange={(value) => handleFilterChange("partner_mkt_sg", value)}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-9 w-full max-w-full">
                   <SelectValue
                     placeholder="Filtrar por Segmento"
                     // Exibe o nome do segmento selecionado
@@ -206,13 +206,13 @@ export default function PartnersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 w-full max-w-full">
               <Label htmlFor="is_compadm">Tipo</Label>
               <Select
                 value={getBooleanSelectValue(filters.is_compadm)}
                 onValueChange={(value) => handleBooleanFilterChange("is_compadm", value)}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-9 w-full max-w-full">
                   <SelectValue placeholder="Filtrar por tipo">
                     {getBooleanSelectLabel(filters.is_compadm)}
                   </SelectValue>
@@ -224,13 +224,13 @@ export default function PartnersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 w-full max-w-full">
               <Label htmlFor="is_active">Status</Label>
               <Select
                 value={getBooleanSelectValue(filters.is_active)}
                 onValueChange={(value) => handleBooleanFilterChange("is_active", value)}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-9 w-full max-w-full">
                   <SelectValue placeholder="Ativo?">
                     {getBooleanSelectLabel(filters.is_active)}
                   </SelectValue>

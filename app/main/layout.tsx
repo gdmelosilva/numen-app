@@ -5,7 +5,7 @@ import { SidebarInset, SidebarProvider, AppSidebar } from "@/components/sidebar"
 import { BreadcrumbDynamic } from "@/components/BreadcrumbDynamic";
 import ThemeSwitcher from "@/components/theme-switcher";
 import { LogoutButton } from "@/components/logout-button";
-import Image from "next/image";
+// import Image from "next/image";
 import "../globals.css";
 import AuthProvider from "@/components/auth-provider";
 import { UserProvider } from "@/components/user-context";
@@ -32,14 +32,14 @@ export default async function MainLayout({
     <AuthProvider>
       <UserProvider>
         <SidebarProvider>
-          <div className="flex min-h-screen bg-white dark:bg-transparent relative">
+          <div className="flex min-h-screen bg-secondary dark:bg-transparent relative">
             <div className="absolute inset-0 z-0">
-              <Image
+              {/* <Image
                 src="/bg.png"
                 alt="Background"
                 fill
                 className="object-cover pointer-events-none opacity-40 dark:opacity-0"
-              />
+              /> */}
             </div>
             <div className="flex flex-1 w-full relative z-10">
               <AppSidebar />

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Quicksand } from "next/font/google";
+import { Quicksand, Roboto } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -15,6 +15,13 @@ const quicksand = Quicksand({
   subsets: ["latin"],
 });
 
+const roboto = Roboto({
+  variable: "--font-roboto",
+  display: "swap",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,7 +29,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${quicksand.className} antialiased`}>
+      <body
+        className={`${quicksand.className} ${roboto.variable} ${quicksand.variable} antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

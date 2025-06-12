@@ -136,18 +136,7 @@ export function AppSidebar() {
   const { user, loading } = useUserContext();
 
   const navMain = React.useMemo(() => [
-    {
-      title: "Utilitários",
-      url: "/main/utils",
-      icon: WrenchIcon,
-      isActive: true,
-      newTab: false,
-      items: [
-        { title: "Cargos", url: "/main/utils/roles", newTab: false }
-      ],
-      roles: ["ADMIN"],
-    },
-    { type: "separator" },
+
     {
       title: "Administrativo",
       url: "/main/admin",
@@ -203,6 +192,19 @@ export function AppSidebar() {
       isActive: true,
       newTab: false,
     },
+    { type: "separator" },
+    {
+      title: "Utilitários",
+      url: "/main/utils",
+      icon: WrenchIcon,
+      isActive: true,
+      newTab: false,
+      items: [
+        { title: "Cargos", url: "/main/utils/roles", newTab: false },
+        { title: "Teste", url: "/main/utils/test", newTab: false }
+      ],
+      roles: ["ADMIN"],
+    }
   ], []);
 
   const toggleItem = React.useCallback((url: string) => {
@@ -224,6 +226,16 @@ export function AppSidebar() {
 
   // Aplica regras de visibilidade
   const filteredNavMain = React.useMemo(() => filterNavMain(navMain, user), [navMain, user]);
+
+  // Separa o item Utilitários do restante do menu
+  const utilitariosItem = React.useMemo(() =>
+    filteredNavMain.find(item => item.title === "Utilitários"),
+    [filteredNavMain]
+  );
+  const filteredNavMainWithoutUtilitarios = React.useMemo(() =>
+    filteredNavMain.filter(item => item.title !== "Utilitários"),
+    [filteredNavMain]
+  );
 
   // Sempre deixa todas as abas abertas por padrão
   const allParentUrls = React.useMemo(() =>
@@ -300,20 +312,47 @@ export function AppSidebar() {
         "flex h-screen flex-col border-r border-border/40 bg-background transition-all duration-300",
         expanded ? "w-64" : "w-16"
       )}
-      style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 30 }}
+      style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 30, transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)' }}
     >
       <div className="flex h-14 items-center justify-between border-b border-border/40 px-4">
         <button
           onClick={() => handleNavigation("/", false)}
-          className="flex items-center gap-2 font-semibold"
+          className={cn(
+            "flex items-center justify-center w-full h-10 transition-all duration-300 overflow-hidden",
+            expanded ? "px-0" : "px-0"
+          )}
+          style={{
+            position: "relative",
+            minHeight: "40px",
+          }}
         >
-            {/* <div className="h-8 w-8 bg-secondary rounded flex items-center justify-center p-1"> */}
-            {/* </div> */}
-            {expanded &&  
-            <>
-            <span className="text-primary-foreground font-bold text-sm ">
-              <Image src="/logo_p.svg" alt="Logo" width={35} height={35} />
-            </span><span>Numen Ops</span></>}
+          <div
+            className={cn(
+              "flex items-center transition-all duration-300",
+              expanded ? "w-[140px]" : "w-[40px]"
+            )}
+            style={{
+              overflow: "hidden",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "35px",
+              transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
+            }}
+          >
+            <Image
+              src="/logo_hor.svg"
+              alt="Logo"
+              width={140}
+              height={35}
+              style={{
+          transition: "margin-left 0.3s, opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
+          marginLeft: expanded ? 0 : -50,
+          opacity: expanded ? 1 : 0,
+          objectFit: "contain",
+              }}
+              priority
+            />
+          </div>
         </button>
         <Button
           variant="ghost"
@@ -330,16 +369,16 @@ export function AppSidebar() {
         </Button>
       </div>
       <nav className="flex-1 space-y-1 p-2">
-        {filteredNavMain.map((item: NavItem, idx: number) => {
+        {filteredNavMainWithoutUtilitarios.map((item: NavItem, idx: number) => {
           if (item.type === "separator") {
             return (
-              <div key={`separator-${idx}`} className="my-2 border-y border-border" />
+              <div key={`separator-${idx}`} className="my-2 border-y border-border transition-all duration-300" style={{ opacity: expanded ? 1 : 0.5, transition: 'opacity 0.3s' }} />
             );
           }
           // Type guard: item is not a separator
           const typedItem = item as Exclude<typeof item, { type: string }>;
           return (
-            <div key={typedItem.url}>
+            <div key={typedItem.url} className="overflow-hidden">
               <button
                 onClick={() => typedItem.url && toggleItem(typedItem.url)}
                 className={cn(
@@ -348,32 +387,139 @@ export function AppSidebar() {
                     ? "bg-red-500 text-accent-foreground"
                     : "hover:bg-primary hover:text-accent-foreground"
                 )}
+                style={{
+                  transition: 'background 0.3s, color 0.3s',
+                }}
               >
-                {typedItem.icon && <typedItem.icon className="h-4 w-4" />}
-                {expanded && <span>{typedItem.title}</span>}
+                {typedItem.icon && <typedItem.icon className="h-4 w-4 transition-all duration-300" style={{ opacity: expanded ? 1 : 0.7, transition: 'opacity 0.3s' }} />}
+                <span
+                  className="transition-all duration-300"
+                  style={{
+                    opacity: expanded ? 1 : 0,
+                    maxWidth: expanded ? 200 : 0,
+                    marginLeft: expanded ? 0 : -16,
+                    transition: 'opacity 0.3s, max-width 0.3s, margin-left 0.3s',
+                    display: 'inline-block',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {typedItem.title}
+                </span>
               </button>
-              {expanded && typedItem.url && openItems.includes(typedItem.url) && typedItem.items && (
-                <div className="ml-6 mt-1 space-y-1">
-                  {typedItem.items.map((subItem: { title: string; url: string; newTab: boolean }) => (
-                    <button
-                      key={subItem.url}
-                      onClick={() => handleNavigation(subItem.url, subItem.newTab)}
-                      className={cn(
-                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-normal transition-colors",
-                        currentPath === subItem.url
-                          ? "bg-red-500 text-accent-foreground"
-                          : "hover:bg-primary hover:text-accent-foreground"
-                      )}
-                    >
-                      {subItem.title}
-                    </button>
-                  ))}
+              {typedItem.url && (
+                <div
+                  className="transition-all duration-300"
+                  style={{
+                    maxHeight: expanded && openItems.includes(typedItem.url) && typedItem.items ? typedItem.items.length * 40 + 8 : 0,
+                    opacity: expanded && openItems.includes(typedItem.url) && typedItem.items ? 1 : 0,
+                    overflow: 'hidden',
+                    transition: 'max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s',
+                  }}
+                >
+                  {expanded && openItems.includes(typedItem.url) && typedItem.items && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {typedItem.items.map((subItem: { title: string; url: string; newTab: boolean }) => (
+                        <button
+                          key={subItem.url}
+                          onClick={() => handleNavigation(subItem.url, subItem.newTab)}
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-normal transition-colors",
+                            currentPath === subItem.url
+                              ? "bg-red-500 text-accent-foreground"
+                              : "hover:bg-primary hover:text-accent-foreground"
+                          )}
+                          style={{
+                            transition: 'background 0.3s, color 0.3s',
+                            opacity: expanded ? 1 : 0,
+                            transform: expanded ? 'translateX(0)' : 'translateX(-10px)',
+                            transitionProperty: 'opacity, transform',
+                            transitionDuration: '0.3s',
+                          }}
+                        >
+                          {subItem.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           );
         })}
       </nav>
+      {/* Utilitários fixo na base da sidebar, acima do card do usuário */}
+      {utilitariosItem && (
+        <div className="p-2 border-t border-border/40" style={{ marginTop: 'auto' }}>
+          <div className="overflow-hidden">
+            <button
+              onClick={() => utilitariosItem.url && toggleItem(utilitariosItem.url)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                currentPath === utilitariosItem.url
+                  ? "bg-red-500 text-accent-foreground"
+                  : "hover:bg-primary hover:text-accent-foreground"
+              )}
+              style={{
+                transition: 'background 0.3s, color 0.3s',
+              }}
+            >
+              {utilitariosItem.icon && <utilitariosItem.icon className="h-4 w-4 transition-all duration-300" style={{ opacity: expanded ? 1 : 0.7, transition: 'opacity 0.3s' }} />}
+              <span
+                className="transition-all duration-300"
+                style={{
+                  opacity: expanded ? 1 : 0,
+                  maxWidth: expanded ? 200 : 0,
+                  marginLeft: expanded ? 0 : -16,
+                  transition: 'opacity 0.3s, max-width 0.3s, margin-left 0.3s',
+                  display: 'inline-block',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                }}
+              >
+                {utilitariosItem.title}
+              </span>
+            </button>
+            {utilitariosItem.url && (
+              <div
+                className="transition-all duration-300"
+                style={{
+                  maxHeight: expanded && openItems.includes(utilitariosItem.url) && utilitariosItem.items ? utilitariosItem.items.length * 40 + 8 : 0,
+                  opacity: expanded && openItems.includes(utilitariosItem.url) && utilitariosItem.items ? 1 : 0,
+                  overflow: 'hidden',
+                  transition: 'max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s',
+                }}
+              >
+                {expanded && openItems.includes(utilitariosItem.url) && utilitariosItem.items && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {utilitariosItem.items.map((subItem: { title: string; url: string; newTab: boolean }) => (
+                      <button
+                        key={subItem.url}
+                        onClick={() => handleNavigation(subItem.url, subItem.newTab)}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-normal transition-colors",
+                          currentPath === subItem.url
+                            ? "bg-red-500 text-accent-foreground"
+                            : "hover:bg-primary hover:text-accent-foreground"
+                        )}
+                        style={{
+                          transition: 'background 0.3s, color 0.3s',
+                          opacity: expanded ? 1 : 0,
+                          transform: expanded ? 'translateX(0)' : 'translateX(-10px)',
+                          transitionProperty: 'opacity, transform',
+                          transitionDuration: '0.3s',
+                        }}
+                      >
+                        {subItem.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {/* Card do usuário na parte inferior */}
       {expanded && <SidebarUserCard />}
     </div>
