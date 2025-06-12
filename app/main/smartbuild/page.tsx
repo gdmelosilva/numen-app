@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, ChevronDown, ChevronUp, Trash } from "lucide-react";
 
 interface Filters {
   projectExtId: string;
@@ -36,8 +36,10 @@ export default function TicketManagementPage() {
     is_247: "",
     start_date: "",
     end_at: "",
-  });  const [pendingFilters, setPendingFilters] = useState<Filters>(filters);
+  });
+  const [pendingFilters, setPendingFilters] = useState<Filters>(filters);
   const [loading, setLoading] = useState(false);
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
   const buildProjectQueryParams = (customFilters: Filters) => {
     const queryParams = new URLSearchParams();
@@ -97,8 +99,21 @@ export default function TicketManagementPage() {
     fetchContracts(cleared);
   };
 
-  // Opcional: buscar ao carregar a página
-  // useEffect(() => { fetchTickets(filters); }, []);
+  // Função para gerar resumo dos filtros ativos
+  const getActiveFiltersSummary = () => {
+    const summary: string[] = [];
+    if (pendingFilters.projectExtId) summary.push(`ID: ${pendingFilters.projectExtId}`);
+    if (pendingFilters.projectName) summary.push(`Título: ${pendingFilters.projectName}`);
+    if (pendingFilters.projectDesc) summary.push(`Descrição: ${pendingFilters.projectDesc}`);
+    if (pendingFilters.partnerId) summary.push(`Parceiro: ${pendingFilters.partnerId}`);
+    if (pendingFilters.project_type) summary.push(`Tipo: ${pendingFilters.project_type}`);
+    if (pendingFilters.project_status) summary.push(`Status: ${pendingFilters.project_status}`);
+    if (pendingFilters.is_wildcard) summary.push(`Wildcard: ${pendingFilters.is_wildcard}`);
+    if (pendingFilters.is_247) summary.push(`24/7: ${pendingFilters.is_247}`);
+    if (pendingFilters.start_date) summary.push(`Início: ${pendingFilters.start_date}`);
+    if (pendingFilters.end_at) summary.push(`Fim: ${pendingFilters.end_at}`);
+    return summary.length ? summary.join(", ") : "Nenhum filtro ativo";
+  };
 
   return (
     <div className="space-y-4">
@@ -108,6 +123,13 @@ export default function TicketManagementPage() {
           <p className="text-sm text-muted-foreground">Administração de Projetos</p>
         </div>
         <div className="flex gap-2">
+          {/* <Button
+            variant="outline"
+            onClick={() => setFiltersCollapsed(v => !v)}
+            aria-label={filtersCollapsed ? "Expandir filtros" : "Recolher filtros"}
+          >
+            {filtersCollapsed ? "Mostrar filtros" : "Recolher filtros"}
+          </Button> */}
           <Button
             variant="colored2"
             onClick={handleSearch}
@@ -115,126 +137,155 @@ export default function TicketManagementPage() {
           >
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleClearFilters}
-            disabled={loading}
-          >
-            Limpar filtros
-          </Button>
         </div>
       </div>
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="projectExtId">ID</Label>
-              <Input
-                id="projectExtId"
-                placeholder="Filtrar por ID"
-                value={pendingFilters.projectExtId}
-                onChange={e => handleFilterChange("projectExtId", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="projectName">Título</Label>
-              <Input
-                id="projectName"
-                placeholder="Filtrar por título"
-                value={pendingFilters.projectName}
-                onChange={e => handleFilterChange("projectName", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="projectDesc">Descrição</Label>
-              <Input
-                id="projectDesc"
-                placeholder="Filtrar por descrição"
-                value={pendingFilters.projectDesc}
-                onChange={e => handleFilterChange("projectDesc", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="partnerId">Parceiro</Label>
-              <Input
-                id="partnerId"
-                placeholder="Filtrar por parceiro (ID)"
-                value={pendingFilters.partnerId}
-                onChange={e => handleFilterChange("partnerId", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="project_type">Tipo</Label>
-              <Input
-                id="project_type"
-                placeholder="Filtrar por tipo (ID)"
-                value={pendingFilters.project_type}
-                onChange={e => handleFilterChange("project_type", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="project_status">Status</Label>
-              <Input
-                id="project_status"
-                placeholder="Filtrar por status (ID)"
-                value={pendingFilters.project_status}
-                onChange={e => handleFilterChange("project_status", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="is_wildcard">Wildcard?</Label>
-              <Input
-                id="is_wildcard"
-                placeholder="true/false"
-                value={pendingFilters.is_wildcard}
-                onChange={e => handleFilterChange("is_wildcard", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="is_247">24/7?</Label>
-              <Input
-                id="is_247"
-                placeholder="true/false"
-                value={pendingFilters.is_247}
-                onChange={e => handleFilterChange("is_247", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Início</Label>
-              <Input
-                id="start_date"
-                type="date"
-                value={pendingFilters.start_date}
-                onChange={e => handleFilterChange("start_date", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="end_at">Fim</Label>
-              <Input
-                id="end_at"
-                type="date"
-                value={pendingFilters.end_at}
-                onChange={e => handleFilterChange("end_at", e.target.value)}
-                disabled={loading}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Card de filtros: expandido ou resumo */}
+      {filtersCollapsed ? (
+        <Card>
+          <CardContent className="pt-6 flex items-center justify-between">
+            <span className="text-muted-foreground text-sm">{getActiveFiltersSummary()}</span>
+            <Button size="sm" variant="ghost" onClick={() => setFiltersCollapsed(false)}>
+              <ChevronDown className="w-4 h-4 mr-2" />Editar filtros
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className={`filter-transition-wrapper${filtersCollapsed ? ' collapsed' : ''}`}> {/* Transition wrapper */}
+          <Card>
+            <CardContent className="pt-6 relative">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="projectExtId">ID</Label>
+                  <Input
+                    id="projectExtId"
+                    placeholder="Filtrar por ID"
+                    value={pendingFilters.projectExtId}
+                    onChange={e => handleFilterChange("projectExtId", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="projectName">Título</Label>
+                  <Input
+                    id="projectName"
+                    placeholder="Filtrar por título"
+                    value={pendingFilters.projectName}
+                    onChange={e => handleFilterChange("projectName", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="projectDesc">Descrição</Label>
+                  <Input
+                    id="projectDesc"
+                    placeholder="Filtrar por descrição"
+                    value={pendingFilters.projectDesc}
+                    onChange={e => handleFilterChange("projectDesc", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="partnerId">Parceiro</Label>
+                  <Input
+                    id="partnerId"
+                    placeholder="Filtrar por parceiro (ID)"
+                    value={pendingFilters.partnerId}
+                    onChange={e => handleFilterChange("partnerId", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="project_type">Tipo</Label>
+                  <Input
+                    id="project_type"
+                    placeholder="Filtrar por tipo (ID)"
+                    value={pendingFilters.project_type}
+                    onChange={e => handleFilterChange("project_type", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="project_status">Status</Label>
+                  <Input
+                    id="project_status"
+                    placeholder="Filtrar por status (ID)"
+                    value={pendingFilters.project_status}
+                    onChange={e => handleFilterChange("project_status", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="is_wildcard">Wildcard?</Label>
+                  <Input
+                    id="is_wildcard"
+                    placeholder="true/false"
+                    value={pendingFilters.is_wildcard}
+                    onChange={e => handleFilterChange("is_wildcard", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="is_247">24/7?</Label>
+                  <Input
+                    id="is_247"
+                    placeholder="true/false"
+                    value={pendingFilters.is_247}
+                    onChange={e => handleFilterChange("is_247", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="start_date">Início</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={pendingFilters.start_date}
+                    onChange={e => handleFilterChange("start_date", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end_at">Fim</Label>
+                  <Input
+                    id="end_at"
+                    type="date"
+                    value={pendingFilters.end_at}
+                    onChange={e => handleFilterChange("end_at", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end mt-4 gap-2">
+                <Button
+                  size={"sm"}
+                  variant="outline"
+                  onClick={handleClearFilters}
+                  disabled={loading}
+                  aria-label="Limpar filtros"
+                  className="bg-destructive hover:bg-destructive/90 text-white"
+                >
+                  <Trash className="w-4 h-4 mr-2" />Limpar filtros
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setFiltersCollapsed(true)}
+                  aria-label="Recolher filtros"
+                  className="hover:bg-secondary/90 hover:text-black"
+                >
+                  <ChevronUp className="w-4 h-4 mr-2" />Recolher filtros
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       {loading ? (
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : (        <DataTable
+      ) : (
+        <DataTable
           columns={columns}
           data={contracts}
         />

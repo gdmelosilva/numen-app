@@ -83,7 +83,7 @@ Vai ficar pra ver com o Felipe:
 
 Backlog geral:
 - [ ] Tirar texto "numen" do arquivo svg e manter a proporção quadradinha
-- [ ] Alterar o email de envio, alterar as cores do email template pro padrão.
+- [X] Alterar o email de envio, alterar as cores do email template pro padrão.
 - [ ] Ajustar o export para excel
 - [ ] Verificar visão do cliente para as abas pertinentes (inclusive para onde ele está sendo       redirecionado)
 - [ ] Validações de registro

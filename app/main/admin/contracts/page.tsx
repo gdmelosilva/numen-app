@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { ContractCreateDialog } from "@/components/contract-create-dialog";
+import React from "react";
 
 interface Filters {
   projectExtId: string;
@@ -221,173 +222,175 @@ export default function ContractsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="pt-6 relative">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="projectExtId">Id.Contrato</Label>
-                <Input
-                  id="projectExtId"
-                  placeholder="Filtrar por Id.Contrato"
-                  value={pendingFilters.projectExtId}
-                  onChange={e => handleFilterChange("projectExtId", e.target.value)}
-                  disabled={isEditDialogOpen}
-                />
+        <div className={`filter-transition-wrapper${filtersCollapsed ? ' collapsed' : ''}`}> {/* Transition wrapper */}
+          <Card>
+            <CardContent className="pt-6 relative">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="projectExtId">Id.Contrato</Label>
+                  <Input
+                    id="projectExtId"
+                    placeholder="Filtrar por Id.Contrato"
+                    value={pendingFilters.projectExtId}
+                    onChange={e => handleFilterChange("projectExtId", e.target.value)}
+                    disabled={isEditDialogOpen}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="projectName">Nome do Contrato</Label>
+                  <Input
+                    id="projectName"
+                    placeholder="Filtrar por nome do projeto"
+                    value={pendingFilters.projectName}
+                    onChange={e => handleFilterChange("projectName", e.target.value)}
+                    disabled={isEditDialogOpen}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="projectDesc">Descrição</Label>
+                  <Input
+                    id="projectDesc"
+                    placeholder="Filtrar por descrição"
+                    value={pendingFilters.projectDesc}
+                    onChange={e => handleFilterChange("projectDesc", e.target.value)}
+                    disabled={isEditDialogOpen}
+                  />
+                </div>
+                <div className="space-y-2 w-full max-w-full">
+                  <Label className="mb-0">Parceiro</Label>
+                  <Select
+                    value={pendingFilters.partnerId || "__all__"}
+                    onValueChange={value => handleFilterChange("partnerId", value === "__all__" ? "" : value)}
+                    disabled={isEditDialogOpen || loadingPartners}
+                    onOpenChange={open => { if (open) handleOpenPartnerSelect(); }}
+                  >
+                    <SelectTrigger id="partnerId" aria-labelledby="partnerId-label" disabled={isEditDialogOpen || loadingPartners} className="w-full max-w-full">
+                      <SelectValue placeholder="Filtrar por parceiro" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos</SelectItem>
+                      {partnerOptions.map(partner => (
+                        <SelectItem key={partner.id} value={partner.id}>{partner.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 w-full max-w-full">
+                  <Label className="mb-0">Tipo de Contrato</Label>
+                  <Select
+                    value={pendingFilters.project_type || "__all__"}
+                    onValueChange={value => handleFilterChange("project_type", value === "__all__" ? "" : value)}
+                    disabled={isEditDialogOpen}
+                  >
+                    <SelectTrigger id="project_type" aria-labelledby="project_type-label" disabled={isEditDialogOpen} className="w-full max-w-full">
+                      <SelectValue placeholder="Filtrar por tipo de contrato" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos</SelectItem>
+                      <SelectItem value="AMS">AMS</SelectItem>
+                      <SelectItem value="TKEY">Turnkey</SelectItem>
+                      <SelectItem value="BSHOP">Bodyshop</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 w-full max-w-full">
+                  <Label className="mb-0">Status do Contrato</Label>
+                  <Select
+                    value={pendingFilters.project_status || "__all__"}
+                    onValueChange={value => handleFilterChange("project_status", value === "__all__" ? "" : value)}
+                    disabled={isEditDialogOpen || loadingStatus}
+                    onOpenChange={open => { if (open) handleOpenStatusSelect(); }}
+                  >
+                    <SelectTrigger id="project_status" aria-labelledby="project_status-label" disabled={isEditDialogOpen || loadingStatus} className="w-full max-w-full">
+                      <SelectValue placeholder="Filtrar por status do contrato" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos</SelectItem>
+                      {statusOptions.map(status => (
+                        <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 w-full max-w-full">
+                  <Label className="mb-0">Wildcard?</Label>
+                  <Select
+                    value={pendingFilters.is_wildcard === null ? "all" : pendingFilters.is_wildcard ? "true" : "false"}
+                    onValueChange={value => handleFilterChange("is_wildcard", value === "all" ? null : value === "true")}
+                    disabled={isEditDialogOpen}
+                  >
+                    <SelectTrigger id="is_wildcard" aria-labelledby="is_wildcard-label" disabled={isEditDialogOpen} className="w-full max-w-full">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="true">Sim</SelectItem>
+                      <SelectItem value="false">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 w-full max-w-full">
+                  <Label className="mb-0">24/7?</Label>
+                  <Select
+                    value={pendingFilters.is_247 === null ? "all" : pendingFilters.is_247 ? "true" : "false"}
+                    onValueChange={value => handleFilterChange("is_247", value === "all" ? null : value === "true")}
+                    disabled={isEditDialogOpen}
+                  >
+                    <SelectTrigger id="is_247" aria-labelledby="is_247-label" disabled={isEditDialogOpen} className="w-full max-w-full">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="true">Sim</SelectItem>
+                      <SelectItem value="false">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="start_date">Data Inicial</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={pendingFilters.start_date}
+                    onChange={e => handleFilterChange("start_date", e.target.value)}
+                    disabled={isEditDialogOpen}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end_at">Data Final</Label>
+                  <Input
+                    id="end_at"
+                    type="date"
+                    value={pendingFilters.end_at}
+                    onChange={e => handleFilterChange("end_at", e.target.value)}
+                    disabled={isEditDialogOpen}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="projectName">Nome do Contrato</Label>
-                <Input
-                  id="projectName"
-                  placeholder="Filtrar por nome do projeto"
-                  value={pendingFilters.projectName}
-                  onChange={e => handleFilterChange("projectName", e.target.value)}
-                  disabled={isEditDialogOpen}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="projectDesc">Descrição</Label>
-                <Input
-                  id="projectDesc"
-                  placeholder="Filtrar por descrição"
-                  value={pendingFilters.projectDesc}
-                  onChange={e => handleFilterChange("projectDesc", e.target.value)}
-                  disabled={isEditDialogOpen}
-                />
-              </div>
-              <div className="space-y-2 w-full max-w-full">
-                <Label className="mb-0">Parceiro</Label>
-                <Select
-                  value={pendingFilters.partnerId || "__all__"}
-                  onValueChange={value => handleFilterChange("partnerId", value === "__all__" ? "" : value)}
-                  disabled={isEditDialogOpen || loadingPartners}
-                  onOpenChange={open => { if (open) handleOpenPartnerSelect(); }}
+              <div className="flex justify-end mt-4 gap-2">
+                <Button
+                  size={"sm"}
+                  variant="outline"
+                  onClick={handleClearFilters}
+                  disabled={loading || isEditDialogOpen}
+                  aria-label="Limpar filtros"
+                  className="bg-destructive hover:bg-destructive/90 text-white"
                 >
-                  <SelectTrigger id="partnerId" aria-labelledby="partnerId-label" disabled={isEditDialogOpen || loadingPartners} className="w-full max-w-full">
-                    <SelectValue placeholder="Filtrar por parceiro" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Todos</SelectItem>
-                    {partnerOptions.map(partner => (
-                      <SelectItem key={partner.id} value={partner.id}>{partner.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 w-full max-w-full">
-                <Label className="mb-0">Tipo de Contrato</Label>
-                <Select
-                  value={pendingFilters.project_type || "__all__"}
-                  onValueChange={value => handleFilterChange("project_type", value === "__all__" ? "" : value)}
-                  disabled={isEditDialogOpen}
+                  <Trash className="w-4 h-4 mr-2" />Limpar filtros
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setFiltersCollapsed(true)}
+                  aria-label="Recolher filtros"
+                  className="hover:bg-secondary/90 hover:text-black"
                 >
-                  <SelectTrigger id="project_type" aria-labelledby="project_type-label" disabled={isEditDialogOpen} className="w-full max-w-full">
-                    <SelectValue placeholder="Filtrar por tipo de contrato" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Todos</SelectItem>
-                    <SelectItem value="AMS">AMS</SelectItem>
-                    <SelectItem value="TKEY">Turnkey</SelectItem>
-                    <SelectItem value="BSHOP">Bodyshop</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <ChevronUp className="w-4 h-4 mr-2" />Recolher filtros
+                </Button>
               </div>
-              <div className="space-y-2 w-full max-w-full">
-                <Label className="mb-0">Status do Contrato</Label>
-                <Select
-                  value={pendingFilters.project_status || "__all__"}
-                  onValueChange={value => handleFilterChange("project_status", value === "__all__" ? "" : value)}
-                  disabled={isEditDialogOpen || loadingStatus}
-                  onOpenChange={open => { if (open) handleOpenStatusSelect(); }}
-                >
-                  <SelectTrigger id="project_status" aria-labelledby="project_status-label" disabled={isEditDialogOpen || loadingStatus} className="w-full max-w-full">
-                    <SelectValue placeholder="Filtrar por status do contrato" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Todos</SelectItem>
-                    {statusOptions.map(status => (
-                      <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 w-full max-w-full">
-                <Label className="mb-0">Wildcard?</Label>
-                <Select
-                  value={pendingFilters.is_wildcard === null ? "all" : pendingFilters.is_wildcard ? "true" : "false"}
-                  onValueChange={value => handleFilterChange("is_wildcard", value === "all" ? null : value === "true")}
-                  disabled={isEditDialogOpen}
-                >
-                  <SelectTrigger id="is_wildcard" aria-labelledby="is_wildcard-label" disabled={isEditDialogOpen} className="w-full max-w-full">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="true">Sim</SelectItem>
-                    <SelectItem value="false">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 w-full max-w-full">
-                <Label className="mb-0">24/7?</Label>
-                <Select
-                  value={pendingFilters.is_247 === null ? "all" : pendingFilters.is_247 ? "true" : "false"}
-                  onValueChange={value => handleFilterChange("is_247", value === "all" ? null : value === "true")}
-                  disabled={isEditDialogOpen}
-                >
-                  <SelectTrigger id="is_247" aria-labelledby="is_247-label" disabled={isEditDialogOpen} className="w-full max-w-full">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="true">Sim</SelectItem>
-                    <SelectItem value="false">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="start_date">Data Inicial</Label>
-                <Input
-                  id="start_date"
-                  type="date"
-                  value={pendingFilters.start_date}
-                  onChange={e => handleFilterChange("start_date", e.target.value)}
-                  disabled={isEditDialogOpen}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="end_at">Data Final</Label>
-                <Input
-                  id="end_at"
-                  type="date"
-                  value={pendingFilters.end_at}
-                  onChange={e => handleFilterChange("end_at", e.target.value)}
-                  disabled={isEditDialogOpen}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end mt-4 gap-2">
-              <Button
-                size={"sm"}
-                variant="outline"
-                onClick={handleClearFilters}
-                disabled={loading || isEditDialogOpen}
-                aria-label="Limpar filtros"
-                className="bg-destructive hover:bg-destructive/90 text-white"
-              >
-                <Trash className="w-4 h-4 mr-2" />Limpar filtros
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setFiltersCollapsed(true)}
-                aria-label="Recolher filtros"
-                className="hover:bg-secondary/90 hover:text-black"
-              >
-                <ChevronUp className="w-4 h-4 mr-2" />Recolher filtros
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {loading ? (

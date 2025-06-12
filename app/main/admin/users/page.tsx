@@ -14,6 +14,7 @@ import { Search } from "lucide-react";
 import { getRoleOptions } from "@/hooks/useOptions";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { UserEditDialog } from "@/components/UserEditDialog";
+import { ChevronDown, ChevronUp, Trash } from "lucide-react";
 
 interface Filters {
   search: string;
@@ -45,6 +46,7 @@ export default function UsersPage() {
   const [roleOptionsLoaded, setRoleOptionsLoaded] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -162,6 +164,23 @@ export default function UsersPage() {
     fetchUsersWithFilters(clearedFilters);
   };
 
+  // Função para gerar resumo dos filtros ativos
+  const getActiveFiltersSummary = () => {
+    const summary: string[] = [];
+    if (filters.search) summary.push(`Nome: ${filters.search}`);
+    if (filters.email) summary.push(`Email: ${filters.email}`);
+    if (filters.tel_contact) summary.push(`Telefone: ${filters.tel_contact}`);
+    if (filters.partner_desc) summary.push(`Parceiro: ${filters.partner_desc}`);
+    if (filters.role) {
+      const role = roleOptions.find(r => r.value === filters.role);
+      summary.push(`Função: ${role ? role.label : filters.role}`);
+    }
+    if (filters.is_client) summary.push(`Tipo: ${filters.is_client === "true" ? "Cliente" : filters.is_client === "false" ? "Administrativo" : "Todos"}`);
+    if (filters.active !== null) summary.push(`Status: ${filters.active ? "Ativo" : "Inativo"}`);
+    if (filters.created_at) summary.push(`Criado em: ${filters.created_at}`);
+    return summary.length ? summary.join(", ") : "Nenhum filtro ativo";
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -170,15 +189,15 @@ export default function UsersPage() {
           <p className="text-sm text-muted-foreground">Administração de Usuários</p>
         </div>
         <div className="flex gap-2">
+          {/* <Button
+            variant="outline"
+            onClick={() => setFiltersCollapsed(v => !v)}
+            aria-label={filtersCollapsed ? "Expandir filtros" : "Recolher filtros"}
+          >
+            {filtersCollapsed ? "Mostrar filtros" : "Recolher filtros"}
+          </Button> */}
           <Button variant="colored2" onClick={handleSearch} disabled={loading || isEditDialogOpen}>
             <Search className="mr-2 h-4 w-4" /> Buscar
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleClearFilters}
-            disabled={loading || isEditDialogOpen}
-          >
-            Limpar filtros
           </Button>
           <UserCreateDialog onSuccess={fetchUsers} disabled={isEditDialogOpen} />
           <Button
@@ -192,98 +211,133 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="search">Nome</Label>
-              <Input
-                id="search"
-                placeholder="Filtrar por nome"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={isEditDialogOpen}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                placeholder="Filtrar por email"
-                value={filters.email}
-                onChange={e => handleFilterChange("email", e.target.value)}
-                disabled={isEditDialogOpen}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tel_contact">Telefone</Label>
-              <Input
-                id="tel_contact"
-                placeholder="Filtrar por telefone"
-                value={filters.tel_contact}
-                onChange={e => handleFilterChange("tel_contact", e.target.value)}
-                disabled={isEditDialogOpen}
-              />
-            </div>
-            <div className="space-y-2 w-full max-w-full">
-              <Label htmlFor="role">Função</Label>
-              <Select
-              value={filters.role || "all"}
-              onValueChange={value => handleFilterChange("role", value === "all" ? "" : value)}
-              disabled={isEditDialogOpen}
-              onOpenChange={handleRoleSelectOpen}
-              >
-              <SelectTrigger id="role" disabled={isEditDialogOpen} className="w-full max-w-full">
-                <SelectValue placeholder="Todas as funções" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {roleOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2 w-full max-w-full">
-              <Label htmlFor="is_client">Tipo</Label>
-              <Select
-                value={filters.is_client || "all"}
-                onValueChange={value => handleFilterChange("is_client", value === "all" ? "" : value)}
-                disabled={isEditDialogOpen}
-              >
-                <SelectTrigger id="is_client" disabled={isEditDialogOpen} className="w-full max-w-full">
-                  <SelectValue placeholder="Todos os tipos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="true">Cliente</SelectItem>
-                  <SelectItem value="false">Administrativo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2 w-full max-w-full">
-              <Label htmlFor="active">Status</Label>
-              <Select
-                value={filters.active === null ? "all" : filters.active ? "true" : "false"}
-                onValueChange={value => {
-                  handleFilterChange("active", value === "all" ? null : value === "true");
-                }}
-                disabled={isEditDialogOpen}
-              >
-                <SelectTrigger id="active" disabled={isEditDialogOpen} className="w-full max-w-full">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="true">Ativo</SelectItem>
-                  <SelectItem value="false">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Card de filtros: expandido ou resumo */}
+      {filtersCollapsed ? (
+        <Card>
+          <CardContent className="pt-6 flex items-center justify-between">
+            <span className="text-muted-foreground text-sm">{getActiveFiltersSummary()}</span>
+            <Button size="sm" variant="ghost" onClick={() => setFiltersCollapsed(false)}>
+              <ChevronDown className="w-4 h-4 mr-2" />Editar filtros
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className={`filter-transition-wrapper${filtersCollapsed ? ' collapsed' : ''}`}> {/* Transition wrapper */}
+          <Card>
+            <CardContent className="pt-6 relative">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="search">Nome</Label>
+                  <Input
+                    id="search"
+                    placeholder="Filtrar por nome"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={isEditDialogOpen}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    placeholder="Filtrar por email"
+                    value={filters.email}
+                    onChange={e => handleFilterChange("email", e.target.value)}
+                    disabled={isEditDialogOpen}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tel_contact">Telefone</Label>
+                  <Input
+                    id="tel_contact"
+                    placeholder="Filtrar por telefone"
+                    value={filters.tel_contact}
+                    onChange={e => handleFilterChange("tel_contact", e.target.value)}
+                    disabled={isEditDialogOpen}
+                  />
+                </div>
+                <div className="space-y-2 w-full max-w-full">
+                  <Label htmlFor="role">Função</Label>
+                  <Select
+                  value={filters.role || "all"}
+                  onValueChange={value => handleFilterChange("role", value === "all" ? "" : value)}
+                  disabled={isEditDialogOpen}
+                  onOpenChange={handleRoleSelectOpen}
+                  >
+                  <SelectTrigger id="role" disabled={isEditDialogOpen} className="w-full max-w-full">
+                    <SelectValue placeholder="Todas as funções" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    {roleOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 w-full max-w-full">
+                  <Label htmlFor="is_client">Tipo</Label>
+                  <Select
+                    value={filters.is_client || "all"}
+                    onValueChange={value => handleFilterChange("is_client", value === "all" ? "" : value)}
+                    disabled={isEditDialogOpen}
+                  >
+                    <SelectTrigger id="is_client" disabled={isEditDialogOpen} className="w-full max-w-full">
+                      <SelectValue placeholder="Todos os tipos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="true">Cliente</SelectItem>
+                      <SelectItem value="false">Administrativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 w-full max-w-full">
+                  <Label htmlFor="active">Status</Label>
+                  <Select
+                    value={filters.active === null ? "all" : filters.active ? "true" : "false"}
+                    onValueChange={value => {
+                      handleFilterChange("active", value === "all" ? null : value === "true");
+                    }}
+                    disabled={isEditDialogOpen}
+                  >
+                    <SelectTrigger id="active" disabled={isEditDialogOpen} className="w-full max-w-full">
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="true">Ativo</SelectItem>
+                      <SelectItem value="false">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end mt-4 gap-2">
+                <Button
+                  size={"sm"}
+                  variant="outline"
+                  onClick={handleClearFilters}
+                  disabled={loading || isEditDialogOpen}
+                  aria-label="Limpar filtros"
+                  className="bg-destructive hover:bg-destructive/90 text-white"
+                >
+                  <Trash className="w-4 h-4 mr-2" />Limpar filtros
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setFiltersCollapsed(true)}
+                  aria-label="Recolher filtros"
+                  className="hover:bg-secondary/90 hover:text-black"
+                >
+                  <ChevronUp className="w-4 h-4 mr-2" />Recolher filtros
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center min-h-[400px]">
