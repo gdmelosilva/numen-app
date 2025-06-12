@@ -208,26 +208,24 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode, tab,
           </form>
         </CardContent>
       </Card>
-      <Card className="mt-4">
-        <div className="px-6 pb-4 pt-2">
-          <Tabs value={tab === 'detalhes' || tab === 'tickets' || tab === 'usuarios' ? tab : 'tickets'} onValueChange={setTab} className="w-full">
-            <TabsList className="mb-2">
-              <TabsTrigger value="tickets">Tickets</TabsTrigger>
-              <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-            </TabsList>
-            <TabsContent value="tickets">
-              {project.id ? (
-                <ProjectTicketsTab projectId={String(project.id)} />
-              ) : null}
-            </TabsContent>
-            <TabsContent value="usuarios">
-              {project.id ? (
-                <ProjectUsersTab projectId={String(project.id)} />
-              ) : null}
-            </TabsContent>
-          </Tabs>
-        </div>
-      </Card>
+      <div className="mt-8">
+        <Tabs value={tab === 'detalhes' || tab === 'tickets' || tab === 'usuarios' ? tab : 'tickets'} onValueChange={setTab} className="w-full">
+          <TabsList className="mb-2">
+            <TabsTrigger value="tickets">Atividades</TabsTrigger>
+            <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+          </TabsList>
+          <TabsContent value="tickets">
+            {project.id ? (
+              <ProjectTicketsTab projectId={String(project.id)} />
+            ) : null}
+          </TabsContent>
+          <TabsContent value="usuarios">
+            {project.id ? (
+              <ProjectUsersTab projectId={String(project.id)} />
+            ) : null}
+          </TabsContent>
+        </Tabs>
+      </div>
     </>
   );
 }
