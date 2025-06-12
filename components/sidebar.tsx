@@ -328,7 +328,7 @@ export function AppSidebar() {
             minHeight: "40px",
           }}
         >
-          <div
+            <div
             className={cn(
               "flex items-center transition-all duration-300",
               expanded ? "w-[140px]" : "w-[40px]"
@@ -340,21 +340,38 @@ export function AppSidebar() {
               height: "35px",
               transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
             }}
-          >
+            >
+            {/* Light mode logo */}
             <Image
               src="/logo_hor.svg"
               alt="Logo"
               width={140}
               height={35}
+              className="block dark:hidden"
               style={{
-          transition: "margin-left 0.3s, opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
-          marginLeft: expanded ? 0 : -50,
-          opacity: expanded ? 1 : 0,
-          objectFit: "contain",
+              transition: "margin-left 0.3s, opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
+              marginLeft: expanded ? 0 : -50,
+              opacity: expanded ? 1 : 0,
+              objectFit: "contain",
               }}
               priority
             />
-          </div>
+            {/* Dark mode logo */}
+            <Image
+              src="/logo_hor_b.svg"
+              alt="Logo"
+              width={140}
+              height={35}
+              className="hidden dark:block"
+              style={{
+              transition: "margin-left 0.3s, opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
+              marginLeft: expanded ? 0 : -50,
+              opacity: expanded ? 1 : 0,
+              objectFit: "contain",
+              }}
+              priority
+            />
+            </div>
         </button>
         <Button
           variant="ghost"
