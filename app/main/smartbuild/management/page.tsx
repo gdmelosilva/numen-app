@@ -54,12 +54,30 @@ export default function SmartbuildManagementPage() {
     if (!user || userLoading) return;
     setLoading(true);
     setError(null);
-    // Use project_id se existir, senão partner_id
     const params = new URLSearchParams();
-    if (user.project_id) {
-      params.append("project_id", String(user.project_id));
-    } else if (user.partner_id) {
-      params.append("partner_id", String(user.partner_id));
+    if (user.is_client) {
+      // Cliente: filtra por partner_id normalmente
+      if (user.partner_id) {
+        params.append("partner_id", String(user.partner_id));
+      }
+    } else {
+      // Não cliente: buscar todos os projetos do usuário
+      try {
+        const res = await fetch(`/api/project-resources/projects?user_id=${user.id}`);
+        if (!res.ok) throw new Error("Erro ao buscar projetos do usuário");
+        const projectIds: string[] = await res.json();
+        if (projectIds.length === 0) {
+          setTickets([]);
+          setLoading(false);
+          return;
+        }
+        // Para múltiplos project_id, buscar tickets para todos
+        params.append("project_id", projectIds.join(","));
+      } catch {
+        setError("Erro ao buscar projetos do usuário");
+        setLoading(false);
+        return;
+      }
     }
     Object.entries(customFilters).forEach(([key, value]) => {
       if (value) params.append(key, value);
