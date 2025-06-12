@@ -119,9 +119,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   try {
     const body = await req.json();
-    // Only allow certain fields
     const {
-      projectName,
       projectDesc,
       partnerId,
       project_type,
@@ -140,9 +138,21 @@ export async function POST(req: NextRequest) {
       opening_time,
       closing_time,
     } = body;
-    // Se for AMS, não insere campos de cobrança
+    // Busca dados do parceiro para montar o nome
+    const { data: partnerData, error: partnerError } = await supabase
+      .from("partner")
+      .select("partner_desc, partner_ext_id")
+      .eq("id", partnerId)
+      .single();
+    if (partnerError || !partnerData) {
+      return NextResponse.json(
+        { error: "Parceiro não encontrado ou sem EXT_ID." },
+        { status: 400 },
+      );
+    }
+    // Cria o projeto sem nome
     const insertData: Record<string, unknown> = {
-      projectName,
+      projectName: "",
       projectDesc,
       partnerId,
       project_type,
@@ -163,17 +173,34 @@ export async function POST(req: NextRequest) {
       insertData.value_hr_warn = value_hr_warn;
       insertData.baseline_hours = baseline_hours;
     }
-    // Insert into DB
-    const { data, error } = await supabase
+    const { data: created, error: insertError } = await supabase
       .from("project")
-      .insert([
-        insertData,
-      ])
-      .select();
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      .insert([insertData])
+      .select()
+      .single();
+    if (insertError || !created) {
+      return NextResponse.json(
+        { error: insertError?.message || "Erro ao criar projeto" },
+        { status: 400 },
+      );
     }
-    return NextResponse.json(data?.[0] ?? {}, { status: 201 });
+    // Monta o nome do projeto com EXT_ID do projeto (preenchendo com zeros à esquerda até 3 dígitos)
+    const partnerDesc = (partnerData.partner_desc || "")
+      .replace(/\s/g, "")
+      .toUpperCase()
+      .slice(0, 4);
+    const contractType = project_type;
+    const year = new Date().getFullYear();
+    let extId = created.projectExtId || created.id || "0";
+    extId = extId.toString().padStart(3, "0");
+    const projectName = `${partnerDesc}.${contractType}.${year}.${extId}`;
+    // Atualiza o projeto com o nome correto
+    await supabase
+      .from("project")
+      .update({ projectName })
+      .eq("id", created.id);
+    // Retorna o projeto já com o nome
+    return NextResponse.json({ ...created, projectName }, { status: 201 });
   } catch {
     return NextResponse.json(
       { error: "Erro ao criar projeto" },
