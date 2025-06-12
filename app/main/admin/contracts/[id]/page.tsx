@@ -21,17 +21,6 @@ export default function ProjectDetailPage() {
     console.log("[ProjectDetailPage] id param:", id);
     const loadContractData = async () => {
       try {
-        // Primeiro, tentar obter os dados do sessionStorage
-        const cachedData = sessionStorage.getItem(`contract-${id}`);
-        if (cachedData) {
-          const contractData = JSON.parse(cachedData);
-          console.log("[ProjectDetailPage] Dados do sessionStorage:", contractData);
-          setProject(contractData);
-          setLoading(false);
-          return;
-        }
-
-        // Se não encontrar no cache, fazer fetch da API
         const response = await fetch(`/api/admin/contracts?id=${id}`);
         console.log("[ProjectDetailPage] Response status:", response.status);
         if (!response.ok) {
@@ -39,20 +28,15 @@ export default function ProjectDetailPage() {
           setLoading(false);
           return;
         }
-        
         const { data } = await response.json();
         console.log("[ProjectDetailPage] Dados retornados da API:", data);
         const contractData = Array.isArray(data) ? data[0] : (Array.isArray(data.data) ? data.data[0] : data.data || data);
-
         if (!contractData) {
           setError(true);
           setLoading(false);
           return;
         }
-
         setProject(contractData);
-        // Salva no sessionStorage para navegação rápida futura
-        sessionStorage.setItem(`contract-${id}`, JSON.stringify(contractData));
         setLoading(false);
       } catch (err) {
         console.error("Erro ao carregar contrato:", err);
@@ -60,16 +44,7 @@ export default function ProjectDetailPage() {
         setLoading(false);
       }
     };
-
-    // Sempre tenta pegar do sessionStorage primeiro
-    const cachedData = sessionStorage.getItem(`contract-${id}`);
-    if (cachedData) {
-      console.log("[ProjectDetailPage] Dados do sessionStorage (fora do async):", JSON.parse(cachedData));
-      setProject(JSON.parse(cachedData));
-      setLoading(false);
-    } else {
-      loadContractData();
-    }
+    loadContractData();
   }, [id]);
 
   if (loading) {
