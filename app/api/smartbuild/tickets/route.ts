@@ -51,6 +51,26 @@ export async function GET(request: Request) {
     query = query.eq("partner_id", partner_id);
   }
 
+  // Filtros adicionais
+  const filterableFields = [
+    "external_id",
+    "title",
+    "status_id",
+    "priority_id",
+    "type_id",
+    "category_id",
+    "is_closed",
+    "created_at",
+    "planned_end_date",
+    "actual_end_date"
+  ];
+  filterableFields.forEach((field) => {
+    const value = searchParams.get(field);
+    if (value) {
+      query = query.eq(field, value);
+    }
+  });
+
   const { data, error } = await query;
 
   if (error) {
