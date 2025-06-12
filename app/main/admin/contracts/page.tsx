@@ -83,8 +83,8 @@ export default function ContractsPage() {
         throw new Error(errorData.error || "Falha ao carregar projetos");
       }
       const data = await response.json();
-      if (Array.isArray(data)) {
-        setContracts(data);
+      if (Array.isArray(data.data)) {
+        setContracts(data.data);
       } else {
         setContracts([]);
       }

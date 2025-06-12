@@ -42,7 +42,7 @@ export default function ProjectDetailPage() {
         
         const { data } = await response.json();
         console.log("[ProjectDetailPage] Dados retornados da API:", data);
-        const contractData = Array.isArray(data) ? data[0] : data;
+        const contractData = Array.isArray(data) ? data[0] : (Array.isArray(data.data) ? data.data[0] : data.data || data);
 
         if (!contractData) {
           setError(true);
