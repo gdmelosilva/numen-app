@@ -172,6 +172,18 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
               <Label htmlFor="end_at">Data Final</Label>
               <Input id="end_at" type="date" value={end_at} onChange={e => setEndAt(e.target.value)} />
             </div>
+            {/* Campos de cobrança só aparecem se NÃO for AMS */}
+            {project_type !== "AMS" && (
+              <>
+                {/* Adicione aqui os campos de cobrança, se existirem */}
+                {/* Exemplo:
+                <div className="grid gap-2">
+                  <Label htmlFor="hours_max">Horas Máx.</Label>
+                  <Input id="hours_max" type="number" value={hours_max} onChange={e => setHoursMax(e.target.value)} />
+                </div>
+                */}
+              </>
+            )}
           </div>
           {error && <p className="text-sm text-red-500 mt-4">{error}</p>}
           <Button type="submit" className="w-full mt-4" disabled={isLoading}>

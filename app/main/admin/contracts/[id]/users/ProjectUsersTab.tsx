@@ -5,6 +5,7 @@ import type { User } from '@/types/users';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { Users } from 'lucide-react';
 
 export default function ProjectUsersTab({ projectId }: { projectId: string }) {
     const [users, setUsers] = useState<User[]>([]);
@@ -59,6 +60,24 @@ export default function ProjectUsersTab({ projectId }: { projectId: string }) {
             .finally(() => setLoading(false));
     };
 
+    // Preenche horas consumidas para cada usuário
+    const [usersWithHours, setUsersWithHours] = useState<(User & { horas_consumidas: number })[]>([]);
+    useEffect(() => {
+        if (!users.length) return;
+        let isMounted = true;
+        Promise.all(users.map(async (u) => {
+            const res = await fetch(`/api/ticket-hours?user_id=${u.id}&project_id=${projectId}`);
+            const data = await res.json();
+            let horas_consumidas = 0;
+            if (Array.isArray(data) && data.length > 0) {
+                const totalMinutes = data.reduce((sum, item) => sum + (item.minutes || 0), 0);
+                horas_consumidas = +(totalMinutes / 60).toFixed(2);
+            }
+            return { ...u, horas_consumidas };
+        })).then(arr => { if (isMounted) setUsersWithHours(arr); });
+        return () => { isMounted = false; };
+    }, [users, projectId]);
+
     if (loading) {
         return (
             <div className="text-center py-8">
@@ -72,10 +91,15 @@ export default function ProjectUsersTab({ projectId }: { projectId: string }) {
     }
     return (
         <div>
-            <div className="flex justify-end mb-4">
-                <Button onClick={handleOpenDialog}>Vincular Usuário</Button>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
+                <div className="flex items-center gap-2 mt-4">
+                    <h2 className="flex items-center text-lg font-semibold">
+                        <Users className="w-4 h-4 mr-2" /> Usuários Vinculados
+                    </h2>
+                </div>
+                <Button onClick={handleOpenDialog} className="whitespace-nowrap mt-4">Vincular Usuário</Button>
             </div>
-            <DataTable columns={columns} data={users} />
+            <DataTable columns={columns} data={usersWithHours.length ? usersWithHours : users} />
             <Dialog open={showDialog} onOpenChange={setShowDialog}>
                 <DialogContent>
                     <DialogHeader>

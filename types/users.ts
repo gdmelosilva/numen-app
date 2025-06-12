@@ -10,4 +10,5 @@ export interface User {
     role: number | null;
     partner_id: number | null;
     partner_desc: string | null;
+    hours_max?: number | null;
 }

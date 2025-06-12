@@ -91,12 +91,13 @@ Backlog geral:
 - [ ] Verificar estrutura de pastas de arquivo
 
 Backlog Contratos: (pegar referencia no projeto antigo)
-- [ ] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
-- [ ] Criar funções: Alocar Recurso, Editar Projeto (dados do projeto + campos adicionais), 
-- [ ] Se contrato AMS incluir campo Horas_max (maximo de horas para melhoria) - se maior, avisar ao gerente.
+- [X] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
+- [X] Criar funções: Editar Projeto (dados do projeto + campos adicionais), 
+- [ ] Acertar funções: Alocar Recurso
+- [X] Se contrato AMS incluir campo Horas_max (maximo de horas para melhoria) - se maior, avisar ao gerente.
 - [ ] Se contrato AMS incluir campo prd_credito (maximo de horas para melhoria) - se maior, avisar ao gerente.
-- [ ] Se contrato AMS incluir campos de valor / hora.
-- [ ] Se contrato AMS incluir campos de Baseline.
+- [X] Se contrato AMS incluir campos de valor / hora.
+- [X] Se contrato AMS incluir campos de Baseline.
 - [ ] 4 Primeiras letras do nome do cliente / Tipo do contrato (AMS, TKEY, BODY) / ANO-0000 (seq) MEDI.AMS.2025-001 // Id Automatico do Contrato
 - [ ] implementar encerramento do contrato - dialog com data de término e encerrar TODOS OS CHAMADOS RELACIONADOS.
 - [ ] Criar alteração de status no contrato, criar status paralisado para o status de contrato Em Mobilização
