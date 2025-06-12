@@ -31,8 +31,43 @@ export function ContractTableRowActions<TData extends Contract>({
     }
   }
   const handleCloseProject = async () => {
-    // TODO: Implement API call to close/end the project
-    toast.info("Funcionalidade de encerrar projeto ainda não implementada.");
+    const contractId = row.original.id;
+    if (!contractId) return toast.error("ID do projeto não encontrado.");
+    try {
+      // Buscar status 'Encerrado'
+      const statusRes = await fetch("/api/options?type=project_status");
+      const statuses: { id: string; name: string }[] = await statusRes.json();
+      const encerrado = statuses.find((s) => s.name.toLowerCase().includes("encerr"));
+      if (!encerrado) return toast.error("Status 'Encerrado' não encontrado.");
+      // Verifica se já está encerrado
+      const currentStatus = (typeof row.original.project_status === "object" && row.original.project_status !== null && "name" in row.original.project_status)
+        ? String((row.original.project_status as { name?: string }).name ?? "").toLowerCase()
+        : String(row.original.project_status ?? "").toLowerCase();
+      if (currentStatus.includes("encerr")) {
+        return toast.info("O projeto já está encerrado.");
+      }
+      // Atualizar contrato
+      const now = new Date();
+      const endAt = now.toISOString().slice(0, 10); // YYYY-MM-DD
+      const res = await fetch("/api/admin/contracts/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: contractId,
+          project_status: encerrado.id,
+          end_at: endAt,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao encerrar projeto");
+      }
+      toast.success("Projeto encerrado com sucesso!");
+      // Opcional: recarregar página ou atualizar tabela
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Erro ao encerrar projeto";
+      toast.error(errorMsg);
+    }
   }
   return (
     <>

@@ -93,14 +93,58 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     setError(null);
     setSuccess(null);
     try {
+      // Monta objeto apenas com campos alterados
+      const changedFields: Record<string, unknown> = {};
+      Object.entries(form).forEach(([key, value]) => {
+        let originalValue = undefined;
+        if (key in project) {
+          originalValue = project[key as keyof typeof project];
+        }
+        // project_status pode ser objeto ou string
+        if (key === "project_status") {
+          originalValue = typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status
+            ? project.project_status.id
+            : project.project_status;
+        }
+        // Lista de campos numéricos
+        const numericFields = [
+          "hours_max", "cred_exp_period", "value_hr_normal", "value_hr_excdn", "value_hr_except", "value_hr_warn", "baseline_hours"
+        ];
+        // Lista de campos de horário
+        const timeFields = ["opening_time", "closing_time"];
+        let sendValue = value;
+        if (numericFields.includes(key)) {
+          if (value === "" || value === undefined) {
+            // Não adiciona o campo se vazio
+            return;
+          } else {
+            sendValue = typeof value === "string" ? Number(value) : value;
+            if (isNaN(sendValue as number)) return;
+          }
+        }
+        if (timeFields.includes(key)) {
+          if (value === "" || value === undefined) {
+            // Não adiciona o campo se vazio
+            return;
+          }
+        }
+        // Normaliza datas para comparação
+        if ((key === "start_date" || key === "end_at") && value && originalValue) {
+          const v1 = String(value).slice(0, 10);
+          const v2 = String(originalValue).slice(0, 10);
+          if (v1 !== v2) changedFields[key] = sendValue;
+        } else if (sendValue !== originalValue) {
+          changedFields[key] = sendValue;
+        }
+      });
+      // Sempre envie id, partnerId e updated_at
+      changedFields.id = project.id;
+      changedFields.partnerId = project.partnerId || project.partner?.id || null;
+      changedFields.updated_at = new Date().toISOString();
       const response = await fetch("/api/admin/contracts/update", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: project.id,
-          partnerId: project.partnerId || project.partner?.id || null, // Always send partnerId
-          ...form,
-        }),
+        body: JSON.stringify(changedFields),
       });
       if (!response.ok) {
         const data = await response.json();
