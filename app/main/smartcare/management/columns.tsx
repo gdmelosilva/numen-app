@@ -24,6 +24,13 @@ export const columns: ColumnDef<Ticket>[] = [
     ),
   },
   {
+    accessorKey: "project.projectName",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Contrato" />
+    ),
+    cell: ({ row }) => row.original.project?.projectName || row.original.project_id || "-",
+  },
+  {
     accessorKey: "partner.partner_desc",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Parceiro" />
@@ -55,7 +62,36 @@ export const columns: ColumnDef<Ticket>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
-    cell: ({ row }) => row.original.status?.name || row.original.status_id || "-",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      const name = status?.name || row.original.status_id || "-";
+      // Suporte para cor customizada vinda do backend (ex: status.color)
+      let variant: "default" | "secondary" | "destructive" | "outline" | "ghost" | "approved" | "accent" | "primary" | "primary-2" = "outline";
+      if (status && status.color) {
+        // Mapeamento customizado de cor para variant
+        const colorMap = {
+          cyan: "approved",
+          orange: "primary",
+          red: "destructive",
+          green: "accent",
+          gray: "secondary",
+          none: "outline",
+          // Adicione outros mapeamentos conforme necessário
+        } as const;
+        const allowedVariants = [
+          "default", "secondary", "destructive", "outline", "ghost", "approved", "accent", "primary", "primary-2"
+        ] as const;
+        const mapped = colorMap[status.color.toLowerCase() as keyof typeof colorMap];
+        if (mapped && allowedVariants.includes(mapped)) {
+          variant = mapped;
+        } else if (allowedVariants.includes(status.color as typeof allowedVariants[number])) {
+          variant = status.color as typeof variant;
+        } else {
+          variant = "outline";
+        }
+      }
+      return name !== "-" ? <Badge variant={variant}>{name}</Badge> : "-";
+    },
   },
   {
     accessorKey: "created_at",
@@ -69,14 +105,16 @@ export const columns: ColumnDef<Ticket>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Prioridade" />
     ),
-    cell: ({ row }) => row.original.priority?.name || row.original.priority_id || "-",
-  },
-  {
-    accessorKey: "project.projectName",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Contrato" />
-    ),
-    cell: ({ row }) => row.original.project?.projectName || row.original.project_id || "-",
+    cell: ({ row }) => {
+      const prioridade = row.original.priority?.name || row.original.priority_id || "-";
+      let variant: "primary" | "outline" | "destructive" = "primary";
+      if (typeof prioridade === "string") {
+        if (prioridade.toLowerCase() === "alta") variant = "destructive";
+        else if (prioridade.toLowerCase() === "baixa") variant = "outline";
+        else variant = "primary";
+      }
+      return prioridade !== "-" ? <Badge variant={variant}>{prioridade}</Badge> : "-";
+    },
   },
   {
     accessorKey: "planned_end_date",

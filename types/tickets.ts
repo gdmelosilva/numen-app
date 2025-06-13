@@ -28,7 +28,7 @@ export type Ticket = {
   category?: { id: number; name: string };
   type?: { id: number; name: string };
   module?: { id: number; name: string };
-  status?: { id: number; name: string };
+  status?: { id: number; name: string; color?: string };
   priority?: { id: number; name: string };
   partner?: { id: string; partner_desc: string };
   project?: { id: string; projectName: string };
