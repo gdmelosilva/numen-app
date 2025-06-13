@@ -16,9 +16,9 @@ export default function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps)
     useEffect(() => {
         setLoading(true);
         setError(null);
-        fetch(`/api/smartbuild/tickets?project_id=${projectId}`)
+        fetch(`/api/smartcare/tickets?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar tickets'))
-            .then(data => setTickets(Array.isArray(data) ? data : data?.data || []))
+            .then(data => setTickets(Array.isArray(data) ? data : data?.data ?? []))
             .catch(err => setError(typeof err === 'string' ? err : 'Erro ao buscar tickets'))
             .finally(() => setLoading(false));
     }, [projectId]);
