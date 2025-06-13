@@ -158,7 +158,7 @@ export function AppSidebar() {
       isActive: true,
       newTab: false,
       items: [
-        { title: "Gestão AMS", url: "/main/smartcare", newTab: false },
+        { title: "Gestão AMS", url: "/main/smartcare/ams", newTab: false },
         { title: "Administrar Chamados", url: "/main/smartcare/management", newTab: false },
         { title: "Abrir Chamado", url: "/main/smartcare/create", newTab: false },
       ],
