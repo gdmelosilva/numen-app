@@ -3,9 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CheckCircle2, XCircle } from "lucide-react"
-
-import { Badge } from "@/components/ui/badge"
+import { ColoredBadge } from "@/components/ui/colored-badge"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { UserTableRowActions } from "@/components/user-table-row-actions"
 
@@ -85,29 +83,16 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title="Função" />
     ),
     cell: ({ row }) => {
-      const role = row.getValue("role") as number | null
-      if (!role) return <Badge variant="outline">Sem função</Badge>
-
-      // Convert role number to display name and variant
-      const getRoleInfo = (roleNum: number): { name: string; variant: "default" | "secondary" | "destructive" | "outline" | "accent" | "approved" } => {
-        switch (roleNum) {
-          case 1:
-        return { name: "Administrador", variant: "destructive" }
-          case 2:
-        return { name: "Gerente", variant: "accent" }
-          case 3: {
-            const isClient = row.original.is_client;
-            return isClient
-              ? { name: "Key-User", variant: "secondary" }
-              : { name: "Funcional", variant: "approved" };
-          }
-          default:
-        return { name: "Desconhecido", variant: "outline" }
-        }
-      }
-
-      const roleInfo = getRoleInfo(role)
-      return <Badge variant={roleInfo.variant}>{roleInfo.name}</Badge>
+      const role = row.getValue("role") as number | null;
+      const isClient = row.original.is_client;
+      let cargo = "Indefinido";
+      if (role === 1) cargo = "Administrador";
+      else if (role === 2) cargo = "Gerente";
+      else if (role === 3 && isClient === true) cargo = "Key-User";
+      else if (role === 3 && isClient === false) cargo = "Funcional";
+      else if (isClient === true) cargo = "Cliente";
+      else if (isClient === false) cargo = "Administrativo";
+      return <ColoredBadge value={cargo} type="user_role" />;
     },
   },
   {
@@ -116,13 +101,8 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title="Tipo" />
     ),
     cell: ({ row }) => {
-      const isClient = row.getValue("is_client") as boolean
-      
-      return (
-        <Badge variant={isClient ? "secondary" : "default"}>
-          {isClient ? "Cliente" : "Administrativo"}
-        </Badge>
-      )
+      const isClient = row.getValue("is_client") as boolean | string | { name: string; color: string } | null | undefined;
+      return <ColoredBadge value={isClient} type="is_client" />;
     },
   },
   {
@@ -141,18 +121,8 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title="Status" />
     ),
     cell: ({ row }) => {
-      const active = row.getValue("is_active") as boolean
-
-      return (
-        <Badge variant={active ? "approved" : "destructive"}>
-          {active ? (
-            <CheckCircle2 className="mr-1 h-3 w-3" />
-          ) : (
-            <XCircle className="mr-1 h-3 w-3" />
-          )}
-          {active ? "Ativo" : "Inativo"}
-        </Badge>
-      )
+      const active = row.getValue("is_active") as string | boolean | { name: string; color: string } | null | undefined;
+      return <ColoredBadge value={active} type="status" />;
     },
   },
   {

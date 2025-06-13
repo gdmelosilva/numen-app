@@ -16,6 +16,7 @@ import type { MarketingInterface } from "@/types/marketing_segments";
 import { formatCpfCnpj, formatPhoneNumber } from "@/lib/utils";
 import { UnlinkUserButton } from "@/components/UnlinkUserButton";
 import { LinkUserButton } from "@/components/LinkUserButton";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 
 type PageProps = {
   params?: Promise<{ id: string }>;
@@ -252,30 +253,21 @@ export default function PartnerDetailsPage(props: Readonly<PageProps>) {
         } else {
           roleLabel = "Funcional";
         }
-        return roleLabel;
+        return <ColoredBadge value={roleLabel} type="user_role" />;
       },
     },
     {
       accessorKey: "is_client",
       header: "Tipo",
       cell: ({ row }) => (
-        <Badge variant={row.original.is_client ? "secondary" : "default"}>
-          {row.original.is_client ? "Cliente" : "Administrativo"}
-        </Badge>
+        <ColoredBadge value={row.original.is_client} type="is_client" />
       ),
     },
     {
       accessorKey: "is_active",
       header: "Status",
       cell: ({ row }) => (
-        <Badge variant={row.original.is_active ? "approved" : "destructive"}>
-          {row.original.is_active ? (
-            <CheckCircle2 className="mr-1 h-3 w-3 inline" />
-          ) : (
-            <XCircle className="mr-1 h-3 w-3 inline" />
-          )}
-          {row.original.is_active ? "Ativo" : "Inativo"}
-        </Badge>
+        <ColoredBadge value={row.original.is_active} type="status" />
       ),
     },
     {
