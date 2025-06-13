@@ -6,9 +6,9 @@ export async function GET(request: Request) {
   const project_id = searchParams.get("project_id");
   const partner_id = searchParams.get("partner_id");
 
-  if (!project_id && !partner_id) {
-    return NextResponse.json({ error: "project_id ou partner_id é obrigatório" }, { status: 400 });
-  }
+  // if (!project_id && !partner_id) {
+  //   return NextResponse.json({ error: "project_id ou partner_id é obrigatório" }, { status: 400 });
+  // }
 
   const supabase = await createClient();
   let query = supabase
