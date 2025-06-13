@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { columns as columnsWithProjectId } from './columns';
 import { DataTable } from '@/components/ui/data-table';
 import type { User } from '@/types/users';
@@ -31,18 +31,12 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     useEffect(() => {
         setLoading(true);
         setError(null);
-        fetch(`/api/smartbuild/users?project_id=${projectId}`)
+        fetch(`/api/smartcare/users?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar usuários'))
-            .then(async (data) => {
+            .then((data) => {
+                // Usa diretamente os dados retornados pela API
                 const usersData: User[] = Array.isArray(data) ? data : data?.data || [];
-                const resLinks = await fetch(`/api/project-resources?project_id=${projectId}`);
-                type ProjectResourceLink = { user_id: string; is_suspended: boolean };
-                const links: ProjectResourceLink[] = await resLinks.json();
-                const usersWithSuspended = usersData.map((u) => {
-                    const link = Array.isArray(links) ? links.find((l) => l.user_id === u.id) : null;
-                    return { ...u, is_suspended: link ? link.is_suspended : false };
-                });
-                setUsers(usersWithSuspended);
+                setUsers(usersData);
             })
             .catch(err => setError(typeof err === 'string' ? err : 'Erro ao buscar usuários'))
             .finally(() => setLoading(false));
@@ -85,7 +79,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                 project_id: projectId,
                 user_id: selectedUserId,
                 max_hours: Number(maxHours),
-                user_functional: userFunctional, // agora envia o id do módulo
+                user_functional: userFunctional,
             })
         });
         setShowDialog(false);
@@ -93,18 +87,11 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
         setMaxHours('');
         setUserFunctional('');
         setLoading(true);
-        fetch(`/api/smartbuild/users?project_id=${projectId}`)
+        fetch(`/api/smartcare/users?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar usuários'))
-            .then(async (data) => {
+            .then((data) => {
                 const usersData: User[] = Array.isArray(data) ? data : data?.data || [];
-                const resLinks = await fetch(`/api/project-resources?project_id=${projectId}`);
-                type ProjectResourceLink = { user_id: string; is_suspended: boolean };
-                const links: ProjectResourceLink[] = await resLinks.json();
-                const usersWithSuspended = usersData.map((u) => {
-                    const link = Array.isArray(links) ? links.find((l) => l.user_id === u.id) : null;
-                    return { ...u, is_suspended: link ? link.is_suspended : false };
-                });
-                setUsers(usersWithSuspended);
+                setUsers(usersData);
             })
             .catch(err => setError(typeof err === 'string' ? err : 'Erro ao buscar usuários'))
             .finally(() => setLoading(false));
