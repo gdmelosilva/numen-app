@@ -59,7 +59,7 @@ export default function PartnersPage() {
       const response = await fetch(`/api/admin/partners?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Falha ao carregar parceiros");
+        throw new Error(errorData.error ?? "Falha ao carregar parceiros");
       }
       const data = await response.json();
       setPartners(Array.isArray(data) ? data : []);
@@ -239,7 +239,7 @@ export default function PartnersPage() {
                     <SelectTrigger className="h-9 w-full max-w-full">
                       <SelectValue>
                         {filters.partner_mkt_sg
-                          ? marketSegments.find(s => s.id.toString() === filters.partner_mkt_sg)?.name || "Filtrar por Segmento"
+                          ? marketSegments.find(s => s.id.toString() === filters.partner_mkt_sg)?.name ?? "Filtrar por Segmento"
                           : "Filtrar por Segmento"}
                       </SelectValue>
                     </SelectTrigger>
@@ -312,22 +312,28 @@ export default function PartnersPage() {
         </div>
       )}
 
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : error ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-destructive">{error}</p>
-            <Button onClick={fetchPartners} className="mt-4">
-              Tentar novamente
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <DataTable columns={columns} data={partners} />
-      )}
+      {(() => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
+        if (error) {
+          return (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-destructive">{error}</p>
+                <Button onClick={fetchPartners} className="mt-4">
+                  Tentar novamente
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        }
+        return <DataTable columns={columns} data={partners} />;
+      })()}
     </div>
   );
 }
