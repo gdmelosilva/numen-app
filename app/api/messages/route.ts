@@ -107,7 +107,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   // Autentica e pega o usuário logado
   const { user, error: authError } = await authenticateRequest();
-  if (authError || !user) return authError;
+  if (authError) {
+    return authError;
+  }
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const body = await req.json();
   const { ticket_id, body: msgBody, hours, is_private, status_id } = body;
   // Corrige: não aceitar created_by vindo do client (pode vir como objeto)

@@ -18,7 +18,7 @@ import { UnlinkUserButton } from "@/components/UnlinkUserButton";
 import { LinkUserButton } from "@/components/LinkUserButton";
 
 type PageProps = {
-  params: { id: string };
+  params?: Promise<{ id: string }>;
 };
 
 async function getPartner(id: string): Promise<PartnerWithUsers | null> {
@@ -59,10 +59,8 @@ type UserRow = {
   is_client: boolean;
 };
 
-export default function PartnerDetailsPage(props: PageProps) {
-  // @ts-expect-error Next.js migration: params may be a Promise in the future
-  const params = typeof props.params.then === "function" ? React.use(props.params) : props.params;
-  const partnerId = (params as { id: string }).id;
+export default function PartnerDetailsPage(props: Readonly<PageProps>) {
+  const [partnerId, setPartnerId] = useState<string>("");
   const [partner, setPartner] = useState<PartnerWithUsers | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -82,6 +80,12 @@ export default function PartnerDetailsPage(props: PageProps) {
   });
   const [error, setError] = useState<string | null>(null);
   const [marketSegments, setMarketSegments] = useState<MarketingInterface[]>([]);
+
+  // Extrai partnerId de props.params
+  useEffect(() => {
+    if (!props.params) return;
+    props.params.then((p) => setPartnerId(p?.id ?? ""));
+  }, [props.params]);
 
   // Fetch market segments and partner data on mount
   useEffect(() => {
@@ -110,14 +114,14 @@ export default function PartnerDetailsPage(props: PageProps) {
             partner_tel: p.partner_tel,
             partner_mkt_sg: segment
               ? { id: segment.id.toString(), name: segment.name }
-              : { id: "", name: p.partner_segment?.name || "" },
-            partner_cep: p.partner_cep || "",
-            partner_addrs: p.partner_addrs || "",
-            partner_compl: p.partner_compl || "",
-            partner_distr: p.partner_distr || "",
-            partner_city: p.partner_city || "",
-            partner_state: p.partner_state || "",
-            partner_cntry: p.partner_cntry || "",
+              : { id: "", name: p.partner_segment?.name ?? "" },
+            partner_cep: p.partner_cep ?? "",
+            partner_addrs: p.partner_addrs ?? "",
+            partner_compl: p.partner_compl ?? "",
+            partner_distr: p.partner_distr ?? "",
+            partner_city: p.partner_city ?? "",
+            partner_state: p.partner_state ?? "",
+            partner_cntry: p.partner_cntry ?? "",
           });
         }
       } catch (err: unknown) {
@@ -144,14 +148,14 @@ export default function PartnerDetailsPage(props: PageProps) {
         partner_ident: partner.partner_ident,
         partner_email: partner.partner_email,
         partner_tel: partner.partner_tel,
-        partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: partner.partner_segment?.name || "" },
-        partner_cep: partner.partner_cep || "",
-        partner_addrs: partner.partner_addrs || "",
-        partner_compl: partner.partner_compl || "",
-        partner_distr: partner.partner_distr || "",
-        partner_city: partner.partner_city || "",
-        partner_state: partner.partner_state || "",
-        partner_cntry: partner.partner_cntry || "",
+        partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: partner.partner_segment?.name ?? "" },
+        partner_cep: partner.partner_cep ?? "",
+        partner_addrs: partner.partner_addrs ?? "",
+        partner_compl: partner.partner_compl ?? "",
+        partner_distr: partner.partner_distr ?? "",
+        partner_city: partner.partner_city ?? "",
+        partner_state: partner.partner_state ?? "",
+        partner_cntry: partner.partner_cntry ?? "",
       });
     }
     setEditMode(false);
@@ -203,14 +207,14 @@ export default function PartnerDetailsPage(props: PageProps) {
         partner_ident: p.partner_ident,
         partner_email: p.partner_email,
         partner_tel: p.partner_tel,
-        partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: p.partner_segment?.name || "" },
-        partner_cep: p.partner_cep || "",
-        partner_addrs: p.partner_addrs || "",
-        partner_compl: p.partner_compl || "",
-        partner_distr: p.partner_distr || "",
-        partner_city: p.partner_city || "",
-        partner_state: p.partner_state || "",
-        partner_cntry: p.partner_cntry || "",
+        partner_mkt_sg: segment ? { id: segment.id.toString(), name: segment.name } : { id: "", name: p.partner_segment?.name ?? "" },
+        partner_cep: p.partner_cep ?? "",
+        partner_addrs: p.partner_addrs ?? "",
+        partner_compl: p.partner_compl ?? "",
+        partner_distr: p.partner_distr ?? "",
+        partner_city: p.partner_city ?? "",
+        partner_state: p.partner_state ?? "",
+        partner_cntry: p.partner_cntry ?? "",
       });
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -237,14 +241,19 @@ export default function PartnerDetailsPage(props: PageProps) {
     {
       accessorKey: "role",
       header: "Função",
-      cell: ({ row }) =>
-        row.original.role === 1
-          ? "Administrador"
-          : row.original.role === 2
-          ? "Gerente"
-          : row.original.is_client
-          ? "Key-User"
-          : "Funcional",
+      cell: ({ row }) => {
+        let roleLabel = "";
+        if (row.original.role === 1) {
+          roleLabel = "Administrador";
+        } else if (row.original.role === 2) {
+          roleLabel = "Gerente";
+        } else if (row.original.is_client) {
+          roleLabel = "Key-User";
+        } else {
+          roleLabel = "Funcional";
+        }
+        return roleLabel;
+      },
     },
     {
       accessorKey: "is_client",

@@ -6,28 +6,26 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { AuthenticatedUser } from '@/lib/api-auth';
 import DeniedAccessPage from '@/components/DeniedAccessPage';
 import { useRouter } from 'next/navigation';
-
-// Define user roles as an enum for better type safety and readability
-export enum UserRole {
-  Admin = 1,
-  Manager = 2,
-  Functional = 3,
-}
+import { UserRole } from '@/hooks/useOptions';
 
 // Utility function to map roles to profiles
 function getUserProfile(user: AuthenticatedUser) {
   if (!user) return null;
   const role = typeof user.role === 'number' ? user.role : Number(user.role);
-  if (!user.is_client) {
-    if (role === UserRole.Admin) return 'admin-adm';
-    if (role === UserRole.Manager) return 'manager-adm';
-    if (role === UserRole.Functional) return 'functional-adm';
-  } else {
-    if (role === UserRole.Admin) return 'admin-client';
-    if (role === UserRole.Manager) return 'manager-client';
-    if (role === UserRole.Functional) return 'functional-client';
-  }
-  return null;
+  const profileMap: Record<string, Record<number, string>> = {
+    adm: {
+      [UserRole.Admin]: 'admin-adm',
+      [UserRole.Manager]: 'manager-adm',
+      [UserRole.Functional]: 'functional-adm',
+    },
+    client: {
+      [UserRole.Admin]: 'admin-client',
+      [UserRole.Manager]: 'manager-client',
+      [UserRole.Functional]: 'functional-client',
+    },
+  };
+  const key = user.is_client ? 'client' : 'adm';
+  return profileMap[key][role] || null;
 }
 
 // Main AMS Page Component

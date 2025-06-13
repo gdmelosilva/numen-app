@@ -6,7 +6,12 @@ import { authenticateRequest, USER_ROLES } from "@/lib/api-auth";
 export async function GET() {
   // Autentica usuário
   const { user, error } = await authenticateRequest();
-  if (error || !user) return error;
+  if (error) {
+    return error;
+  }
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const supabase = await createClient();
 
@@ -99,8 +104,12 @@ export async function GET() {
 // PUT /api/smartcare/ams-projects/close
 export async function PUT(req: NextRequest) {
   const { user, error } = await authenticateRequest();
-  if (error || !user) return error;
-
+  if (error) {
+    return error;
+  }
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   if (user.role !== USER_ROLES.ADMIN && user.role !== USER_ROLES.MANAGER) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }

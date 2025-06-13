@@ -42,3 +42,9 @@ export async function getMarketSegments(): Promise<MarketingInterface[] | null> 
 
     return data || [];
 }
+
+export enum UserRole {
+  Admin = 1,
+  Manager = 2,
+  Functional = 3,
+}
