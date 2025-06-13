@@ -93,14 +93,14 @@ Backlog geral:
 Backlog Contratos: (pegar referencia no projeto antigo)
 - [X] Criar detalhes do projeto (com informações do projeto, recursos alocados, se for AMS - Tickets relacionados, se não, Atividades Relacionadas)...
 - [X] Criar funções: Editar Projeto (dados do projeto + campos adicionais), 
-- [ ] Acertar funções: Alocar Recurso
+- [X] Acertar funções: Alocar Recurso
 - [X] Se contrato AMS incluir campo Horas_max (maximo de horas para melhoria) - se maior, avisar ao gerente.
-- [ ] Se contrato AMS incluir campo prd_credito (maximo de horas para melhoria) - se maior, avisar ao gerente.
+- [X] Se contrato AMS incluir campo prd_credito (maximo de horas para melhoria) - se maior, avisar ao gerente.
 - [X] Se contrato AMS incluir campos de valor / hora.
 - [X] Se contrato AMS incluir campos de Baseline.
-- [ ] 4 Primeiras letras do nome do cliente / Tipo do contrato (AMS, TKEY, BODY) / ANO-0000 (seq) MEDI.AMS.2025-001 // Id Automatico do Contrato
-- [ ] implementar encerramento do contrato - dialog com data de término e encerrar TODOS OS CHAMADOS RELACIONADOS.
-- [ ] Criar alteração de status no contrato, criar status paralisado para o status de contrato Em Mobilização
+- [X] 4 Primeiras letras do nome do cliente / Tipo do contrato (AMS, TKEY, BODY) / ANO-0000 (seq) MEDI.AMS.2025-001 // Id Automatico do Contrato
+- [X] implementar encerramento do contrato - dialog com data de término e encerrar TODOS OS CHAMADOS RELACIONADOS.
+- [X] Criar alteração de status no contrato, criar status paralisado para o status de contrato Em Mobilização
 - [ ] Limite total de horas por membro (adicionar) na alocação
 - [ ] validação de ter somente 1 contrato AMS por parceiro
 - [ ] Liberação de Horas no Projeto (liberado horas para atividade) - Horas do recurso na atividade CAMPO SOMENTE LEITURA DE HORAS TOTAIS UTILIZADAS DO RECURSO NO PROJETO e Botão para liberar mais horas

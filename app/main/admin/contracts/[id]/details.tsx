@@ -345,7 +345,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
                 {/* Linha 1: Horas Máx, Horas Baseline */}
                 <div className="grid gap-6 md:grid-cols-4">
                   <div>
-                    <Label htmlFor="hours_max" className="text-xs text-muted-foreground">Horas Máx.</Label>
+                    <Label htmlFor="hours_max" className="text-xs text-muted-foreground">Máx. Horas por Chamado</Label>
                     <Input id="hours_max" name="hours_max" type="number" value={form.hours_max || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
                   </div>
                   <div>

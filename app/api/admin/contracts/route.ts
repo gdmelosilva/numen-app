@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
       .single();
     if (partnerError || !partnerData) {
       return NextResponse.json(
-        { error: "Parceiro não encontrado ou sem EXT_ID." },
+        { error: "Verifique o campo de associação ao Parceiro" },
         { status: 400 },
       );
     }
@@ -179,9 +179,13 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
     if (insertError || !created) {
+      let errorMessage = insertError?.message || "Erro ao criar projeto";
+      if (errorMessage.includes("project_type")) {
+      errorMessage = "Verifique o Tipo de Projeto informado";
+      }
       return NextResponse.json(
-        { error: insertError?.message || "Erro ao criar projeto" },
-        { status: 400 },
+      { error: errorMessage },
+      { status: 400 },
       );
     }
     // Monta o nome do projeto com EXT_ID do projeto (preenchendo com zeros à esquerda até 3 dígitos)
