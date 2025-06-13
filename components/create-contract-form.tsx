@@ -16,7 +16,6 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
   const [projectDesc, setProjectDesc] = useState("");
   const [partnerId, setPartnerId] = useState("");
   const [project_type, setProjectType] = useState("");
-  const [project_status, setProjectStatus] = useState("");
   const [is_wildcard, setIsWildcard] = useState<null | boolean>(null);
   const [is_247, setIs247] = useState<null | boolean>(null);
   const [start_date, setStartDate] = useState("");
@@ -24,17 +23,12 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [partners, setPartners] = useState<{ id: string; name: string; partner_desc?: string; partner_ext_id?: string }[]>([]);
-  const [statuses, setStatuses] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     // Buscar parceiros (agora trazendo partner_desc e partner_ext_id)
     fetch("/api/options?type=partners")
       .then((res) => res.json())
       .then((data) => setPartners(data || []));
-    // Buscar status de projeto
-    fetch("/api/options?type=project_status")
-      .then((res) => res.json())
-      .then((data) => setStatuses(data || []));
   }, []);
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -42,6 +36,8 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
     setIsLoading(true);
     setError(null);
     try {
+      // Definir status fixo conforme o tipo de projeto
+      const statusToSend = project_type === "AMS" ? "4" : "5";
       const response = await fetch("/api/admin/contracts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,7 +46,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
           projectDesc,
           partnerId,
           project_type,
-          project_status,
+          project_status: statusToSend,
           is_wildcard,
           is_247,
           start_date,
@@ -94,7 +90,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
             </div> */}
             <div className="grid gap-2">
               <Label htmlFor="projectDesc">Descrição</Label>
-              <Input id="projectDesc" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} />
+              <Input id="projectDesc" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} required />
             </div>
             <div className="grid gap-2 w-full w-max-full">
               <Label>ID do Parceiro</Label>
@@ -123,19 +119,6 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
               </Select>
             </div>
             <div className="grid gap-2 w-full w-max-full">
-              <Label>Status do Projeto</Label>
-              <Select value={project_status} onValueChange={setProjectStatus} required>
-                <SelectTrigger id="project_status" className="w-full w-max-full">
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2 w-full w-max-full">
               <Label className="flex items-center gap-1">
                 Wildcard?
                 <TooltipProvider>
@@ -151,7 +134,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <Select value={is_wildcard === null ? "all" : is_wildcard ? "true" : "false"} onValueChange={v => setIsWildcard(v === "all" ? null : v === "true") }>
+              <Select value={is_wildcard === null ? "all" : is_wildcard ? "true" : "false"} onValueChange={v => setIsWildcard(v === "all" ? null : v === "true") } required>
                 <SelectTrigger className="w-full w-max-full" id="is_wildcard"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
@@ -162,7 +145,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
             </div>
             <div className="grid gap-2 w-full w-max-full">
               <Label>24/7?</Label>
-              <Select value={is_247 === null ? "all" : is_247 ? "true" : "false"} onValueChange={v => setIs247(v === "all" ? null : v === "true") }>
+              <Select value={is_247 === null ? "all" : is_247 ? "true" : "false"} onValueChange={v => setIs247(v === "all" ? null : v === "true") } required>
                 <SelectTrigger id="is_247" className="w-full w-max-full"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
@@ -173,7 +156,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
             </div>
             <div className="grid gap-2">
               <Label htmlFor="start_date">Data Inicial</Label>
-              <Input id="start_date" type="date" value={start_date} onChange={e => setStartDate(e.target.value)} />
+              <Input id="start_date" type="date" value={start_date} onChange={e => setStartDate(e.target.value)} required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="end_at">Data Final</Label>
