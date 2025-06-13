@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import React from "react";
 import { PauseCircle, PlayCircle } from "lucide-react";
 import { EditProjectUserHoursButton } from "@/components/EditProjectUserHoursButton";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 type User = BaseUser & {
   horas_consumidas?: number;
@@ -84,34 +85,70 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
         }
       };
       return (
-        <div className="flex items-center gap-2">
-          <Button
-            size="icon"
-            variant={user.is_suspended ? "colored2" : "colored1"}
-            className="text-white"
-            title={user.is_suspended ? "Reativar recurso" : "Suspender recurso"}
-            onClick={handleToggleSuspended}
-            disabled={isClosed}
-          >
-            {user.is_suspended ? <PlayCircle className="w-5 h-5" /> : <PauseCircle className="w-5 h-5" />}
-          </Button>
-          <EditProjectUserHoursButton
-            userId={user.id}
-            projectId={projectId}
-            projectResourceId={user.project_resource_id ?? 0}
-            currentHours={user.hours_max ?? 0}
-            onUpdated={() => window.location.reload()}
-            disabled={isClosed}
-          />
-          <UnlinkProjectUserButtonProject
-            userId={user.id}
-            projectId={projectId}
-            projectResourceId={user.project_resource_id ?? 0}
-            consumedHours={user.horas_consumidas || 0}
-            onUnlinked={() => window.location.reload()}
-            disabled={isClosed}
-          />
-        </div>
+        <TooltipProvider>
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    window.open(`/smartcare/ams/${projectId}/tickets/messages?userId=${user.id}`, "_blank");
+                  }}
+                >
+                  <span className="sr-only">Ver mensagens do usuário</span>
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Ver mensagens do usuário (abre em nova aba)</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={handleToggleSuspended}
+                  disabled={isClosed}
+                >
+                  {user.is_suspended ? <PlayCircle className="w-5 h-5" /> : <PauseCircle className="w-5 h-5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{user.is_suspended ? "Reativar usuário no projeto" : "Suspender usuário no projeto"}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <EditProjectUserHoursButton
+                    userId={user.id}
+                    projectId={projectId}
+                    projectResourceId={user.project_resource_id ?? 0}
+                    currentHours={user.hours_max ?? 0}
+                    onUpdated={() => window.location.reload()}
+                    disabled={isClosed}
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Editar horas alocadas do usuário</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <UnlinkProjectUserButtonProject
+                    userId={user.id}
+                    projectId={projectId}
+                    projectResourceId={user.project_resource_id ?? 0}
+                    consumedHours={user.horas_consumidas ?? 0}
+                    onUnlinked={() => window.location.reload()}
+                    disabled={isClosed}
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Desvincular usuário do projeto</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       );
     },
     enableSorting: false,
