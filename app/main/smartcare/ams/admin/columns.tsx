@@ -1,6 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import { Badge } from "@/components/ui/badge";
 import type { Contract } from "@/types/contracts";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -8,12 +7,13 @@ import { MoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Row } from "@tanstack/react-table";
+import { ColoredBadge } from '@/components/ui/colored-badge';
 
 interface AMSProjectTableRowActionsProps<TData> {
   row: Row<TData>;
 }
 
-export function AMSProjectTableRowActions<TData extends Contract>({ row }: AMSProjectTableRowActionsProps<TData>) {
+export function AMSProjectTableRowActions<TData extends Contract>({ row }: Readonly<AMSProjectTableRowActionsProps<TData>>) {
   const router = useRouter();
   const handleOpenDetails = () => {
     const contractId = row.original.id;
@@ -33,7 +33,7 @@ export function AMSProjectTableRowActions<TData extends Contract>({ row }: AMSPr
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Erro ao encerrar projeto");
+        throw new Error(err.error ?? "Erro ao encerrar projeto");
       }
       toast.success("Projeto encerrado com sucesso!");
       router.refresh();
@@ -70,12 +70,12 @@ export const columns: ColumnDef<Contract>[] = [
   {
     accessorKey: "projectExtId",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Project.Id" />,
-    cell: ({ row }) => row.original.projectExtId || "-",
+    cell: ({ row }) => row.original.projectExtId ?? "-",
   },
   {
     accessorKey: "projectName",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Nome" />,
-    cell: ({ row }) => <span>{row.original.projectName || "-"}</span>,
+    cell: ({ row }) => <span>{row.original.projectName ?? "-"}</span>,
   },
   {
     accessorKey: "projectDesc",
@@ -86,27 +86,37 @@ export const columns: ColumnDef<Contract>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Parceiro" />,
     cell: ({ row }) => row.original.partner && typeof row.original.partner === "object" && "partner_desc" in row.original.partner
       ? row.original.partner.partner_desc
-      : row.original.partnerId || "-",
+      : row.original.partnerId ?? "-",
   },
   {
     accessorKey: "project_type",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
-    cell: ({ row }) => row.original.project_type || "-",
+    cell: ({ row }) => (
+      <div className="text-center w-full">
+        <ColoredBadge value={row.original.project_type} type="project_type" />
+      </div>
+    ),
   },
   {
     accessorKey: "project_status.name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => row.original.project_status?.name || "-",
+    cell: ({ row }) => (
+      <ColoredBadge value={row.original.project_status} type="project_status" />
+    ),
   },
   {
     accessorKey: "is_wildcard",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Wildcard?" />,
-    cell: ({ row }) => (row.original.is_wildcard ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>),
+    cell: ({ row }) => (
+      <ColoredBadge value={row.original.is_wildcard} type="boolean" />
+    ),
   },
   {
     accessorKey: "is_247",
     header: ({ column }) => <DataTableColumnHeader column={column} title="24/7?" />,
-    cell: ({ row }) => (row.original.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>),
+    cell: ({ row }) => (
+      <ColoredBadge value={row.original.is_247} type="boolean" />
+    ),
   },
   {
     accessorKey: "start_date",

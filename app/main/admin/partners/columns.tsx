@@ -1,12 +1,11 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { PartnerTableRowActions } from "@/components/partner-table-row-actions";
-import { CheckCircle2, XCircle } from "lucide-react";
 import type { Partner } from "@/types/partners";
 import { formatCpfCnpj, formatPhoneNumber } from "@/lib/utils";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 
 export const columns: ColumnDef<Partner>[] = [
 	{
@@ -55,31 +54,16 @@ export const columns: ColumnDef<Partner>[] = [
 			<DataTableColumnHeader column={column} title="Tipo Parceiro" />
 		),
 		cell: ({ row }) => {
-			const value = row.getValue("is_compadm") as boolean;
-			const label = value ? "Administrativo" : "Cliente";
-			return (
-				<Badge variant={value ? "default" : "secondary"}>
-					{label}
-				</Badge>
-			);
+			const value = row.getValue("is_compadm") as string | boolean | { name: string; color: string } | null | undefined;
+			return <ColoredBadge value={value} type="is_client" />;
 		},
 	},
 	{
 		accessorKey: "is_active",
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
 		cell: ({ row }) => {
-			const active = row.getValue("is_active") as boolean;
-
-			return (
-				<Badge variant={active ? "approved" : "destructive"}>
-					{active ? (
-						<CheckCircle2 className="mr-1 h-3 w-3" />
-					) : (
-						<XCircle className="mr-1 h-3 w-3" />
-					)}
-					{active ? "Ativo" : "Inativo"}
-				</Badge>
-			);
+			const active = row.getValue("is_active") as string | boolean | { name: string; color: string } | null | undefined;
+			return <ColoredBadge value={active} type="boolean" />;
 		},
 	},
 	{

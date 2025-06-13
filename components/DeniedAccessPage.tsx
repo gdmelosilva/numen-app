@@ -1,5 +1,6 @@
 import { Ban } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import Link from "next/link";
 
 export default function DeniedAccessPage() {
     return (
@@ -12,6 +13,12 @@ export default function DeniedAccessPage() {
                 <CardDescription className="text-lg text-center max-w-md leading-relaxed">
                     Você não tem permissão para acessar esta funcionalidade. Caso acredite que isso é um engano, entre em contato com o suporte.
                 </CardDescription>
+                <Link
+                    href="/"
+                    className="mt-6 inline-block px-6 py-2 rounded bg-red-500 text-white font-semibold hover:bg-red-600 transition"
+                >
+                    Voltar para a página inicial
+                </Link>
             </CardHeader>
         </Card>
     );

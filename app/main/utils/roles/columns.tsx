@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { Role } from "@/types/roles"
+import { ColoredBadge } from "@/components/ui/colored-badge"
 
 const columns: ColumnDef<Role>[] = [
 	{
@@ -36,7 +37,7 @@ const columns: ColumnDef<Role>[] = [
 			<DataTableColumnHeader column={column} title="Cargo" />
 		),
 		cell: ({ row }) => (
-			<span className="font-medium">{row.original.title}</span>
+			<ColoredBadge value={row.original.title} type="user_role" />
 		),
 	},
 	{

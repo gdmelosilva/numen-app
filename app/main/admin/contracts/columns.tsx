@@ -6,11 +6,8 @@ import { ptBR } from "date-fns/locale"
 
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { ContractTableRowActions } from "@/components/contract-table-row-actions"
-import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, XCircle } from "lucide-react"
 import type { Contract } from "@/types/contracts"
-
-
+import { ColoredBadge } from "@/components/ui/colored-badge"
 
 // Add types for actions
 export interface ContractTableActionsContext {
@@ -38,21 +35,9 @@ export const columns: ColumnDef<Contract>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("project_type") as string;
-      const typeColorMap: Record<string, "accent" | "secondary" | "outline" | "default" | "primary" | "approved"> = {
-        "AMS": "accent",
-        "BSHOP": "primary",
-        "TKEY": "approved",
-      };
-      const typeLabelMap: Record<string, string> = {
-        "AMS": "AMS",
-        "BSHOP": "Bodyshop",
-        "TKEY": "Turnkey",
-      };
-      const variant = typeColorMap[value] ?? "default";
-      const label = typeLabelMap[value] ?? (value || "-");
       return (
         <div className="text-center w-full">
-          <Badge variant={variant}>{label}</Badge>
+          <ColoredBadge value={value} type="project_type" />
         </div>
       );
     },
@@ -76,21 +61,9 @@ export const columns: ColumnDef<Contract>[] = [
     ),
     cell: ({ row }) => {
       const status = row.original.project_status;
-      const name = status?.name || "-";
-      const color = status?.color || "default";
-      const variantMap: Record<string, "default" | "destructive" | "secondary" | "outline" | "ghost" | "approved" | "accent" |  "primary" | "primary-2"> = {
-        cyan: "approved",
-        purple: "accent",
-        red: "destructive",
-        gray: "secondary",
-        colorless: "outline",
-        orange: "primary",
-        blue: "primary-2"
-      };
-      const variant = variantMap[color] ?? "outline";
       return (
         <div className="text-center w-full">
-          <Badge variant={variant}>{name}</Badge>
+          <ColoredBadge value={status} type="project_status" />
         </div>
       );
     },
@@ -101,20 +74,8 @@ export const columns: ColumnDef<Contract>[] = [
       <DataTableColumnHeader column={column} title="Wildcard?" />
     ),
     cell: ({ row }) => {
-      const value = row.getValue("is_wildcard") as boolean | null;
-      return value === null 
-        ? <span className="text-muted-foreground">-</span> 
-        : value 
-          ? (
-              <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4 inline text-approved" />Sim
-              </span>
-            )
-          : (
-              <span className="flex items-center gap-1">
-                <XCircle className="w-4 h-4 inline text-destructive" />Não
-              </span>
-            )
+      const value = row.getValue("is_wildcard") as boolean | string | null | undefined;
+      return <ColoredBadge value={value} type="boolean" />;
     },
   },
   {
@@ -123,20 +84,8 @@ export const columns: ColumnDef<Contract>[] = [
       <DataTableColumnHeader column={column} title="24/7?" />
     ),
     cell: ({ row }) => {
-      const value = row.getValue("is_247") as boolean | null;
-      return value === null
-        ? <span className="text-muted-foreground">-</span> 
-        : value 
-          ? (
-              <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4 inline text-approved" />Sim
-              </span>
-            )
-          : (
-              <span className="flex items-center gap-1">
-                <XCircle className="w-4 h-4 inline text-destructive" />Não
-              </span>
-            )
+      const value = row.getValue("is_247") as string | boolean | { name: string; color: string } | null | undefined;
+      return <ColoredBadge value={value} type="boolean" />;
     },
   },
   {

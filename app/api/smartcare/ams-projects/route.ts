@@ -17,7 +17,7 @@ export async function GET() {
 
   let query = supabase
     .from("project")
-    .select("*, partner:partnerId(*)", { count: "exact" })
+    .select("*, partner:partnerId(*), project_status:project_status(*)", { count: "exact" })
     .eq("project_type", "AMS");
 
   if (!user.is_client) {
@@ -51,8 +51,8 @@ export async function GET() {
   if (fetchError) {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
-  // Map only the fields needed by the frontend
-  interface AMSProject {
+  // Define a type for the project row
+  type ProjectRow = {
     id: string;
     projectExtId?: string;
     projectName: string;
@@ -60,11 +60,11 @@ export async function GET() {
     partnerId: string;
     partner?: Record<string, unknown> | null;
     project_type: string;
-    project_status?: string | number | null;
+    project_status?: { name?: string; color?: string } | null;
     is_wildcard?: boolean | null;
     is_247?: boolean | null;
     start_date?: string | null;
-    end_at: string;
+    end_at?: string | null;
     hours_max?: number | null;
     cred_exp_period?: number | null;
     value_hr_normal?: number | null;
@@ -74,30 +74,41 @@ export async function GET() {
     baseline_hours?: number | null;
     opening_time?: string | null;
     closing_time?: string | null;
-  }
-  const result = (data || []).map((row: AMSProject) => ({
-    id: row.id,
-    projectExtId: row.projectExtId ?? "",
-    projectName: row.projectName,
-    projectDesc: row.projectDesc ?? "",
-    partnerId: row.partnerId,
-    partner: row.partner ?? null,
-    project_type: row.project_type,
-    project_status: row.project_status ?? null,
-    is_wildcard: row.is_wildcard ?? null,
-    is_247: row.is_247 ?? null,
-    start_date: row.start_date ?? null,
-    end_at: row.end_at,
-    hours_max: row.hours_max ?? null,
-    cred_exp_period: row.cred_exp_period ?? null,
-    value_hr_normal: row.value_hr_normal ?? null,
-    value_hr_excdn: row.value_hr_excdn ?? null,
-    value_hr_except: row.value_hr_except ?? null,
-    value_hr_warn: row.value_hr_warn ?? null,
-    baseline_hours: row.baseline_hours ?? null,
-    opening_time: row.opening_time ?? null,
-    closing_time: row.closing_time ?? null,
-  }));
+  };
+
+  // Map only the fields needed by the frontend
+  const result = (data || []).map((row: ProjectRow) => {
+    let project_status = null;
+    if (row.project_status && typeof row.project_status === 'object') {
+      project_status = {
+        name: row.project_status.name ?? '',
+        color: row.project_status.color ?? '',
+      };
+    }
+    return {
+      id: row.id,
+      projectExtId: row.projectExtId ?? "",
+      projectName: row.projectName,
+      projectDesc: row.projectDesc ?? "",
+      partnerId: row.partnerId,
+      partner: row.partner ?? null,
+      project_type: row.project_type,
+      project_status,
+      is_wildcard: row.is_wildcard ?? null,
+      is_247: row.is_247 ?? null,
+      start_date: row.start_date ?? null,
+      end_at: row.end_at,
+      hours_max: row.hours_max ?? null,
+      cred_exp_period: row.cred_exp_period ?? null,
+      value_hr_normal: row.value_hr_normal ?? null,
+      value_hr_excdn: row.value_hr_excdn ?? null,
+      value_hr_except: row.value_hr_except ?? null,
+      value_hr_warn: row.value_hr_warn ?? null,
+      baseline_hours: row.baseline_hours ?? null,
+      opening_time: row.opening_time ?? null,
+      closing_time: row.closing_time ?? null,
+    };
+  });
   return NextResponse.json(result);
 }
 

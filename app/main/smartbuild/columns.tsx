@@ -2,15 +2,15 @@ import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import { Badge } from "@/components/ui/badge";
 import { SmartbuildTableRowActions } from "@/components/smartbuild-table-row-actions";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 import type { Contract } from "@/types/contracts";
 
 export const columns: ColumnDef<Contract>[] = [
-	{
-		accessorKey: "id",
-		header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-	},
+	// {
+	// 	accessorKey: "id",
+	// 	header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
+	// },
 	{
 		accessorKey: "projectExtId",
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Id.Contrato" />,
@@ -66,22 +66,22 @@ export const columns: ColumnDef<Contract>[] = [
 	{
 		accessorKey: "project_type",
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
-		cell: ({ row }) => row.original.project_type || "-",
+		cell: ({ row }) => <ColoredBadge value={row.original.project_type} type="project_type" />,
 	},
 	{
 		accessorKey: "project_status.name",
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-		cell: ({ row }) => row.original.project_status?.name || "-",
+		cell: ({ row }) => <ColoredBadge value={row.original.project_status} type="project_status" />,
 	},
 	{
 		accessorKey: "is_wildcard",
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Wildcard?" />,
-		cell: ({ row }) => (row.original.is_wildcard ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>),
+		cell: ({ row }) => <ColoredBadge value={row.original.is_wildcard} type="boolean" />,
 	},
 	{
 		accessorKey: "is_247",
 		header: ({ column }) => <DataTableColumnHeader column={column} title="24/7?" />,
-		cell: ({ row }) => (row.original.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>),
+		cell: ({ row }) => <ColoredBadge value={row.original.is_247} type="boolean" />,
 	},
 	{
 		accessorKey: "start_date",

@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Ticket } from "@/types/tickets";
 import { SmartbuildTableRowActions } from "@/components/smartbuild-management-able-row-actions";
@@ -16,17 +16,17 @@ export const columns: ColumnDef<Ticket>[] = [
 	{
 		accessorKey: "status",
 		header: "Status",
-		cell: ({ row }) => row.original.status?.name || row.original.status_id || "-",
+		cell: ({ row }) => <ColoredBadge value={row.original.status?.name || String(row.original.status_id)} type="status" />,
 	},
 	{
 		accessorKey: "priority",
 		header: "Prioridade",
-		cell: ({ row }) => row.original.priority?.name || row.original.priority_id || "-",
+		cell: ({ row }) => <ColoredBadge value={row.original.priority?.name || String(row.original.priority_id)} type="priority" />,
 	},
 	{
 		accessorKey: "type",
 		header: "Tipo",
-		cell: ({ row }) => row.original.type?.name || row.original.type_id || "-",
+		cell: ({ row }) => <ColoredBadge value={row.original.type?.name || String(row.original.type_id)} type="ticket_type" />,
 	},
 	{
 		accessorKey: "created_at",
@@ -36,7 +36,7 @@ export const columns: ColumnDef<Ticket>[] = [
 	{
 		accessorKey: "is_closed",
 		header: "Fechado?",
-		cell: ({ row }) => row.original.is_closed ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>,
+		cell: ({ row }) => <ColoredBadge value={row.original.is_closed} type="boolean" />,
 	},
 	{
 		id: "actions",

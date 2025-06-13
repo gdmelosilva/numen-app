@@ -26,7 +26,7 @@ export default function AMSDetailPage() {
         if (!response.ok) {
           setError(true);
           setLoading(false);
-          return;''
+          return;
         }
         const data = await response.json();
         let projectData;

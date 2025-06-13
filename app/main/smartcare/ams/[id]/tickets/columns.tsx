@@ -1,6 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
 import type { Ticket } from "@/types/tickets";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Row } from "@tanstack/react-table";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 
 export const columns: ColumnDef<Ticket>[] = [
   {
@@ -25,17 +25,23 @@ export const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => row.original.status?.name || "-",
+    cell: ({ row }) => (
+      <ColoredBadge value={row.original.status?.name} type="status" />
+    ),
   },
   {
     accessorKey: "priority",
     header: "Prioridade",
-    cell: ({ row }) => row.original.priority?.name || "-",
+    cell: ({ row }) => (
+      <ColoredBadge value={row.original.priority?.name} type="priority" />
+    ),
   },
   {
     accessorKey: "type",
     header: "Tipo",
-    cell: ({ row }) => row.original.type?.name || "-",
+    cell: ({ row }) => (
+      <ColoredBadge value={row.original.type?.name} type="ticket_type" />
+    ),
   },
   {
     accessorKey: "created_at",
@@ -48,12 +54,9 @@ export const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "is_closed",
     header: "Fechado?",
-    cell: ({ row }) =>
-      row.original.is_closed ? (
-        <Badge variant="secondary">Sim</Badge>
-      ) : (
-        <Badge variant="outline">Não</Badge>
-      ),
+    cell: ({ row }) => (
+      <ColoredBadge value={row.original.is_closed} type="boolean" />
+    ),
   },
   {
     id: "actions",

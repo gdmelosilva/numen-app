@@ -1,6 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import type { User } from "@/types/users";
-import { Badge } from "@/components/ui/badge";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -23,16 +23,17 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const role = row.original.role;
       const isClient = row.original.is_client;
-      if (role === 1) return "Administrador";
-      if (role === 2) return "Gerente";
-      if (role === 3 && isClient === true) return "Key-User";
-      if (role === 3 && isClient === false) return "Funcional";
-      return "Indefinido";
+      let cargo = "Indefinido";
+      if (role === 1) cargo = "Administrador";
+      else if (role === 2) cargo = "Gerente";
+      else if (role === 3 && isClient === true) cargo = "Key-User";
+      else if (role === 3 && isClient === false) cargo = "Funcional";
+      return <ColoredBadge value={cargo} type="user_role" />;
     },
   },
   {
     accessorKey: "is_active",
     header: "Ativo?",
-    cell: ({ row }) => row.original.is_active ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>,
+    cell: ({ row }) => <ColoredBadge value={row.original.is_active} type="status" />,
   },
 ];

@@ -1,11 +1,11 @@
 import { ColumnDef } from "@tanstack/react-table";
 import type { User as BaseUser } from "@/types/users";
-import { Badge } from "@/components/ui/badge";
 import { UnlinkProjectUserButton as UnlinkProjectUserButtonProject } from "@/components/UnlinkProjectUserButton";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { PauseCircle, PlayCircle } from "lucide-react";
 import { EditProjectUserHoursButton } from "@/components/EditProjectUserHoursButton";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 
 type User = BaseUser & {
   horas_consumidas?: number;
@@ -35,17 +35,18 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
     cell: ({ row }) => {
       const role = row.original.role;
       const isClient = row.original.is_client;
-      if (role === 1) return "Administrador";
-      if (role === 2) return "Gerente";
-      if (role === 3 && isClient === true) return "Key-User";
-      if (role === 3 && isClient === false) return "Funcional";
-      return "Indefinido";
+      let cargo = "Indefinido";
+      if (role === 1) cargo = "Administrador";
+      else if (role === 2) cargo = "Gerente";
+      else if (role === 3 && isClient === true) cargo = "Key-User";
+      else if (role === 3 && isClient === false) cargo = "Funcional";
+      return <ColoredBadge value={cargo} type="user_role" />;
     },
   },
   {
     accessorKey: "is_active",
     header: "Ativo?",
-    cell: ({ row }) => row.original.is_active ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>,
+    cell: ({ row }) => <ColoredBadge value={row.original.is_active} type="status" />,
   },
   {
     accessorKey: "hours_max",
@@ -60,7 +61,7 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
   {
     id: "is_suspended",
     header: "Status",
-    cell: ({ row }) => row.original.is_suspended ? <Badge variant="accent">Suspenso</Badge> : <Badge variant="approved">Mobilizado</Badge>,
+    cell: ({ row }) => <ColoredBadge value={row.original.is_suspended} type="boolean" />,
   },
   {
     accessorKey: "user_functional",
