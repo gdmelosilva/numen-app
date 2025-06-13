@@ -7,14 +7,12 @@ import { columns, User } from "./columns";
 import { Button } from "@/components/ui/button";
 import { UserCreateDialog } from "@/components/user-create-dialog";
 import { exportToCSV } from "@/lib/export-file";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, ChevronDown, ChevronUp, Trash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search } from "lucide-react";
 import { getRoleOptions } from "@/hooks/useOptions";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { UserEditDialog } from "@/components/UserEditDialog";
-import { ChevronDown, ChevronUp, Trash } from "lucide-react";
 
 interface Filters {
   search: string;
@@ -65,7 +63,7 @@ export default function UsersPage() {
       const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Falha ao carregar usuários");
+        throw new Error(errorData.error ?? "Falha ao carregar usuários");
       }
       const data = await response.json();
       if (Array.isArray(data)) {
@@ -106,7 +104,7 @@ export default function UsersPage() {
       const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Falha ao carregar usuários");
+        throw new Error(errorData.error ?? "Falha ao carregar usuários");
       }
       const data = await response.json();
       if (Array.isArray(data)) {
@@ -164,6 +162,25 @@ export default function UsersPage() {
     fetchUsersWithFilters(clearedFilters);
   };
 
+  // Helper functions to reduce cognitive complexity for filter summary
+  const getRoleSummary = () => {
+    if (!filters.role) return null;
+    const role = roleOptions.find(r => r.value === filters.role);
+    return `Função: ${role ? role.label : filters.role}`;
+  };
+
+  const getClientTypeSummary = () => {
+    if (!filters.is_client) return null;
+    if (filters.is_client === "true") return "Tipo: Cliente";
+    if (filters.is_client === "false") return "Tipo: Administrativo";
+    return "Tipo: Todos";
+  };
+
+  const getActiveStatusSummary = () => {
+    if (filters.active === null) return null;
+    return `Status: ${filters.active ? "Ativo" : "Inativo"}`;
+  };
+
   // Função para gerar resumo dos filtros ativos
   const getActiveFiltersSummary = () => {
     const summary: string[] = [];
@@ -171,12 +188,16 @@ export default function UsersPage() {
     if (filters.email) summary.push(`Email: ${filters.email}`);
     if (filters.tel_contact) summary.push(`Telefone: ${filters.tel_contact}`);
     if (filters.partner_desc) summary.push(`Parceiro: ${filters.partner_desc}`);
-    if (filters.role) {
-      const role = roleOptions.find(r => r.value === filters.role);
-      summary.push(`Função: ${role ? role.label : filters.role}`);
-    }
-    if (filters.is_client) summary.push(`Tipo: ${filters.is_client === "true" ? "Cliente" : filters.is_client === "false" ? "Administrativo" : "Todos"}`);
-    if (filters.active !== null) summary.push(`Status: ${filters.active ? "Ativo" : "Inativo"}`);
+
+    const roleSummary = getRoleSummary();
+    if (roleSummary) summary.push(roleSummary);
+
+    const clientTypeSummary = getClientTypeSummary();
+    if (clientTypeSummary) summary.push(clientTypeSummary);
+
+    const activeStatusSummary = getActiveStatusSummary();
+    if (activeStatusSummary) summary.push(activeStatusSummary);
+
     if (filters.created_at) summary.push(`Criado em: ${filters.created_at}`);
     return summary.length ? summary.join(", ") : "Nenhum filtro ativo";
   };
@@ -189,13 +210,6 @@ export default function UsersPage() {
           <p className="text-sm text-muted-foreground">Administração de Usuários</p>
         </div>
         <div className="flex gap-2">
-          {/* <Button
-            variant="outline"
-            onClick={() => setFiltersCollapsed(v => !v)}
-            aria-label={filtersCollapsed ? "Expandir filtros" : "Recolher filtros"}
-          >
-            {filtersCollapsed ? "Mostrar filtros" : "Recolher filtros"}
-          </Button> */}
           <Button variant="colored2" onClick={handleSearch} disabled={loading || isEditDialogOpen}>
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
@@ -233,7 +247,7 @@ export default function UsersPage() {
                     placeholder="Filtrar por nome"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyPress}
                     disabled={isEditDialogOpen}
                   />
                 </div>
@@ -295,22 +309,34 @@ export default function UsersPage() {
                 </div>
                 <div className="space-y-2 w-full max-w-full">
                   <Label htmlFor="active">Status</Label>
-                  <Select
-                    value={filters.active === null ? "all" : filters.active ? "true" : "false"}
-                    onValueChange={value => {
-                      handleFilterChange("active", value === "all" ? null : value === "true");
-                    }}
-                    disabled={isEditDialogOpen}
-                  >
-                    <SelectTrigger id="active" disabled={isEditDialogOpen} className="w-full max-w-full">
-                      <SelectValue placeholder="Todos os status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="true">Ativo</SelectItem>
-                      <SelectItem value="false">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {(() => {
+                    let activeValue: string;
+                    if (filters.active === null) {
+                      activeValue = "all";
+                    } else if (filters.active) {
+                      activeValue = "true";
+                    } else {
+                      activeValue = "false";
+                    }
+                    return (
+                      <Select
+                        value={activeValue}
+                        onValueChange={value => {
+                          handleFilterChange("active", value === "all" ? null : value === "true");
+                        }}
+                        disabled={isEditDialogOpen}
+                      >
+                        <SelectTrigger id="active" disabled={isEditDialogOpen} className="w-full max-w-full">
+                          <SelectValue placeholder="Todos os status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="true">Ativo</SelectItem>
+                          <SelectItem value="false">Inativo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="flex justify-end mt-4 gap-2">
@@ -339,29 +365,37 @@ export default function UsersPage() {
         </div>
       )}
 
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : error ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-destructive">{error}</p>
-            <Button onClick={fetchUsers} className="mt-4" disabled={isEditDialogOpen}>
-              Tentar novamente
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={users}
-          meta={{
-            onEditOpen: () => setIsEditDialogOpen(true),
-            onEditClose: () => setIsEditDialogOpen(false),
-          }}
-        />
-      )}
+      {(() => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
+        if (error) {
+          return (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-destructive">{error}</p>
+                <Button onClick={fetchUsers} className="mt-4" disabled={isEditDialogOpen}>
+                  Tentar novamente
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        }
+        return (
+          <DataTable
+            columns={columns}
+            data={users}
+            meta={{
+              onEditOpen: () => setIsEditDialogOpen(true),
+              onEditClose: () => setIsEditDialogOpen(false),
+            }}
+          />
+        );
+      })()}
 
       {editUser && isEditDialogOpen && (
         <UserEditDialog user={editUser} onSuccess={handleCloseEditDialog} />

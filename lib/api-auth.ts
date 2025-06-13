@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export interface AuthenticatedUser {
-  project_id: string;
+  project_id?: string;
   id: string;
   email: string;
   role: number;
