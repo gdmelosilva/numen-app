@@ -383,7 +383,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       </Card>
       <Card className="mt-4">
         <div className="px-6 pb-4 pt-2">
-          <ProjectUsersTab projectId={String(project.id)} />
+          <ProjectUsersTab projectId={String(project.id)} isClosed={isClosed} />
         </div>
       </Card>
     </>

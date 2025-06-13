@@ -13,13 +13,37 @@ export async function GET(request: Request) {
   if (project_id) {
     const { data, error } = await supabase
       .from("project_resources")
-      .select(`user:id, max_hours, user!inner(id, first_name, last_name, email, tel_contact, is_active, role, is_client)`)
+      .select(`id, user:id, max_hours, user_functional, ticket_modules:user_functional(id, name), user!inner(id, first_name, last_name, email, tel_contact, is_active, role, is_client)`)
       .eq("project_id", project_id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    type ProjectResourceRow = { user: { id: string; first_name: string; last_name: string; email: string; tel_contact: string; is_active: boolean; role: number; is_client: boolean }, max_hours: number | null };
-    const users = (data || []).map((row: ProjectResourceRow) => ({ ...row.user, hours_max: row.max_hours }));
+    interface ProjectResourceRow {
+      id: number;
+      user: {
+        id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        tel_contact: string;
+        is_active: boolean;
+        role: number;
+        is_client: boolean;
+      };
+      max_hours: number | null;
+      user_functional?: number;
+      ticket_modules?: { id: number; name: string } | { id: number; name: string }[] | null;
+    }
+    const users = (data || []).map((row: ProjectResourceRow) => ({
+      ...row.user,
+      hours_max: row.max_hours,
+      user_functional: (() => {
+        if (Array.isArray(row.ticket_modules)) return row.ticket_modules[0]?.name ?? null;
+        if (row.ticket_modules && typeof row.ticket_modules === 'object') return row.ticket_modules.name ?? null;
+        return null;
+      })(),
+      project_resource_id: row.id,
+    }));
     return NextResponse.json(users);
   }
 

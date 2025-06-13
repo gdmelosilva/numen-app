@@ -1,16 +1,20 @@
 import { ColumnDef } from "@tanstack/react-table";
 import type { User as BaseUser } from "@/types/users";
 import { Badge } from "@/components/ui/badge";
-import { UnlinkUserButton } from "@/components/UnlinkUserButton";
+import { UnlinkProjectUserButton as UnlinkProjectUserButtonProject } from "@/components/UnlinkProjectUserButton";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { PauseCircle, PlayCircle } from "lucide-react";
+import { EditProjectUserHoursButton } from "@/components/EditProjectUserHoursButton";
 
 type User = BaseUser & {
   horas_consumidas?: number;
+  is_suspended?: boolean;
+  user_functional?: string;
+  project_resource_id?: number;
 };
 
-export const columns: ColumnDef<User>[] = [
+export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[] => [
   {
     accessorKey: "first_name",
     header: "Nome",
@@ -54,15 +58,26 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => row.original.horas_consumidas ?? <span className="text-muted-foreground">...</span>,
   },
   {
+    id: "is_suspended",
+    header: "Status",
+    cell: ({ row }) => row.original.is_suspended ? <Badge variant="accent">Suspenso</Badge> : <Badge variant="approved">Mobilizado</Badge>,
+  },
+  {
+    accessorKey: "user_functional",
+    header: "Alocação",
+    cell: ({ row }) => row.original.user_functional || <span className="text-muted-foreground">-</span>,
+  },
+  {
     id: "actions",
     header: "Ações",
     cell: function ActionsCell({ row }) {
       const user = row.original;
-      const handleToggleActive = async () => {
-        const res = await fetch("/api/admin/users/" + user.email, {
+      const handleToggleSuspended = async () => {
+        if (!user.project_resource_id) return;
+        const res = await fetch("/api/project-resources/suspend", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ is_active: !user.is_active }),
+          body: JSON.stringify({ id: user.project_resource_id, is_suspended: !user.is_suspended }),
         });
         if (res.ok) {
           window.location.reload();
@@ -72,13 +87,30 @@ export const columns: ColumnDef<User>[] = [
         <div className="flex items-center gap-2">
           <Button
             size="icon"
-            variant={user.is_active ? "outline" : "secondary"}
-            title={user.is_active ? "Suspender" : "Ativar"}
-            onClick={handleToggleActive}
+            variant={user.is_suspended ? "colored2" : "colored1"}
+            className="text-white"
+            title={user.is_suspended ? "Reativar recurso" : "Suspender recurso"}
+            onClick={handleToggleSuspended}
+            disabled={isClosed}
           >
-            {user.is_active ? <PauseCircle className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
+            {user.is_suspended ? <PlayCircle className="w-5 h-5" /> : <PauseCircle className="w-5 h-5" />}
           </Button>
-          <UnlinkUserButton user={user} partnerId={user.partner_id?.toString() || ''} onUnlinked={() => window.location.reload()} />
+          <EditProjectUserHoursButton
+            userId={user.id}
+            projectId={projectId}
+            projectResourceId={user.project_resource_id ?? 0}
+            currentHours={user.hours_max ?? 0}
+            onUpdated={() => window.location.reload()}
+            disabled={isClosed}
+          />
+          <UnlinkProjectUserButtonProject
+            userId={user.id}
+            projectId={projectId}
+            projectResourceId={user.project_resource_id ?? 0}
+            consumedHours={user.horas_consumidas || 0}
+            onUnlinked={() => window.location.reload()}
+            disabled={isClosed}
+          />
         </div>
       );
     },

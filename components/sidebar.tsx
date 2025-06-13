@@ -95,9 +95,43 @@ const menuVisibilityRules: MenuVisibilityRule[] = [
     hide: [
       // Esconder abas inteiras
       "Utilitários",
-      "TimeSheet",
       "TimeFlow - Faturamento",
       "Administrativo",
+      { parent: "TimeSheet", items: ["Apontamento de Horas"] },
+    ],
+  },
+  {
+    match: (user) => user.role === 3 && user.is_client === true, // Key-User Cliente
+    hide: [
+      // Esconder abas inteiras
+      "Utilitários",
+      "TimeFlow - Faturamento",
+      "Administrativo",
+            "TimeSheet",
+      "TimeFlow - Faturamento",
+      // Esconder itens específicos da aba Administrativo
+      { parent: "SmartCare - AMS", items: ["Gestão AMS"] },
+      { parent: "SmartBuild - Projetos", items: ["Gestão de Projetos"] },
+    ],
+  },
+  {
+    match: (user) => user.role === 2 && user.is_client === false, // Gerente Administrativo
+    hide: [
+      // Esconder abas inteiras
+      "Utilitários",
+      "Administrativo",
+    ],
+  },
+  {
+    match: (user) => user.role === 3 && user.is_client === false, // Funcional Administrativo
+    hide: [
+      // Esconder abas inteiras
+      "Utilitários",
+      "TimeFlow - Faturamento",
+      "Administrativo",
+      // Esconder itens específicos da aba Administrativo
+      { parent: "SmartCare - AMS", items: ["Gestão AMS"] },
+      { parent: "SmartBuild - Projetos", items: ["Gestão de Projetos"] },
     ],
   },
   // Adicione mais regras conforme necessário

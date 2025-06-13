@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { columns } from './columns';
+import { columns as columnsWithProjectId } from './columns';
 import { DataTable } from '@/components/ui/data-table';
 import type { User } from '@/types/users';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useTicketModules } from '@/hooks/useTicketModules';
 
-export default function ProjectUsersTab({ projectId }: { projectId: string }) {
+export default function ProjectUsersTab({ projectId, isClosed }: { projectId: string; isClosed?: boolean }) {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,17 @@ export default function ProjectUsersTab({ projectId }: { projectId: string }) {
         setError(null);
         fetch(`/api/smartbuild/users?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar usuários'))
-            .then(data => setUsers(Array.isArray(data) ? data : data?.data || []))
+            .then(async (data) => {
+                const usersData: User[] = Array.isArray(data) ? data : data?.data || [];
+                const resLinks = await fetch(`/api/project-resources?project_id=${projectId}`);
+                type ProjectResourceLink = { user_id: string; is_suspended: boolean };
+                const links: ProjectResourceLink[] = await resLinks.json();
+                const usersWithSuspended = usersData.map((u) => {
+                    const link = Array.isArray(links) ? links.find((l) => l.user_id === u.id) : null;
+                    return { ...u, is_suspended: link ? link.is_suspended : false };
+                });
+                setUsers(usersWithSuspended);
+            })
             .catch(err => setError(typeof err === 'string' ? err : 'Erro ao buscar usuários'))
             .finally(() => setLoading(false));
     }, [projectId]);
@@ -85,7 +95,17 @@ export default function ProjectUsersTab({ projectId }: { projectId: string }) {
         setLoading(true);
         fetch(`/api/smartbuild/users?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar usuários'))
-            .then(data => setUsers(Array.isArray(data) ? data : data?.data || []))
+            .then(async (data) => {
+                const usersData: User[] = Array.isArray(data) ? data : data?.data || [];
+                const resLinks = await fetch(`/api/project-resources?project_id=${projectId}`);
+                type ProjectResourceLink = { user_id: string; is_suspended: boolean };
+                const links: ProjectResourceLink[] = await resLinks.json();
+                const usersWithSuspended = usersData.map((u) => {
+                    const link = Array.isArray(links) ? links.find((l) => l.user_id === u.id) : null;
+                    return { ...u, is_suspended: link ? link.is_suspended : false };
+                });
+                setUsers(usersWithSuspended);
+            })
             .catch(err => setError(typeof err === 'string' ? err : 'Erro ao buscar usuários'))
             .finally(() => setLoading(false));
     };
@@ -151,9 +171,9 @@ export default function ProjectUsersTab({ projectId }: { projectId: string }) {
                         <Users className="w-4 h-4 mr-2" /> Usuários Vinculados
                     </h2>
                 </div>
-                <Button onClick={handleOpenDialog} className="whitespace-nowrap mt-4">Vincular Usuário</Button>
+                <Button onClick={handleOpenDialog} className="whitespace-nowrap mt-4" disabled={isClosed}>Vincular Usuário</Button>
             </div>
-            <DataTable columns={columns} data={usersWithHours.length ? usersWithHours : users} />
+            <DataTable columns={columnsWithProjectId(projectId, isClosed)} data={usersWithHours.length ? usersWithHours : users} />
             <Dialog open={showDialog} onOpenChange={setShowDialog}>
                 <DialogContent className="w-[750px] max-w-[750px] mx-auto">
                     <DialogHeader>
@@ -276,7 +296,7 @@ export default function ProjectUsersTab({ projectId }: { projectId: string }) {
                             </div>
                         </div>
                         <DialogFooter className="mt-4">
-                            <Button type="submit" disabled={!selectedUserId || !maxHours || userFunctional === ''}>Vincular</Button>
+                            <Button type="submit" disabled={!selectedUserId || !maxHours || userFunctional === '' || isClosed}>Vincular</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
