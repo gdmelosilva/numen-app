@@ -7,7 +7,6 @@ import type { Contract } from "@/types/contracts";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
-import ProjectUsersTab from "./users/ProjectUsersTab";
 import { toast } from "sonner";
 
 interface ProjectDetailsTabProps {
@@ -216,7 +215,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 px-1">
+      <div className="flex items-center justify-between gap-2 px-1 py-2">
         <h1 className="text-2xl font-bold truncate">{form.projectName || 'Projeto'}</h1>
         {editMode ? (
           <div className="flex gap-2">
