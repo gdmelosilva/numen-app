@@ -138,6 +138,29 @@ export async function POST(req: NextRequest) {
       opening_time,
       closing_time,
     } = body;
+
+    // Validação: impedir mais de um projeto AMS por parceiro
+    if (project_type === "AMS") {
+      const { data: amsExists, error: amsError } = await supabase
+        .from("project")
+        .select("id")
+        .eq("partnerId", partnerId)
+        .eq("project_type", "AMS")
+        .limit(1)
+        .maybeSingle();
+      if (amsError) {
+        return NextResponse.json(
+          { error: "Erro ao validar projetos AMS existentes." },
+          { status: 500 },
+        );
+      }
+      if (amsExists) {
+        return NextResponse.json(
+          { error: "Já existe um projeto do tipo AMS para este parceiro." },
+          { status: 400 },
+        );
+      }
+    }
     // Busca dados do parceiro para montar o nome
     const { data: partnerData, error: partnerError } = await supabase
       .from("partner")

@@ -31,11 +31,27 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
       .then((data) => setPartners(data || []));
   }, []);
 
+  const checkAMSExists = async (partnerId: string) => {
+    const res = await fetch(`/api/admin/contracts?partnerId=${partnerId}&project_type=AMS`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    return Array.isArray(data.data) && data.data.length > 0;
+  };
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     try {
+      // Validação frontend: AMS único por parceiro
+      if (project_type === "AMS" && partnerId) {
+        const exists = await checkAMSExists(partnerId);
+        if (exists) {
+          setError("Já existe um projeto do tipo AMS para este parceiro.");
+          setIsLoading(false);
+          return;
+        }
+      }
       // Definir status fixo conforme o tipo de projeto
       const statusToSend = project_type === "AMS" ? "4" : "5";
       const response = await fetch("/api/admin/contracts", {
