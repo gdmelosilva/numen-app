@@ -26,6 +26,12 @@ export const columns: ColumnDef<Contract>[] = [
     ),
   },
   {
+    accessorKey: "projectName",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Cód. Contrato" />
+    ),
+  },
+  {
     accessorKey: "project_type",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Tipo" />
@@ -52,15 +58,9 @@ export const columns: ColumnDef<Contract>[] = [
     },
   },
   {
-    accessorKey: "projectName",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Cód. Contrato" />
-    ),
-  },
-  {
     accessorKey: "projectDesc",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nome" />
+      <DataTableColumnHeader column={column} title="Descrição" />
     ),
   },
   {

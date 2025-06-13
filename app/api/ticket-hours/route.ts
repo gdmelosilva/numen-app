@@ -57,13 +57,14 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const message_id = searchParams.get("message_id");
-    if (!message_id) {
-      return NextResponse.json({ error: "message_id é obrigatório" }, { status: 400 });
-    }
-    const { data, error } = await supabase
-      .from("ticket_hours")
-      .select("*")
-      .eq("message_id", message_id); // Corrigido para message_id
+    const user_id = searchParams.get("user_id");
+    const project_id = searchParams.get("project_id");
+    // Permite busca flexível: por message_id, user_id, project_id, ou todos
+    let query = supabase.from("ticket_hours").select("*");
+    if (message_id) query = query.eq("message_id", message_id);
+    if (user_id) query = query.eq("user_id", user_id);
+    if (project_id) query = query.eq("project_id", project_id);
+    const { data, error } = await query;
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

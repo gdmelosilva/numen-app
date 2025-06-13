@@ -237,7 +237,7 @@ export default function ContractsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="projectName">Nome do Contrato</Label>
+                  <Label htmlFor="projectName">Cód.Contrato</Label>
                   <Input
                     id="projectName"
                     placeholder="Filtrar por nome do projeto"

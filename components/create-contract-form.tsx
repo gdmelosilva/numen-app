@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 export function CreateContractForm({ className, onCreate, ...props }: React.ComponentPropsWithoutRef<"div"> & { onCreate?: () => void }) {
-  const [projectName, setProjectName] = useState("");
+  const [, setProjectName] = useState("");
   const [projectDesc, setProjectDesc] = useState("");
   const [partnerId, setPartnerId] = useState("");
   const [project_type, setProjectType] = useState("");
@@ -62,6 +63,9 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
       }
       const data = await response.json();
       setProjectName(data.projectName || ""); // Mostra o nome gerado pelo backend
+      toast.success("Contrato criado com sucesso!", {
+        description: `Nome do contrato: ${data.projectName || "(não informado)"}`,
+      });
       if (onCreate) onCreate();
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -78,15 +82,16 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <CardHeader>
         <CardTitle className="text-2xl">Criar Novo Contrato</CardTitle>
-        <CardDescription>Preencha os dados abaixo para criar um novo projeto</CardDescription>
+        <CardDescription>Preencha os dados abaixo para criar um novo contrato. O nome do contrato será gerado automaticamente com base no parceiro selecionado.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleCreateProject}>
           <div className="mb-6 grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
+            {/* <div className="grid gap-2">
               <Label>Nome do Projeto</Label>
               <Input id="projectName" value={projectName} readOnly className="bg-secondary" />
-            </div>
+            </div> */}
             <div className="grid gap-2">
               <Label htmlFor="projectDesc">Descrição</Label>
               <Input id="projectDesc" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} />

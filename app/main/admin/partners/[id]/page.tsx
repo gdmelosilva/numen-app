@@ -482,7 +482,7 @@ export default function PartnerDetailsPage(props: PageProps) {
         </CardContent>
       </Card>
       <h1 className="text-md pt-4 pb-1 font-bold flex items-center justify-between">
-        Usuários alocados
+        Usuários Vinculados
         <div>
           {/* Adicionar usuário button à direita */}
           {partner && (

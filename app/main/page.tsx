@@ -12,7 +12,7 @@ export default function HomePage() {
       <div className="relative z-10 w-full max-w-3xl mx-auto flex flex-col items-center gap-8 py-12">
         <NumenLogo className="mb-2" />
         <h1
-          className="text-3xl md:text-4xl font-extrabold text-center drop-shadow-lg"
+          className="text-3xl md:text-4xl font-extrabold text-center"
           style={{
             background: "linear-gradient(90deg, #ff9800, #f44336)",
             WebkitBackgroundClip: "text",

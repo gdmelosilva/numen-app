@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
     const contractType = project_type;
     const year = new Date().getFullYear();
     let extId = created.projectExtId || created.id || "0";
-    extId = extId.toString().padStart(3, "0");
+    extId = extId.toString().slice(-3).padStart(3, "0");
     const projectName = `${partnerDesc}.${contractType}.${year}.${extId}`;
     // Atualiza o projeto com o nome correto
     await supabase

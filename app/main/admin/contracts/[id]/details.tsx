@@ -352,6 +352,10 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
                     <Label htmlFor="baseline_hours" className="text-xs text-muted-foreground">Horas Baseline</Label>
                     <Input id="baseline_hours" name="baseline_hours" type="number" value={form.baseline_hours || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
                   </div>
+                    <div>
+                    <Label htmlFor="cred_exp_period" className="text-xs text-muted-foreground">Período Exp. Crédito (dias)</Label>
+                    <Input id="cred_exp_period" name="cred_exp_period" type="number" value={form.cred_exp_period || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                  </div>
                 </div>
                 {/* Linha 2: Valores e Período Exp. Crédito */}
                 <div className="grid gap-6 md:grid-cols-4 mt-6">
@@ -370,10 +374,6 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
                   <div>
                     <Label htmlFor="value_hr_warn" className="text-xs text-muted-foreground">Valor Hora Aviso</Label>
                     <Input id="value_hr_warn" name="value_hr_warn" type="number" step="0.01" value={form.value_hr_warn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                  <div>
-                    <Label htmlFor="cred_exp_period" className="text-xs text-muted-foreground">Período Exp. Crédito (dias)</Label>
-                    <Input id="cred_exp_period" name="cred_exp_period" type="number" value={form.cred_exp_period || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
                   </div>
                 </div>
               </div>
