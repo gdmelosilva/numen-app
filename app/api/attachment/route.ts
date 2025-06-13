@@ -43,3 +43,24 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ success: true, path: filePath, url: publicUrlData?.publicUrl });
 }
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const ticketId = searchParams.get("ticket_id") || searchParams.get("ticketId");
+  if (!ticketId) {
+    return NextResponse.json({ error: "ticket_id ausente." }, { status: 400 });
+  }
+
+  // Busca todos os anexos do ticket (com ou sem message_id)
+  const { data, error } = await supabase
+    .from("attachment")
+    .select("id, name, path, message_id, created_at, user_name")
+    .eq("ticket_id", ticketId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data || []);
+}

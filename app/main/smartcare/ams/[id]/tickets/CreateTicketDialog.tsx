@@ -53,19 +53,20 @@ export default function CreateTicketDialog({ open, onOpenChange, projectId, part
     setLoading(true);
     setError(null);
     try {
+      let ticketId: string | null = null;
+      let ticketRes, ticketData;
+      // Criação do chamado (sempre pega o retorno do ticket)
       if (form.attachment) {
-        // Envia como multipart/form-data
         const fd = new FormData();
         fd.append('contractId', projectId);
-        fd.append('partner_id', partnerId); // <-- envia o partner_id
+        fd.append('partner_id', partnerId);
         fd.append('title', form.title);
         fd.append('category_id', form.category_id);
         fd.append('module_id', form.module_id);
         fd.append('priority_id', form.priority_id);
         fd.append('description', form.description);
-        fd.append('file', form.attachment);
-        if (attachmentType) fd.append('att_type', attachmentType);
-        const ticketRes = await fetch('/api/tickets/create', {
+        // Não envia o arquivo ainda
+        ticketRes = await fetch('/api/tickets/create', {
           method: 'POST',
           body: fd,
         });
@@ -73,15 +74,15 @@ export default function CreateTicketDialog({ open, onOpenChange, projectId, part
           const data = await ticketRes.json();
           throw new Error(data.error || 'Erro ao criar chamado');
         }
-        // Não é necessário usar o ticket retornado
+        ticketData = await ticketRes.json();
+        ticketId = ticketData?.id || ticketData?.data?.id;
       } else {
-        // Envia como JSON
-        const ticketRes = await fetch('/api/tickets/create', {
+        ticketRes = await fetch('/api/tickets/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contractId: projectId,
-            partner_id: partnerId, // <-- envia o partner_id
+            partner_id: partnerId,
             title: form.title,
             category_id: form.category_id,
             module_id: form.module_id,
@@ -93,7 +94,31 @@ export default function CreateTicketDialog({ open, onOpenChange, projectId, part
           const data = await ticketRes.json();
           throw new Error(data.error || 'Erro ao criar chamado');
         }
-        // Não é necessário usar o ticket retornado
+        ticketData = await ticketRes.json();
+        ticketId = ticketData?.id || ticketData?.data?.id;
+      }
+      // Se houver anexo, faz o upload vinculado à primeira mensagem do ticket
+      if (form.attachment && ticketId) {
+        // Busca mensagens do ticket
+        const msgRes = await fetch(`/api/messages?ticket_id=${ticketId}`);
+        if (!msgRes.ok) throw new Error('Erro ao buscar mensagem do chamado');
+        const msgs = await msgRes.json();
+        const systemMsg = Array.isArray(msgs) && msgs.length > 0 ? msgs[0] : null;
+        if (!systemMsg?.id) throw new Error('Mensagem do sistema não encontrada');
+        // Envia o anexo para o endpoint correto
+        const attFd = new FormData();
+        attFd.append('file', form.attachment);
+        attFd.append('messageId', systemMsg.id);
+        attFd.append('ticketId', ticketId);
+        if (attachmentType) attFd.append('att_type', attachmentType);
+        const attRes = await fetch('/api/attachment', {
+          method: 'POST',
+          body: attFd,
+        });
+        if (!attRes.ok) {
+          const data = await attRes.json();
+          throw new Error(data.error || 'Erro ao enviar anexo');
+        }
       }
       toast.success('Chamado criado com sucesso.');
       setForm({ title: '', category_id: '', module_id: '', priority_id: '', description: '', attachment: null });

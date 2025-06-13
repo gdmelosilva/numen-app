@@ -42,6 +42,14 @@ export default function TicketDetailsPage() {
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const messagesPerPage = 6; // Altera para 6 mensagens por página
+  const [ticketAttachments, setTicketAttachments] = useState<Array<{
+    id: string;
+    name: string;
+    path: string;
+    message_id?: string | null;
+    created_at?: string;
+    user_name?: string;
+  }>>([]);
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = React.useCallback((msg: Record<string, unknown>): Message => ({
@@ -83,13 +91,25 @@ export default function TicketDetailsPage() {
       setError(null);
       try {
         // Busca dados do ticket pelo novo endpoint
-        const response = await fetch(`/api/smartbuild/tickets/${ticket_id}`);
+        const response = await fetch(`/api/smartcare/tickets/${ticket_id}`);
         const data = await response.json();
         if (!response.ok || !data || !data.data) {
           throw new Error("Chamado não encontrado");
         }
         const ticketData = data.data;
         setTicket(ticketData);
+        // Busca anexos do ticket diretamente
+        if (ticketData?.id) {
+          const attRes = await fetch(`/api/attachment?ticket_id=${ticketData.id}`);
+          if (attRes.ok) {
+            const atts = await attRes.json();
+            setTicketAttachments(Array.isArray(atts) ? atts : []);
+          } else {
+            setTicketAttachments([]);
+          }
+        } else {
+          setTicketAttachments([]);
+        }
         // Busca mensagens reais do ticket
         if (ticketData?.id) {
           const res = await fetch(`/api/messages?ticket_id=${ticketData.id}`);
@@ -105,6 +125,7 @@ export default function TicketDetailsPage() {
       } catch {
         setError("Erro ao buscar detalhes do chamado");
         setAllMessages([]);
+        setTicketAttachments([]);
       } finally {
         setLoading(false);
       }
@@ -243,21 +264,49 @@ export default function TicketDetailsPage() {
               <File className="w-4 h-4" />
               Anexos do Chamado
             </div>
-            {/* Exibição de anexos apenas das mensagens */}
+            {/* Exibição de todos os anexos do ticket (com ou sem message_id) */}
             {(() => {
-              const messageAttachments = allMessages.reduce((acc: { id: string; name: string; path: string; messageId: string; messageDate: string; userName: string }[], msg) => {
+              // Junta todos os anexos do ticket (com ou sem message_id)
+              const allTicketAttachments: {
+                id: string;
+                name: string;
+                path: string;
+                messageId?: string;
+                messageDate: string;
+                userName: string;
+              }[] = [];
+
+              // Anexos diretos do ticket (todos de ticketAttachments)
+              if (Array.isArray(ticketAttachments)) {
+                const directAttachments = ticketAttachments
+                  .filter(att => !att.message_id) // só os que não têm message_id
+                  .map(att => ({
+                    id: att.id,
+                    name: att.name,
+                    path: att.path,
+                    messageId: undefined,
+                    messageDate: att.created_at || (ticket?.created_at || ''),
+                    userName: att.user_name || (ticket && ticket.created_by_user && typeof ticket.created_by_user === 'object' && 'name' in ticket.created_by_user
+                      ? ticket.created_by_user.name
+                      : (typeof ticket?.created_by === 'string' ? ticket.created_by : 'Usuário desconhecido'))
+                  }));
+                allTicketAttachments.push(...directAttachments);
+              }
+
+              // Anexos das mensagens (com message_id)
+              allMessages.forEach(msg => {
                 if (msg.attachments && msg.attachments.length > 0) {
-                  const attachmentsWithMessageInfo = msg.attachments.map(attachment => ({
-                    ...attachment,
+                  const msgAttachments = msg.attachments.map(att => ({
+                    ...att,
                     messageId: msg.id,
                     messageDate: msg.createdAt || '',
-                    userName: msg.user?.name || "Usuário desconhecido"
+                    userName: msg.user?.name || 'Usuário desconhecido'
                   }));
-                  return [...acc, ...attachmentsWithMessageInfo];
+                  allTicketAttachments.push(...msgAttachments);
                 }
-                return acc;
-              }, []);
-              if (messageAttachments.length === 0) {
+              });
+
+              if (allTicketAttachments.length === 0) {
                 return (
                   <div className="text-sm text-muted-foreground italic">
                     Nenhum anexo encontrado neste chamado.
@@ -267,8 +316,9 @@ export default function TicketDetailsPage() {
               return (
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Anexos das Mensagens:</h4>                    <ul className="list-none space-y-2 text-sm ml-4">
-                      {messageAttachments.map((file) => (
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Anexos do Chamado:</h4>
+                    <ul className="list-none space-y-2 text-sm ml-4">
+                      {allTicketAttachments.map((file) => (
                         <li key={file.id} className="border-l-2 border-gray-300 pl-3">
                           <div className="flex flex-col">
                             <button
@@ -278,7 +328,6 @@ export default function TicketDetailsPage() {
                                   if (!response.ok) {
                                     throw new Error('Erro ao baixar arquivo');
                                   }
-                                  
                                   const blob = await response.blob();
                                   const url = window.URL.createObjectURL(blob);
                                   const a = document.createElement('a');
@@ -300,6 +349,7 @@ export default function TicketDetailsPage() {
                             </button>
                             <span className="text-xs text-muted-foreground">
                               {file.userName} - {file.messageDate ? new Date(file.messageDate).toLocaleString("pt-BR") : ""}
+                              {file.messageId ? ' (anexo de mensagem)' : ' (anexo do chamado)'}
                             </span>
                           </div>
                         </li>
