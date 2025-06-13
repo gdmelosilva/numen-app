@@ -38,7 +38,7 @@ export default function AMSClientPage() {
       }
     };
     fetchAMSProject();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (

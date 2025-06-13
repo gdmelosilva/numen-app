@@ -7,7 +7,6 @@ import type { Contract } from "@/types/contracts";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
-import ProjectUsersTab from "./users/ProjectUsersTab";
 import { toast } from "sonner";
 
 interface ProjectDetailsTabProps {
