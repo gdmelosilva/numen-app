@@ -60,8 +60,11 @@ export default function SmartbuildManagementPage() {
       if (user.partner_id) {
         params.append("partner_id", String(user.partner_id));
       }
+    } else if (user.role === 1 && user.is_client === false) {
+      // Admin não-cliente: não passa project_id nem faz requisição de projetos
+      // Não adiciona nenhum filtro de projeto
     } else {
-      // Não cliente: buscar todos os projetos do usuário
+      // Não cliente e não admin: buscar todos os projetos do usuário
       try {
         const res = await fetch(`/api/project-resources/projects?user_id=${user.id}`);
         if (!res.ok) throw new Error("Erro ao buscar projetos do usuário");
