@@ -61,7 +61,7 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
   {
     id: "is_suspended",
     header: "Status",
-    cell: ({ row }) => <ColoredBadge value={row.original.is_suspended ? "Suspenso" : "Ativo"} type="status" />,
+    cell: ({ row }) => <ColoredBadge value={row.original.is_suspended ? "Inativo" : "Ativo"} type="status" />,
   },
   {
     accessorKey: "user_functional",
