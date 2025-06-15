@@ -38,8 +38,10 @@ export function DataTable<TData extends { id?: number|string }, TValue>({
   meta,
   onSelectionChange,
   onRowClick,
-}: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([])
+}: Readonly<DataTableProps<TData, TValue>>) {
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "projectExtId", desc: true },
+  ])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [rowSelection, setRowSelection] = useState({})
 
