@@ -16,7 +16,6 @@ import { useTicketModules } from "@/hooks/useTicketModules";
 import {
   Card,
   CardHeader,
-  CardTitle,
   CardContent
 } from "@/components/ui/card";
 
@@ -184,10 +183,9 @@ export default function CreateTicketPage() {
           <p className="text-sm text-muted-foreground">Cria um novo chamado dentro do seu contrato AMS</p>
         </div>
       <Card className="w-full">
-        <CardHeader />
         <CardContent>
-          <form className="space-y-6" onSubmit={handleSubmit}>
-                          <div>
+          <form className="space-y-6 mt-6" onSubmit={handleSubmit}>
+              <div>
                 <label className="block text-sm font-medium mb-1">Título</label>
                 <Input
                   name="title"
