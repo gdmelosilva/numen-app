@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import type { Ticket } from "@/types/tickets";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,10 @@ import { Loader2 } from "lucide-react";
 import React from "react";
 import MessageForm from "@/components/message-form";
 import { MessageCard } from "@/components/message-card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useUserContext } from "@/components/user-context";
+import type { User } from "@/types/users";
 
 export default function TicketDetailsPage() {
   const { id } = useParams();
@@ -42,6 +46,14 @@ export default function TicketDetailsPage() {
   const [activeTab, setActiveTab] = useState<string>("details");
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
+  const { user: currentUser } = useUserContext();
+  const [resources, setResources] = useState<User[]>([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [showResourceDialog, setShowResourceDialog] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [availableLoading, setAvailableLoading] = useState(false);
+  const [resourceError, setResourceError] = useState<string | null>(null);
+  const [searchUser, setSearchUser] = useState("");
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
@@ -94,9 +106,9 @@ export default function TicketDetailsPage() {
   });
 
   // Calcular total de horas das mensagens
-  const totalHours = allMessages.reduce((total, msg) => {
-    return total + (msg.msgHours ? parseFloat(msg.msgHours.toString()) : 0);
-  }, 0);
+  // const totalHours = allMessages.reduce((total, msg) => {
+  //   return total + (msg.msgHours ? parseFloat(msg.msgHours.toString()) : 0);
+  // }, 0);
 
   // Busca apenas as mensagens do ticket
   const refreshMessages = async () => {
@@ -142,6 +154,54 @@ export default function TicketDetailsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, ticket]);
+
+  // Busca recursos vinculados ao chamado (projeto)
+  const fetchResources = useCallback(async () => {
+    if (!ticket?.project_id) return;
+    setResourcesLoading(true);
+    try {
+      // Busca todos os recursos vinculados ao projeto
+      const res = await fetch(`/api/project-resources?project_id=${ticket.project_id}`);
+      if (!res.ok) throw new Error("Erro ao buscar recursos do projeto");
+      const data = await res.json();
+      // Busca detalhes dos usuários
+      if (Array.isArray(data) && data.length > 0) {
+        const ids = (data as { user_id: string }[]).map(r => r.user_id);
+        const usersRes = await fetch(`/api/admin/user-partner/by-ids?ids=${ids.join(",")}`);
+        const users = usersRes.ok ? await usersRes.json() : [];
+        setResources(Array.isArray(users) ? users : []);
+      } else {
+        setResources([]);
+      }
+    } catch {
+      setResources([]);
+    } finally {
+      setResourcesLoading(false);
+    }
+  }, [ticket?.project_id]);
+
+  // Busca usuários disponíveis para vínculo
+  const fetchAvailableUsers = useCallback(async () => {
+    if (!ticket?.project_id) return;
+    setAvailableLoading(true);
+    setResourceError(null);
+    try {
+      // Busca usuários do projeto que não são clientes
+      const res = await fetch(`/api/admin/user-partner/available-for-project?project_id=${ticket.project_id}`);
+      if (!res.ok) throw new Error("Erro ao buscar usuários disponíveis");
+      const users = await res.json();
+      setAvailableUsers(Array.isArray(users) ? users : []);
+    } catch {
+      setResourceError("Erro ao buscar usuários disponíveis");
+      setAvailableUsers([]);
+    } finally {
+      setAvailableLoading(false);
+    }
+  }, [ticket?.project_id]);
+
+  useEffect(() => {
+    fetchResources();
+  }, [fetchResources]);
 
   // Paginação
   const goToPage = (page: number) => {
@@ -241,12 +301,12 @@ export default function TicketDetailsPage() {
                 </div>
                 <Badge variant="default" className="text-md">{(typeof ticket.status === 'object' && ticket.status && 'name' in ticket.status) ? ticket.status.name : (typeof ticket.status_id === 'string' || typeof ticket.status_id === 'number' ? ticket.status_id : '-')}</Badge>
               </div>
-              <div className="flex flex-col items-end align-middle justify-center">
+              {/* <div className="flex flex-col items-end align-middle justify-center">
                 <span className="text-muted-foreground text-xs font-medium mb-1"></span>
                 <Badge variant="secondary" className="text-sm px-3 py-1">
                   {totalHours > 0 ? `${totalHours.toFixed(1)}h` : "0h"}
                 </Badge>
-              </div>
+              </div> */}
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -366,6 +426,89 @@ export default function TicketDetailsPage() {
             })()}
             <Separator className="my-4 mb-4" />
           </CardContent>
+          {/* --- Recursos vinculados ao chamado --- */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium">
+                <UserCircle className="w-4 h-4" /> Recursos vinculados ao chamado
+              </div>
+              {currentUser && !currentUser.is_client && (
+                <Button size="sm" variant="outline" onClick={() => { setShowResourceDialog(true); fetchAvailableUsers(); }}>
+                  Vincular Recurso
+                </Button>
+              )}
+            </div>
+            {resourcesLoading ? (
+              <div className="text-muted-foreground text-sm">Carregando recursos...</div>
+            ) : resources.length === 0 ? (
+              <div className="text-muted-foreground text-sm italic">Nenhum recurso vinculado a este chamado.</div>
+            ) : (
+              <ul className="list-disc ml-6 space-y-1">
+                {resources.map((u) => (
+                  <li key={u.id} className="text-sm">{u.first_name} {u.last_name} ({u.email})</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {/* Dialog para vincular recurso */}
+          <Dialog open={showResourceDialog} onOpenChange={setShowResourceDialog}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Vincular Recurso ao Chamado</DialogTitle>
+              </DialogHeader>
+              <div className="mb-2">
+                <Input
+                  placeholder="Buscar por nome ou email..."
+                  value={searchUser}
+                  onChange={e => setSearchUser(e.target.value)}
+                  disabled={availableLoading}
+                />
+              </div>
+              {availableLoading ? (
+                <div className="text-muted-foreground text-sm">Carregando usuários...</div>
+              ) : resourceError ? (
+                <div className="text-destructive text-sm">{resourceError}</div>
+              ) : availableUsers.length === 0 ? (
+                <div className="text-muted-foreground text-sm italic">Nenhum usuário disponível para vínculo.</div>
+              ) : (
+                <ul className="divide-y divide-muted-foreground/10">
+                  {availableUsers.filter(u =>
+                    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(searchUser.toLowerCase())
+                  ).map(u => (
+                    <li key={u.id} className="py-2 flex items-center justify-between">
+                      <span>
+                        {u.first_name} {u.last_name} ({u.email})
+                        {u.user_functional_name || u.ticket_module ? (
+                          <span className="ml-2 text-xs text-muted-foreground italic">
+                            - Módulo: {u.user_functional_name || u.ticket_module}
+                          </span>
+                        ) : null}
+                      </span>
+                      <Button size="sm" onClick={async () => {
+                        try {
+                          await fetch("/api/project-resources/link", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ project_id: ticket?.project_id, user_id: u.id, max_hours: 0, user_functional: null })
+                          });
+                          setShowResourceDialog(false);
+                          fetchResources();
+                        } catch {
+                          setResourceError("Erro ao vincular recurso");
+                        }
+                      }}>Vincular</Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">Fechar</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          {/* --- Fim recursos vinculados --- */}
         </TabsContent>
         <TabsContent value="messages">
           <div className="space-y-4">
