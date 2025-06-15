@@ -66,7 +66,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
       project_type: project.project_type || "",
       project_status: (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status)
-        ? project.project_status.id || ""
+        ? String(project.project_status.id || "")
         : (typeof project.project_status === "string" ? project.project_status : ""),
       is_wildcard: project.is_wildcard || false,
       is_247: project.is_247 || false,
@@ -80,13 +80,19 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       opening_time: project.opening_time ?? "",
       closing_time: project.closing_time ?? "",
     };
-    console.log('[ProjectDetailsTab] useEffect project mudou, novo form:', novoForm);
     setForm(novoForm);
   }, [project]);
 
   const [statusOptions, setStatusOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Garante que o valor do status está sempre sincronizado com as opções
+  useEffect(() => {
+    if (statusOptions.length > 0 && form.project_status && !statusOptions.some(opt => opt.id === form.project_status)) {
+      setForm(f => ({ ...f, project_status: statusOptions[0].id }));
+    }
+  }, [statusOptions, form.project_status]);
 
   useEffect(() => {
     // Fetch project status options
@@ -256,7 +262,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             {/* Parceiro */}
             <div>
               <Label className="text-xs text-muted-foreground">Parceiro</Label>
-              <Input value={project.partner?.partner_desc || ''} disabled className="h-9" />
+              <Input value={project.partner?.partner_desc || project.partnerId || ''} disabled className="h-9" />
             </div>
             {/* Início */}
             <div>
@@ -280,7 +286,24 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             {/* Status */}
             <div>
               <Label htmlFor="project_status" className="text-xs text-muted-foreground">Status</Label>
-              <Input id="project_status" name="project_status" value={statusOptions.find(s => s.id === form.project_status)?.name || ""} className="h-9" disabled />
+              {editMode ? (
+                <Select
+                  value={String(form.project_status)}
+                  onValueChange={v => setForm(f => ({ ...f, project_status: v }))}
+                  disabled={!editMode}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(option => (
+                      <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input id="project_status" name="project_status" value={statusOptions.find(s => s.id === form.project_status)?.name || ""} className="h-9" disabled />
+              )}
             </div>
             {/* Horário de Abertura */}
             <div>

@@ -109,7 +109,7 @@ function renderTicketTypeBadge(value: string | boolean | { name: string; color: 
 
 export interface ColoredBadgeProps {
   value: string | boolean | { name: string; color: string } | null | undefined;
-  type: "project_type" | "status" | "boolean" | "project_status" | "user_role" | "is_client" | "priority" | "ticket_type";
+  type: "project_type" | "status" | "boolean" | "project_status" | "user_role" | "is_client" | "priority" | "ticket_type" | "suspended";
   statusColor?: string; // para status que vem com cor
   className?: string;
 }
@@ -227,6 +227,33 @@ function renderIsClientBadge(
   return <Badge variant={variant} className={className}>{label}</Badge>;
 }
 
+function renderSuspendedBadge(
+  value: string | boolean | { name: string; color: string } | null | undefined
+) {
+  let label = "-";
+  if (typeof value === "boolean") label = value ? "Suspenso" : "Mobilizado";
+  else if (typeof value === "string") {
+    if (value.toLowerCase() === "true" || value === "1" || value === "suspenso") label = "Suspenso";
+    else if (value.toLowerCase() === "false" || value === "0" || value === "mobilizado") label = "Mobilizado";
+    else label = value;
+  }
+  if (label === "Mobilizado") {
+    return (
+      <span className="flex items-center gap-1">
+        <CheckCircle2 className="w-4 h-4 inline text-approved" />Mobilizado
+      </span>
+    );
+  }
+  if (label === "Suspenso") {
+    return (
+      <span className="flex items-center gap-1">
+        <XCircle className="w-4 h-4 inline text-destructive" />Suspenso
+      </span>
+    );
+  }
+  return <span>{label}</span>;
+}
+
 export function ColoredBadge({ value, type, statusColor, className }: Readonly<ColoredBadgeProps>) {
   if (value === null || value === undefined || value === "") {
     return <span className="text-muted-foreground">-</span>;
@@ -249,6 +276,8 @@ export function ColoredBadge({ value, type, statusColor, className }: Readonly<C
       return renderTicketPriorityBadge(value, className);
     case "ticket_type":
       return renderTicketTypeBadge(value, className);
+    case "suspended":
+      return renderSuspendedBadge(value);
     default:
       return <span>{String(value)}</span>;
   }
