@@ -12,60 +12,69 @@ import { useRouter } from "next/navigation";
 import type { Row } from "@tanstack/react-table";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 
-export const columns: ColumnDef<Ticket>[] = [
-  {
-    accessorKey: "external_id",
-    header: "ID",
-    cell: ({ row }) => String(row.original.external_id).padStart(5, "0"),
-  },
-  {
-    accessorKey: "title",
-    header: "Título",
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <ColoredBadge value={row.original.status?.name} type="status" />
-    ),
-  },
-  {
-    accessorKey: "priority",
-    header: "Prioridade",
-    cell: ({ row }) => (
-      <ColoredBadge value={row.original.priority?.name} type="priority" />
-    ),
-  },
-  {
-    accessorKey: "type",
-    header: "Tipo",
-    cell: ({ row }) => (
-      <ColoredBadge value={row.original.type?.name} type="ticket_type" />
-    ),
-  },
-  {
-    accessorKey: "created_at",
-    header: "Criado em",
-    cell: ({ row }) =>
-      row.original.created_at
-        ? new Date(row.original.created_at).toLocaleDateString("pt-BR")
-        : "-",
-  },
-  {
-    accessorKey: "is_closed",
-    header: "Fechado?",
-    cell: ({ row }) => (
-      <ColoredBadge value={row.original.is_closed} type="boolean" />
-    ),
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: ActionsCell,
-    enableSorting: false,
-    enableHiding: false,
-  },
-];
+export function getTicketColumns({ priorities, types, statuses }: {
+  priorities: { id: string | number; name: string }[];
+  types: { id: string | number; name: string }[];
+  statuses: { id: string | number; name: string }[];
+}): ColumnDef<Ticket>[] {
+  return [
+    {
+      accessorKey: "external_id",
+      header: "ID",
+      cell: ({ row }) => String(row.original.external_id).padStart(5, "0"),
+    },
+    {
+      accessorKey: "title",
+      header: "Título",
+    },
+    {
+      accessorKey: "status_id",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.original.status?.name ?? statuses.find(s => String(s.id) === String(row.original.status_id))?.name;
+        return <ColoredBadge value={status} type="status" />;
+      },
+    },
+    {
+      accessorKey: "priority_id",
+      header: "Prioridade",
+      cell: ({ row }) => {
+        const priority = row.original.priority?.name ?? priorities.find(p => String(p.id) === String(row.original.priority_id))?.name;
+        return <ColoredBadge value={priority} type="priority" />;
+      },
+    },
+    {
+      accessorKey: "type_id",
+      header: "Tipo",
+      cell: ({ row }) => {
+        const type = row.original.type?.name ?? types.find(t => String(t.id) === String(row.original.type_id))?.name;
+        return <ColoredBadge value={type} type="ticket_type" />;
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: "Criado em",
+      cell: ({ row }) =>
+        row.original.created_at
+          ? new Date(row.original.created_at).toLocaleDateString("pt-BR")
+          : "-",
+    },
+    {
+      accessorKey: "is_closed",
+      header: "Fechado?",
+      cell: ({ row }) => (
+        <ColoredBadge value={row.original.is_closed} type="boolean" />
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ActionsCell,
+      enableSorting: false,
+      enableHiding: false,
+    },
+  ];
+}
 
 function ActionsCell({ row }: { row: Row<Ticket> }) {
   const ticket = row.original;

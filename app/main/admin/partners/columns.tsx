@@ -63,7 +63,7 @@ export const columns: ColumnDef<Partner>[] = [
 		header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
 		cell: ({ row }) => {
 			const active = row.getValue("is_active") as string | boolean | { name: string; color: string } | null | undefined;
-			return <ColoredBadge value={active} type="boolean" />;
+			return <ColoredBadge value={active} type="status" />;
 		},
 	},
 	{
