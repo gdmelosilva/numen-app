@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { columns } from './columns';
+import { getTicketColumns } from './columns';
 import { DataTable } from '@/components/ui/data-table';
 import type { Ticket } from '@/types/tickets';
 import CreateTicketDialog from './CreateTicketDialog';
@@ -74,7 +74,7 @@ export default function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps)
             ) : !tickets.length ? (
                 <div className="text-muted-foreground text-center py-8">Nenhum ticket encontrado para este projeto.</div>
             ) : (
-                <DataTable columns={columns} data={tickets} />
+                <DataTable columns={getTicketColumns({ priorities, types: categories, statuses: [] })} data={tickets} />
             )}
         </>
     );

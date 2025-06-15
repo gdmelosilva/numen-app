@@ -68,6 +68,9 @@ Este projeto é um sistema de gestão de contratos, parceiros, usuários, chamad
 - [ ] Trava de mensageria para recurso não alocado
 - [ ] Qualificação de anexos
 - [ ] Tipo de chamado: Atendimento Plantão
+- [ ] O "Adicionar Anexo" deve ser o mesmo definido em "Abrir chamado"
+- [ ] Carregar mensagens junto do chamado
+- [ ] Configurar supabase para alteração de status
 
 ### Atividades
 - [ ] Card de melhorias com horas extrapoladas totais
