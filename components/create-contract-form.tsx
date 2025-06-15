@@ -53,7 +53,7 @@ export function CreateContractForm({ className, onCreate, ...props }: React.Comp
         }
       }
       // Definir status fixo conforme o tipo de projeto
-      const statusToSend = project_type === "AMS" ? "4" : "5";
+      const statusToSend = "5"; //project_type === "AMS" ? "5" : "5";
       const response = await fetch("/api/admin/contracts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
