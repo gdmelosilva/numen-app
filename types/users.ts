@@ -12,3 +12,8 @@ export interface User {
     partner_desc: string | null;
     hours_max?: number | null;
 }
+
+export interface UserWithModule extends User {
+    user_functional_name?: string | null;
+    ticket_module?: string | null;
+}
