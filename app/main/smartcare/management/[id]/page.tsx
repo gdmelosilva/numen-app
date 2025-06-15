@@ -18,7 +18,7 @@ import { MessageCard } from "@/components/message-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useUserContext } from "@/components/user-context";
-import type { User } from "@/types/users";
+import type { User, UserWithModule } from "@/types/users";
 
 export default function TicketDetailsPage() {
   const { id } = useParams();
@@ -50,7 +50,7 @@ export default function TicketDetailsPage() {
   const [resources, setResources] = useState<User[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [showResourceDialog, setShowResourceDialog] = useState(false);
-  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<UserWithModule[]>([]);
   const [availableLoading, setAvailableLoading] = useState(false);
   const [resourceError, setResourceError] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState("");
