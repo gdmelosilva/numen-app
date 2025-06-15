@@ -262,7 +262,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             {/* Parceiro */}
             <div>
               <Label className="text-xs text-muted-foreground">Parceiro</Label>
-              <Input value={project.partner?.partner_desc || project.partnerId || ''} disabled className="h-9" />
+              <Input value={project.partner_name?.partner_desc || project.partnerId || ''} disabled className="h-9" />
             </div>
             {/* Início */}
             <div>
@@ -292,12 +292,16 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
                   onValueChange={v => setForm(f => ({ ...f, project_status: v }))}
                   disabled={!editMode}
                 >
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Selecione o status" />
+                  <SelectTrigger className="h-9 w-full w-max-full">
+                    <SelectValue placeholder="Selecione o status">
+                      {statusOptions.find(s => s.id === form.project_status)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map(option => (
-                      <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

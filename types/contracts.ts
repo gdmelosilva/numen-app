@@ -43,4 +43,7 @@ export type Contract = {
   baseline_hours?: number | null;
   opening_time?: string | null;
   closing_time?: string | null;
-};
+  partner_name?: {
+    partner_desc: string;
+  };
+}

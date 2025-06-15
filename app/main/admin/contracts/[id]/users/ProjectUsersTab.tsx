@@ -7,10 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useTicketModules } from '@/hooks/useTicketModules';
+import { ColoredBadge } from '@/components/ui/colored-badge';
 
 export default function ProjectUsersTab({ projectId, isClosed }: { projectId: string; isClosed?: boolean }) {
     const [users, setUsers] = useState<User[]>([]);
@@ -224,14 +224,10 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                                                     <div className="grid grid-cols-12 items-center gap-2">
                                                         <span className="col-span-4 font-medium truncate">{u.first_name} {u.last_name}</span>
                                                         <span className="col-span-2">
-                                                            <Badge variant={u.is_client ? 'accent' : 'secondary'}>
-                                                                {u.is_client ? 'Cliente' : 'Administrativo'}
-                                                            </Badge>
+                                                            <ColoredBadge value={u.is_client} type="is_client" />
                                                         </span>
                                                         <span className="col-span-2">
-                                                            <Badge variant={u.is_client ? 'outline' : 'default'}>
-                                                                {getRoleLabel(u.role, u.is_client)}
-                                                            </Badge>
+                                                            <ColoredBadge value={getRoleLabel(u.role, u.is_client)} type="user_role" />
                                                         </span>
                                                         <span className="col-span-4 block text-xs text-muted-foreground truncate">{u.email}</span>
                                                     </div>
@@ -283,9 +279,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                                     disabled={loadingModules}
                                 >
                                     <SelectTrigger id="user_functional" className="w-full">
-                                        <SelectValue
-                                            placeholder={loadingModules ? 'Carregando...' : 'Selecione o módulo'}
-                                        />
+                                      <SelectValue placeholder={loadingModules ? 'Carregando...' : 'Selecione o módulo'} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {ticketModules.map((mod) => (
