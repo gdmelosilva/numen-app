@@ -60,6 +60,7 @@ Este projeto é um sistema de gestão de contratos, parceiros, usuários, chamad
 - [ ] Campo Parceiro não é mostrado corretamente nos Detalhes
 - [ ] O campo status não é mostrado corretamente durante o dialog de Vincular Usuário
 - [ ] Campo módulo do recurso não é mostrado corretamente no vínculo
+- [ ] Visibilidade de mensagens (cliente)
 
 ### Chamados (Tickets)
 - [ ] Tela de gestão de projetos na aba Gestão AMS
