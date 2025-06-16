@@ -3,30 +3,9 @@
 import React from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { AuthenticatedUser } from '@/lib/api-auth';
 import DeniedAccessPage from '@/components/DeniedAccessPage';
 import { useRouter } from 'next/navigation';
-import { UserRole } from '@/hooks/useOptions';
-
-// Utility function to map roles to profiles
-function getUserProfile(user: AuthenticatedUser) {
-  if (!user) return null;
-  const role = typeof user.role === 'number' ? user.role : Number(user.role);
-  const profileMap: Record<string, Record<number, string>> = {
-    adm: {
-      [UserRole.Admin]: 'admin-adm',
-      [UserRole.Manager]: 'manager-adm',
-      [UserRole.Functional]: 'functional-adm',
-    },
-    client: {
-      [UserRole.Admin]: 'admin-client',
-      [UserRole.Manager]: 'manager-client',
-      [UserRole.Functional]: 'functional-client',
-    },
-  };
-  const key = user.is_client ? 'client' : 'adm';
-  return profileMap[key][role] || null;
-}
+import { getUserProfile } from '@/components/UserProfileGetter';
 
 // Main AMS Page Component
 export default function AmsPageContent() {
