@@ -43,6 +43,23 @@ export async function getMarketSegments(): Promise<MarketingInterface[] | null> 
     return data || [];
 }
 
+// Função para opções de categoria
+export function getCategoryOptions() {
+  return [
+    { id: "1", name: "Incidente" },
+    { id: "2", name: "Solicitação" },
+  ];
+}
+
+// Função para opções de prioridade
+export function getPriorityOptions() {
+  return [
+    { id: "1", name: "Baixa" },
+    { id: "2", name: "Média" },
+    { id: "3", name: "Alta" },
+  ];
+}
+
 export enum UserRole {
   Admin = 1,
   Manager = 2,
