@@ -2,15 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const project_id = searchParams.get("project_id");
-  const partner_id = searchParams.get("partner_id");
+  try {
+    const { searchParams } = new URL(request.url);
+    const project_id = searchParams.get("project_id");
+    const partner_id = searchParams.get("partner_id");    console.log("Tickets API called with project_id:", project_id, "partner_id:", partner_id);
 
-  // if (!project_id && !partner_id) {
-  //   return NextResponse.json({ error: "project_id ou partner_id é obrigatório" }, { status: 400 });
-  // }
-
-  const supabase = await createClient();
+    const supabase = await createClient();
   let query = supabase
     .from("ticket")
     .select(`
@@ -43,10 +40,19 @@ export async function GET(request: Request) {
       created_by_user:ticket_created_by_fkey(id, first_name, last_name)
     `)
     .order("created_at", { ascending: false })
-    .eq("type_id", 2);
-
-  if (project_id) {
-    query = query.eq("project_id", project_id);
+    .eq("type_id", 2);  if (project_id) {
+    // Handle multiple project IDs separated by commas
+    // URL decode the project_id first in case it's URL encoded
+    const decodedProjectId = decodeURIComponent(project_id);
+    const projectIds = decodedProjectId.split(',').map(id => id.trim()).filter(id => id);
+    
+    console.log("Processed project IDs:", projectIds);
+    
+    if (projectIds.length === 1) {
+      query = query.eq("project_id", projectIds[0]);
+    } else if (projectIds.length > 1) {
+      query = query.in("project_id", projectIds);
+    }
   }
   if (partner_id) {
     query = query.eq("partner_id", partner_id);
@@ -71,12 +77,16 @@ export async function GET(request: Request) {
       query = query.eq(field, value);
     }
   });
-
   const { data, error } = await query;
 
   if (error) {
+    console.error("Database error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json(data || []);
+  } catch (err) {
+    console.error("API error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
