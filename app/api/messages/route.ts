@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       for (const refId of systemMsgRefIds) {
         const totalMinutes = hoursData
           .filter((h: { message_id: string }) => h.message_id === refId)
-          .reduce((sum: number, h: { minutes?: number }) => sum + (h.minutes || 0), 0);
+          .reduce((sum: number, h: { minutes?: number }) => sum + (h.minutes ?? 0), 0);
         systemHoursMap[refId] = totalMinutes / 60;
       }
     }
@@ -113,16 +113,57 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  
   const body = await req.json();
   const { ticket_id, body: msgBody, hours, is_private, status_id } = body;
-  // Corrige: não aceitar created_by vindo do client (pode vir como objeto)
+  
   if (!ticket_id || !msgBody) {
     return NextResponse.json({ error: "ticket_id e body são obrigatórios" }, { status: 400 });
   }
+
   const supabase = await createClient();
-  // LOG: dados recebidos e enviados para insert
-  console.log("[POST /api/messages] user:", user);
-  console.log("[POST /api/messages] body:", body);
+
+  // Verificações de negócio antes de permitir o envio da mensagem
+
+  // 1. Verificar se o usuário está ativo
+  if (!user.is_active) {
+    return NextResponse.json({ error: "Usuário está suspenso/inativo e não pode enviar mensagens." }, { status: 403 });
+  }
+
+  // 2. Buscar informações do ticket para obter o project_id
+  const { data: ticketData, error: ticketError } = await supabase
+    .from('ticket')
+    .select('project_id')
+    .eq('id', ticket_id)
+    .single();
+
+  if (ticketError || !ticketData) {
+    return NextResponse.json({ error: "Ticket não encontrado." }, { status: 404 });
+  }
+
+  // 3. Para usuários clientes, verificar se estão no contrato
+  if (user.is_client) {
+    const { data: projectResources, error: projectResourcesError } = await supabase
+      .from('project_resources')
+      .select('user_id, is_suspended')
+      .eq('project_id', ticketData.project_id)
+      .eq('user_id', user.id);
+
+    if (projectResourcesError) {
+      return NextResponse.json({ error: "Erro ao verificar vinculação ao projeto." }, { status: 500 });
+    }
+
+    if (!projectResources || projectResources.length === 0) {
+      return NextResponse.json({ error: "Usuário não está vinculado a este contrato e não pode enviar mensagens." }, { status: 403 });
+    }
+
+    const userResource = projectResources[0];
+    if (userResource.is_suspended) {
+      return NextResponse.json({ error: "Usuário está suspenso neste projeto e não pode enviar mensagens." }, { status: 403 });
+    }
+  }
+
+  // Se passou por todas as validações, pode inserir a mensagem
   const { data, error } = await supabase
     .from("message")
     .insert([
@@ -138,9 +179,11 @@ export async function POST(req: NextRequest) {
     ])
     .select()
     .single();
+
   if (error) {
     console.error("[POST /api/messages] Supabase insert error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
   return NextResponse.json(data as Message);
 }
