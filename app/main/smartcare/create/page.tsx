@@ -20,30 +20,22 @@ import {
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useProjectOptions } from "@/hooks/useProjectOptions";
 import DeniedAccessPage from "@/components/DeniedAccessPage";
-
-// Simulação de categorias/prioridades (substitua por fetch real depois)
-const useCategoryOptions = () => {
-  const [categories] = useState([
-    { id: "1", name: "Incidente" },
-    { id: "2", name: "Solicitação" },
-  ]);
-  return { categories, loading: false };
-};
-const usePriorityOptions = () => {
-  const [priorities] = useState([
-    { id: "1", name: "Normal" },
-    { id: "2", name: "Média" },
-    { id: "3", name: "Alta" },
-  ]);
-  return { priorities, loading: false };
-};
+import { getPriorityOptions, getCategoryOptions } from "@/hooks/useOptions";
 
 export default function CreateTicketPage() {
   const { profile, loading: loadingProfile, user } = useUserProfile();
   const { partners } = usePartnerOptions();
   const { modules } = useTicketModules();
-  const { categories } = useCategoryOptions();
-  const { priorities } = usePriorityOptions();
+
+  // Estados para categorias e prioridades AMS
+  const [categories, setCategories] = React.useState<{ id: string; name: string; description: string }[]>([]);
+  const [priorities, setPriorities] = React.useState<{ id: string; name: string }[]>([]);
+
+  // Carregar categorias e prioridades AMS
+  React.useEffect(() => {
+    getCategoryOptions(true).then((data) => setCategories(data ?? []));
+    getPriorityOptions().then((data) => setPriorities(data ?? []));
+  }, []);
 
   // Filtragem de parceiros conforme perfil
   let filteredPartners = partners;
@@ -281,7 +273,7 @@ export default function CreateTicketPage() {
                     <SelectValue placeholder="Selecione o projeto" />
                   </SelectTrigger>
                   <SelectContent>
-                    {filteredProjects.map((p) => (
+                    {(filteredProjects ?? []).map((p) => (
                       <SelectItem key={String(p.id)} value={String(p.id)}>
                         {p.name}
                       </SelectItem>
@@ -298,11 +290,13 @@ export default function CreateTicketPage() {
                 >
                   <SelectTrigger className="w-full" id="category_id">
                     <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
+                  </SelectTrigger>                  <SelectContent>
+                    {(categories ?? []).map((c) => (
                       <SelectItem key={String(c.id)} value={String(c.id)}>
-                        {c.name}
+                        <div className="flex flex-col">
+                          <span>{c.name}</span>
+                          <span className="text-xs italic text-muted-foreground lowercase">{c.description}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -336,9 +330,8 @@ export default function CreateTicketPage() {
                 >
                   <SelectTrigger className="w-full" id="priority_id">
                     <SelectValue placeholder="Selecione a prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {priorities.map((p) => (
+                  </SelectTrigger>                  <SelectContent>
+                    {(priorities ?? []).map((p) => (
                       <SelectItem key={String(p.id)} value={String(p.id)}>
                         {p.name}
                       </SelectItem>

@@ -44,20 +44,32 @@ export async function getMarketSegments(): Promise<MarketingInterface[] | null> 
 }
 
 // Função para opções de categoria
-export function getCategoryOptions() {
-  return [
-    { id: "1", name: "Incidente" },
-    { id: "2", name: "Solicitação" },
-  ];
+export async function getCategoryOptions(ams: boolean = false): Promise<{ id: string; name: string; description: string }[]> {
+  const { data, error } = await supabase
+    .from('ticket_categories')
+    .select('*')
+    .eq('is_ams', ams);
+
+  if (error) {
+    console.error('Error fetching categories:', error);
+    return [];
+  }
+  return data ?? [];
 }
 
 // Função para opções de prioridade
-export function getPriorityOptions() {
-  return [
-    { id: "1", name: "Baixa" },
-    { id: "2", name: "Média" },
-    { id: "3", name: "Alta" },
-  ];
+export async function getPriorityOptions(): Promise<{
+  id: string; name: string 
+}[]> {
+  const { data, error } = await supabase
+    .from('ticket_priorities')
+    .select('*');
+
+  if (error) {
+    console.error('Error fetching priorities:', error);
+    return [];
+  }
+  return data ?? [];
 }
 
 export enum UserRole {
