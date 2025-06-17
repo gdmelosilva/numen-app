@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, memo, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -22,7 +22,7 @@ interface MessageFormProps {
   statusOptions?: StatusOption[];
 }
 
-const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, statusOptions = [] }) => {
+const MessageForm = memo<MessageFormProps>(({ ticket, onMessageSent, statusOptions = [] }) => {
   const [newMessage, setNewMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -30,13 +30,13 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
   const [sending, setSending] = useState(false);
   const [ticketHourData, setTicketHourData] = useState<TicketHourData | null>(null);
   const [statusList, setStatusList] = useState<StatusOption[]>(statusOptions);
-  const [statusLoading, setStatusLoading] = useState(false);  // Hooks de validação
+  const [statusLoading, setStatusLoading] = useState(false);  // Hooks de validação com memoização
   const { userInContract, loading: contractLoading } = useUserInContract(ticket.project_id);
   const { canSend, reason: messageReason } = useCanUserSendMessage(ticket.project_id, userInContract ?? undefined);
   const { canLog, reason: hoursReason, loading: hoursLoading } = useCanUserLogHours(ticket.project_id);
 
-  // Loading geral das validações
-  const validationsLoading = contractLoading || hoursLoading;
+  // Loading geral das validações - memoizado para evitar recálculos
+  const validationsLoading = useMemo(() => contractLoading || hoursLoading, [contractLoading, hoursLoading]);
 
   const fileNameDisplay = selectedFiles.length > 0 ? (
     <div className="mb-2 text-sm text-muted-foreground">
@@ -286,11 +286,12 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
             setSelectedFiles(files);
           }}
           className="text-sm"
-          disabled={sending || validationsLoading}
-        />
+          disabled={sending || validationsLoading}        />
       </div>
     </div>
   );
-};
+});
+
+MessageForm.displayName = 'MessageForm';
 
 export default MessageForm;
