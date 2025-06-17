@@ -3,7 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { authenticateRequest, USER_ROLES } from "@/lib/api-auth";
 
 // GET /api/smartcare/ams-projects
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Lê os parâmetros da query string
+  const { searchParams } = new URL(req.url);
+  const details = searchParams.get("details") === "true";
+  const project_id = searchParams.get("project_id");
+
   // Autentica usuário
   const { user, error } = await authenticateRequest();
   if (error) {
@@ -20,7 +25,10 @@ export async function GET() {
     .select("*, partner:partnerId(*), project_status:project_status(*)", { count: "exact" })
     .eq("project_type", "AMS");
 
-  if (!user.is_client) {
+  if (details && project_id) {
+    // Se details=true, ignora a role e filtra apenas pelo project_id informado
+    query = query.eq("id", project_id);
+  } else if (!user.is_client) {
     if (user.role === USER_ROLES.ADMIN) {
       // Admin: retorna todos os projetos AMS
       // Nada a filtrar

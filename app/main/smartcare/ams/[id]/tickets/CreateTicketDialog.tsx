@@ -50,8 +50,19 @@ export default function CreateTicketDialog({ open, onOpenChange, projectId, part
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    // Log dos valores enviados para debug
+    console.log('DEBUG SUBMIT:', {
+      projectId,
+      partnerId,
+      ...form
+    });
     setError(null);
+    // Validação local dos campos obrigatórios
+    if (!projectId || !partnerId || !form.title || !form.category_id || !form.module_id || !form.priority_id || !form.description) {
+      setError('Preencha todos os campos obrigatórios.');
+      return;
+    }
+    setLoading(true);
     try {
       let ticketId: string | null = null;
       let ticketRes, ticketData;

@@ -23,8 +23,17 @@ export async function POST(req: NextRequest) {
     const description = formData.get("description") as string;
     const attachment = formData.get("file") as File | null;
 
-    if (!contractId || !title || !category_id || !module_id || !priority_id || !description || !partner_id) {
-      return NextResponse.json({ error: "Campos obrigatórios faltando." }, { status: 400 });
+    // Validação detalhada dos campos obrigatórios (FormData)
+    const missingFields = [];
+    if (!contractId) missingFields.push('contractId');
+    if (!partner_id) missingFields.push('partner_id');
+    if (!title) missingFields.push('title');
+    if (!category_id) missingFields.push('category_id');
+    if (!module_id) missingFields.push('module_id');
+    if (!priority_id) missingFields.push('priority_id');
+    if (!description) missingFields.push('description');
+    if (missingFields.length > 0) {
+      return NextResponse.json({ error: `Campo(s) obrigatório(s) faltando: ${missingFields.join(', ')}` }, { status: 400 });
     }
 
     // Cria o ticket
@@ -93,8 +102,17 @@ export async function POST(req: NextRequest) {
     description
   } = body;
 
-  if (!contractId || !partner_id || !title || !category_id || !module_id || !priority_id || !description) {
-    return NextResponse.json({ error: "Campos obrigatórios faltando." }, { status: 400 });
+  // Validação detalhada dos campos obrigatórios (JSON)
+  const missingFieldsJson = [];
+  if (!contractId) missingFieldsJson.push('contractId');
+  if (!partner_id) missingFieldsJson.push('partner_id');
+  if (!title) missingFieldsJson.push('title');
+  if (!category_id) missingFieldsJson.push('category_id');
+  if (!module_id) missingFieldsJson.push('module_id');
+  if (!priority_id) missingFieldsJson.push('priority_id');
+  if (!description) missingFieldsJson.push('description');
+  if (missingFieldsJson.length > 0) {
+    return NextResponse.json({ error: `Campo(s) obrigatório(s) faltando: ${missingFieldsJson.join(', ')}` }, { status: 400 });
   }
 
   const { data, error } = await supabase

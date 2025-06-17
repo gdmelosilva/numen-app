@@ -116,8 +116,12 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { ticket_id, body: msgBody, hours, is_private, status_id } = body;
   // Corrige: não aceitar created_by vindo do client (pode vir como objeto)
-  if (!ticket_id || !msgBody) {
-    return NextResponse.json({ error: "ticket_id e body são obrigatórios" }, { status: 400 });
+  // Validação detalhada dos campos obrigatórios
+  const missingFields = [];
+  if (!ticket_id) missingFields.push('ticket_id');
+  if (!msgBody) missingFields.push('body');
+  if (missingFields.length > 0) {
+    return NextResponse.json({ error: `Campo(s) obrigatório(s) faltando: ${missingFields.join(', ')}` }, { status: 400 });
   }
   const supabase = await createClient();
   // LOG: dados recebidos e enviados para insert

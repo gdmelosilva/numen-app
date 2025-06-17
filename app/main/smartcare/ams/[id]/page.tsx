@@ -22,7 +22,7 @@ export default function AMSDetailPage() {
   useEffect(() => {
     const loadProjectData = async () => {
       try {
-        const response = await fetch(`/api/smartcare/ams-projects?id=${id}`);
+        const response = await fetch(`/api/smartcare/ams-projects?details=true&project_id=${id}`);
         if (!response.ok) {
           setError(true);
           setLoading(false);
@@ -88,7 +88,7 @@ export default function AMSDetailPage() {
                 <ProjectUsersTab projectId={String(project.id)} />
               </TabsContent>
               <TabsContent value="chamados">
-                <ProjectTicketsTab projectId={String(project.id)} />
+                <ProjectTicketsTab projectId={String(project.id)} partnerId={String(project.partnerId)} />
               </TabsContent>
             </Tabs>
           </div>

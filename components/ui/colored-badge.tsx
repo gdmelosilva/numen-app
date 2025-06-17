@@ -109,7 +109,7 @@ function renderTicketTypeBadge(value: string | boolean | { name: string; color: 
 
 export interface ColoredBadgeProps {
   value: string | boolean | { name: string; color: string } | null | undefined;
-  type: "project_type" | "status" | "boolean" | "project_status" | "user_role" | "is_client" | "priority" | "ticket_type" | "suspended";
+  type: "project_type" | "status" | "boolean" | "project_status" | "user_role" | "is_client" | "priority" | "ticket_type" | "suspended" | "comp_adm";
   statusColor?: string; // para status que vem com cor
   className?: string;
 }
@@ -227,6 +227,22 @@ function renderIsClientBadge(
   return <Badge variant={variant} className={className}>{label}</Badge>;
 }
 
+function renderIsCompAdmBadge(
+  value: string | boolean | { name: string; color: string } | null | undefined,
+  className?: string
+) {
+  let label = "-";
+  if (typeof value === "boolean") {
+    label = value ? "Administrativo" : "Genérico";
+  } else if (typeof value === "string") {
+    label = isClientLabelMap[value] ?? value;
+  } else if (isNameColorObject(value)) {
+    label = isClientLabelMap[value.name] ?? value.name;
+  }
+  const variant = isClientColorMap[label] ?? "outline";
+  return <Badge variant={variant} className={className}>{label}</Badge>;
+}
+
 function renderSuspendedBadge(
   value: string | boolean | { name: string; color: string } | null | undefined
 ) {
@@ -278,6 +294,8 @@ export function ColoredBadge({ value, type, statusColor, className }: Readonly<C
       return renderTicketTypeBadge(value, className);
     case "suspended":
       return renderSuspendedBadge(value);
+    case "comp_adm":
+      return renderIsCompAdmBadge(value, className);
     default:
       return <span>{String(value)}</span>;
   }
