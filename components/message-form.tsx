@@ -30,11 +30,13 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
   const [sending, setSending] = useState(false);
   const [ticketHourData, setTicketHourData] = useState<TicketHourData | null>(null);
   const [statusList, setStatusList] = useState<StatusOption[]>(statusOptions);
-  const [statusLoading, setStatusLoading] = useState(false);
-  // Hooks de validação
-  const { userInContract } = useUserInContract(ticket.project_id);
+  const [statusLoading, setStatusLoading] = useState(false);  // Hooks de validação
+  const { userInContract, loading: contractLoading } = useUserInContract(ticket.project_id);
   const { canSend, reason: messageReason } = useCanUserSendMessage(ticket.project_id, userInContract ?? undefined);
-  const { canLog, reason: hoursReason } = useCanUserLogHours(ticket.project_id);
+  const { canLog, reason: hoursReason, loading: hoursLoading } = useCanUserLogHours(ticket.project_id);
+
+  // Loading geral das validações
+  const validationsLoading = contractLoading || hoursLoading;
 
   const fileNameDisplay = selectedFiles.length > 0 ? (
     <div className="mb-2 text-sm text-muted-foreground">
@@ -148,11 +150,20 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
     } finally {
       setStatusLoading(false);
     }
-  }
-  return (
+  }  return (
     <div className="w-full space-y-2 mt-4">
+      {/* Loading das validações */}
+      {validationsLoading && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-500 mr-3" />
+            <span className="text-sm text-blue-700">Verificando permissões...</span>
+          </div>
+        </div>
+      )}
+
       {/* Avisos de validação */}
-      {!canSend && (
+      {!validationsLoading && !canSend && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -172,7 +183,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
         </div>
       )}
 
-      {!canLog && ticketHourData && (
+      {!validationsLoading && !canLog && ticketHourData && (
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -194,22 +205,32 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
       )}
 
       {fileNameDisplay}
-      <Card className="w-full py-2 rounded-md">
-        <CardContent className="flex flex-col md:flex-row justify-start items-center gap-6 py-0 px-6">
+      <Card className="w-full py-2 rounded-md">        <CardContent className="flex flex-col md:flex-row justify-start items-center gap-6 py-0 px-6">
+          {validationsLoading && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Carregando permissões...</span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <label htmlFor="privateSwitch" className="text-sm text-muted-foreground font-medium">
               Mensagem Privada
             </label>
-            <Switch id="privateSwitch" checked={isPrivate} onCheckedChange={setIsPrivate} />
+            <Switch 
+              id="privateSwitch" 
+              checked={isPrivate} 
+              onCheckedChange={setIsPrivate}
+              disabled={validationsLoading}
+            />
           </div>
           <div className="flex items-center gap-2 min-w-60">
             <label htmlFor="statusSelect" className="text-sm text-muted-foreground font-medium">
               Status
-            </label>
-            <Select
+            </label>            <Select
               value={selectedStatus}
               onValueChange={setSelectedStatus}
               onOpenChange={(open) => { if (open) fetchStatusOptions(); }}
+              disabled={validationsLoading}
             >
               <SelectTrigger className="min-w-60">
                 <SelectValue placeholder="Selecionar status" />
@@ -241,22 +262,23 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
             </span>
           )}
         </CardContent>
-      </Card>
-      <Textarea
-        placeholder="Digite sua mensagem..."
+      </Card>      <Textarea
+        placeholder={validationsLoading ? "Verificando permissões..." : "Digite sua mensagem..."}
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
-        disabled={sending}
-      />      <div className="flex items-center gap-2">
-        <Button 
+        disabled={sending || validationsLoading}
+      /><div className="flex items-center gap-2">        <Button 
           onClick={handleSend} 
-          disabled={!newMessage.trim() || sending || !canSend}
-          className={!canSend ? "opacity-50 cursor-not-allowed" : ""}
+          disabled={!newMessage.trim() || sending || !canSend || validationsLoading}
+          className={(!canSend && !validationsLoading) ? "opacity-50 cursor-not-allowed" : ""}
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {!canSend ? "Envio Bloqueado" : "Enviar Mensagem"}
-        </Button>
-        <Input
+          {(() => {
+            if (validationsLoading) return "Verificando...";
+            if (!canSend) return "Envio Bloqueado";
+            return "Enviar Mensagem";
+          })()}
+        </Button>        <Input
           type="file"
           multiple
           onChange={(e) => {
@@ -264,7 +286,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
             setSelectedFiles(files);
           }}
           className="text-sm"
-          disabled={sending}
+          disabled={sending || validationsLoading}
         />
       </div>
     </div>
