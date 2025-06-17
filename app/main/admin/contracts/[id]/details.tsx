@@ -17,7 +17,6 @@ interface ProjectDetailsTabProps {
 }
 
 export default function ProjectDetailsTab({ project, editMode, setEditMode }: ProjectDetailsTabProps) {
-  console.log('[ProjectDetailsTab] project recebido:', project);
   // Determine if the project is closed (status 'Encerrado')
   const isClosed = (() => {
     let status = '';
@@ -52,10 +51,8 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     value_hr_except: project.value_hr_except ?? "",
     value_hr_warn: project.value_hr_warn ?? "",
     baseline_hours: project.baseline_hours ?? "",
-    opening_time: project.opening_time ?? "",
-    closing_time: project.closing_time ?? "",
+    opening_time: project.opening_time ?? "",    closing_time: project.closing_time ?? "",
   });
-  console.log('[ProjectDetailsTab] form inicial:', form);
 
   // Atualiza o form sempre que o project mudar
   useEffect(() => {
@@ -82,7 +79,6 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     };
     setForm(novoForm);
   }, [project]);
-
   const [statusOptions, setStatusOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,13 +208,9 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       baseline_hours: project.baseline_hours ?? "",
       opening_time: project.opening_time ?? "",
       closing_time: project.closing_time ?? "",
-    });
-    setEditMode(false);
+    });    setEditMode(false);
     setError(null);
   };
-
-  // Logar valor do input de cobrança antes do return
-  console.log('[ProjectDetailsTab] render input hours_max:', form.hours_max);
 
   return (
     <>
@@ -282,89 +274,64 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             <div>
               <Label htmlFor="project_type" className="text-xs text-muted-foreground">Tipo</Label>
               <Input id="project_type" name="project_type" value={form.project_type} onChange={handleChange} className="h-9" disabled />
-            </div>
-            {/* Status */}
+            </div>            {/* Status */}
             <div>
               <Label htmlFor="project_status" className="text-xs text-muted-foreground">Status</Label>
-              {editMode ? (
-                <Select
-                  value={String(form.project_status)}
-                  onValueChange={v => setForm(f => ({ ...f, project_status: v }))}
-                  disabled={!editMode}
-                >
-                  <SelectTrigger className="h-9 w-full w-max-full">
-                    <SelectValue placeholder="Selecione o status">
-                      {statusOptions.find(s => s.id === form.project_status)?.name}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map(option => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input id="project_status" name="project_status" value={statusOptions.find(s => s.id === form.project_status)?.name || ""} className="h-9" disabled />
-              )}
+              <Input id="project_status" name="project_status" value={statusOptions.find(s => s.id === form.project_status)?.name || ""} className="h-9" disabled />
             </div>
             {/* Horário de Abertura */}
             <div>
               <Label htmlFor="opening_time" className="text-xs text-muted-foreground">Horário de Abertura</Label>
               <Input id="opening_time" name="opening_time" type="time" value={form.opening_time || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+            </div>            {/* Horário de Fechamento */}
+            <div>
+              <Label htmlFor="closing_time" className="text-xs text-muted-foreground">Horário de Fechamento</Label>
+              <Input id="closing_time" name="closing_time" type="time" value={form.closing_time || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
             </div>
-            {/* Linha com Horário de Fechamento, Wildcard e 24/7 lado a lado */}
-            <div className="flex gap-4 items-end">
+            {/* Wildcard e 24/7 ao final */}
+            <div className="flex gap-6 items-end md:col-span-2 lg:col-span-2">
               <div>
-                <Label htmlFor="closing_time" className="text-xs text-muted-foreground">Horário de Fechamento</Label>
-                <Input id="closing_time" name="closing_time" type="time" value={form.closing_time || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-              </div>
-            </div>
-            <div className="flex gap-4 items-end">
-              <div>
-                  <Label className="text-xs text-muted-foreground">Wildcard?</Label>
-                  {editMode ? (
-                    <Select
+                <Label className="text-xs text-muted-foreground">Wildcard?</Label>
+                {editMode ? (
+                  <Select
                     value={form.is_wildcard ? "true" : "false"}
                     onValueChange={v => setForm(f => ({ ...f, is_wildcard: v === "true" }))}
                     disabled={!editMode}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="true">Sim</SelectItem>
-                        <SelectItem value="false">Não</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div>{project.is_wildcard ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
-                  )}
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">24/7?</Label>
-                  {editMode ? (
-                    <Select
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Sim</SelectItem>
+                      <SelectItem value="false">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div>{project.is_wildcard ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
+                )}
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">24/7?</Label>
+                {editMode ? (
+                  <Select
                     value={form.is_247 ? "true" : "false"}
                     onValueChange={v => setForm(f => ({ ...f, is_247: v === "true" }))}
                     disabled={!editMode}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="true">Sim</SelectItem>
-                        <SelectItem value="false">Não</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div>{project.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
-                  )}
-                </div>
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Sim</SelectItem>
+                      <SelectItem value="false">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div>{project.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>                )}
               </div>
-            {/* Seção de cobrança só aparece se for AMS */}
-            {form.project_type === "AMS" && (
+            </div>
+            {/* Seção de cobrança - sempre aparece para projetos AMS no admin */}
+            {(form.project_type === "AMS" || project.project_type === "AMS") && (
               <div className="md:col-span-4 pt-6">
                 <h2 className="flex items-center text-lg font-semibold pt-4 pb-3">
                   <CircleDollarSignIcon className="w-4 h-4 mr-2" />Informações de Cobrança

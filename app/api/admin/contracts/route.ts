@@ -13,7 +13,6 @@ type ProjectStatus = {
 function mapProjectRow(row: unknown) {
   const r = row as Record<string, unknown>;
   const projectStatus = r.project_status as ProjectStatus | undefined;
-  const isAMS = r.project_type === "AMS";
   const base = {
     id: r.id,
     projectExtId: r.projectExtId?.toString() ?? "",
@@ -36,14 +35,11 @@ function mapProjectRow(row: unknown) {
       : "",
     end_at: r.end_at ? new Date(r.end_at as string).toISOString() : "",
     opening_time: r.opening_time ?? null,
-    closing_time: r.closing_time ?? null,
-  };
-  if (isAMS) {
-    return base;
-  }
+    closing_time: r.closing_time ?? null,  };
+  
   return {
     ...base,
-    // Campos de cobrança
+    // Campos de cobrança - sempre incluídos
     hours_max: r.hours_max ?? null,
     cred_exp_period: r.cred_exp_period ?? null,
     value_hr_normal: r.value_hr_normal ?? null,
