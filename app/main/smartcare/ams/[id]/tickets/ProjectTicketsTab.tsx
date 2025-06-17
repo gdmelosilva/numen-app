@@ -8,10 +8,11 @@ import { File } from 'lucide-react';
 
 interface ProjectTicketsTabProps {
     projectId: string;
+    partnerId: string;
 }
 
 // Componente para exibir a tabela/lista de tickets do projeto
-export default function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps) {
+export default function ProjectTicketsTab({ projectId, partnerId }: ProjectTicketsTabProps) {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -37,9 +38,6 @@ export default function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps)
         fetch('/api/options?type=ticket_priorities').then(r => r.json()).then(d => setPriorities(Array.isArray(d) ? d : []));
     }, []);
 
-    // Busca o partnerId do primeiro ticket, se houver, ou defina conforme a lógica do seu projeto
-    const partnerId = tickets.length > 0 ? tickets[0].partner_id : undefined;
-
     return (
         <>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
@@ -54,7 +52,7 @@ export default function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps)
                 open={openDialog}
                 onOpenChange={setOpenDialog}
                 projectId={projectId}
-                partnerId={partnerId || ''}
+                partnerId={partnerId}
                 categories={categories}
                 modules={modules}
                 priorities={priorities}

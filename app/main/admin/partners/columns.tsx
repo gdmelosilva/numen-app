@@ -55,7 +55,7 @@ export const columns: ColumnDef<Partner>[] = [
 		),
 		cell: ({ row }) => {
 			const value = row.getValue("is_compadm") as string | boolean | { name: string; color: string } | null | undefined;
-			return <ColoredBadge value={value} type="is_client" />;
+			return <ColoredBadge value={value} type="comp_adm" />;
 		},
 	},
 	{
