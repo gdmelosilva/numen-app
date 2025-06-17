@@ -5,7 +5,7 @@ import { useUserProjectHours } from "./useUserProjectHours";
 // Cache global para evitar recarregamentos desnecessários
 const contractCache = new Map<string, { data: boolean | null; timestamp: number }>();
 const hoursCache = new Map<string, { data: { canLog: boolean; reason: string; userProjectHours: number | null }; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutos
 
 // Função para limpar cache quando necessário (ex: após mudanças de permissão)
 export function clearValidationCache(userId?: string, projectId?: string) {
