@@ -46,4 +46,30 @@ export type Contract = {
   partner_name?: {
     partner_desc: string;
   };
+  project?: {
+    id: string;
+    endAt?: string | null;
+    end_at?: string | null;
+    is_247?: boolean;
+    createdAt?: string;
+    hours_max?: number | null;
+    partnerId?: string;
+    updatedAt?: string | null;
+    start_date?: string | null;
+    is_wildcard?: boolean;
+    projectDesc?: string;
+    projectName?: string;
+    closing_time?: string | null;
+    opening_time?: string | null;
+    projectExtId?: string;
+    projectHours?: number | null;
+    project_type?: string;
+    value_hr_warn?: number | null;
+    baseline_hours?: number | null;
+    project_status?: number;
+    value_hr_excdn?: number | null;
+    cred_exp_period?: number | null;
+    value_hr_except?: number | null;
+    value_hr_normal?: number | null;
+  };
 }

@@ -15,18 +15,11 @@ import { usePartnerOptions } from "@/hooks/usePartnerOptions";
 import { useTicketModules } from "@/hooks/useTicketModules";
 import {
   Card,
-  CardHeader,
   CardContent
 } from "@/components/ui/card";
-
-// Simulação de projetos (substitua por hook real depois)
-const useProjectOptions = () => {
-  const [projects] = useState([
-    { id: "1", name: "Projeto A" },
-    { id: "2", name: "Projeto B" },
-  ]);
-  return { projects, loading: false };
-};
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useProjectOptions } from "@/hooks/useProjectOptions";
+import DeniedAccessPage from "@/components/DeniedAccessPage";
 
 // Simulação de categorias/prioridades (substitua por fetch real depois)
 const useCategoryOptions = () => {
@@ -46,11 +39,17 @@ const usePriorityOptions = () => {
 };
 
 export default function CreateTicketPage() {
-  const { projects } = useProjectOptions();
+  const { profile, loading: loadingProfile, user } = useUserProfile();
   const { partners } = usePartnerOptions();
   const { modules } = useTicketModules();
   const { categories } = useCategoryOptions();
   const { priorities } = usePriorityOptions();
+
+  // Filtragem de parceiros conforme perfil
+  let filteredPartners = partners;
+  if (profile === "admin-client" && user?.partner_id) {
+    filteredPartners = partners.filter((p) => String(p.id) === String(user.partner_id));
+  }
 
   const [form, setForm] = useState({
     project_id: "",
@@ -78,12 +77,78 @@ export default function CreateTicketPage() {
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, attachment: e.target.files?.[0] || null }));
+    setForm((prev) => ({ ...prev, attachment: e.target.files?.[0] ?? null }));
   };
 
   const handleAttachmentType = (value: string) => {
     setAttachmentType(value);
   };
+
+  // Função auxiliar para criar o ticket
+  async function createTicket(formData: typeof form) {
+    if (formData.attachment) {
+      const fd = new FormData();
+      fd.append("contractId", formData.project_id);
+      fd.append("partner_id", formData.partner_id);
+      fd.append("title", formData.title);
+      fd.append("category_id", formData.category_id);
+      fd.append("module_id", formData.module_id);
+      fd.append("priority_id", formData.priority_id);
+      fd.append("description", formData.description);
+      const ticketRes = await fetch("/api/tickets/create", {
+        method: "POST",
+        body: fd,
+      });
+      if (!ticketRes.ok) {
+        const data = await ticketRes.json();
+        throw new Error(data.error ?? "Erro ao criar chamado");
+      }
+      const ticketData = await ticketRes.json();
+      return ticketData?.id ?? ticketData?.data?.id;
+    } else {
+      const ticketRes = await fetch("/api/tickets/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractId: formData.project_id,
+          partner_id: formData.partner_id,
+          title: formData.title,
+          category_id: formData.category_id,
+          module_id: formData.module_id,
+          priority_id: formData.priority_id,
+          description: formData.description,
+        }),
+      });
+      if (!ticketRes.ok) {
+        const data = await ticketRes.json();
+        throw new Error(data.error ?? "Erro ao criar chamado");
+      }
+      const ticketData = await ticketRes.json();
+      return ticketData?.id ?? ticketData?.data?.id;
+    }
+  }
+
+  // Função auxiliar para upload de anexo
+  async function uploadAttachment(formData: typeof form, ticketId: string, attachmentType: string) {
+    const msgRes = await fetch(`/api/messages?ticket_id=${ticketId}`);
+    if (!msgRes.ok) throw new Error("Erro ao buscar mensagem do chamado");
+    const msgs = await msgRes.json();
+    const systemMsg = Array.isArray(msgs) && msgs.length > 0 ? msgs[0] : null;
+    if (!systemMsg?.id) throw new Error("Mensagem do sistema não encontrada");
+    const attFd = new FormData();
+    if (formData.attachment) attFd.append("file", formData.attachment);
+    attFd.append("messageId", systemMsg.id);
+    attFd.append("ticketId", ticketId);
+    if (attachmentType) attFd.append("att_type", attachmentType);
+    const attRes = await fetch("/api/attachment", {
+      method: "POST",
+      body: attFd,
+    });
+    if (!attRes.ok) {
+      const data = await attRes.json();
+      throw new Error(data.error ?? "Erro ao enviar anexo");
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,67 +160,9 @@ export default function CreateTicketPage() {
         setLoading(false);
         return;
       }
-      let ticketId: string | null = null;
-      let ticketRes, ticketData;
-      if (form.attachment) {
-        const fd = new FormData();
-        fd.append("contractId", form.project_id);
-        fd.append("partner_id", form.partner_id);
-        fd.append("title", form.title);
-        fd.append("category_id", form.category_id);
-        fd.append("module_id", form.module_id);
-        fd.append("priority_id", form.priority_id);
-        fd.append("description", form.description);
-        ticketRes = await fetch("/api/tickets/create", {
-          method: "POST",
-          body: fd,
-        });
-        if (!ticketRes.ok) {
-          const data = await ticketRes.json();
-          throw new Error(data.error || "Erro ao criar chamado");
-        }
-        ticketData = await ticketRes.json();
-        ticketId = ticketData?.id || ticketData?.data?.id;
-      } else {
-        ticketRes = await fetch("/api/tickets/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contractId: form.project_id,
-            partner_id: form.partner_id,
-            title: form.title,
-            category_id: form.category_id,
-            module_id: form.module_id,
-            priority_id: form.priority_id,
-            description: form.description,
-          }),
-        });
-        if (!ticketRes.ok) {
-          const data = await ticketRes.json();
-          throw new Error(data.error || "Erro ao criar chamado");
-        }
-        ticketData = await ticketRes.json();
-        ticketId = ticketData?.id || ticketData?.data?.id;
-      }
+      const ticketId = await createTicket(form);
       if (form.attachment && ticketId) {
-        const msgRes = await fetch(`/api/messages?ticket_id=${ticketId}`);
-        if (!msgRes.ok) throw new Error("Erro ao buscar mensagem do chamado");
-        const msgs = await msgRes.json();
-        const systemMsg = Array.isArray(msgs) && msgs.length > 0 ? msgs[0] : null;
-        if (!systemMsg?.id) throw new Error("Mensagem do sistema não encontrada");
-        const attFd = new FormData();
-        attFd.append("file", form.attachment);
-        attFd.append("messageId", systemMsg.id);
-        attFd.append("ticketId", ticketId);
-        if (attachmentType) attFd.append("att_type", attachmentType);
-        const attRes = await fetch("/api/attachment", {
-          method: "POST",
-          body: attFd,
-        });
-        if (!attRes.ok) {
-          const data = await attRes.json();
-          throw new Error(data.error || "Erro ao enviar anexo");
-        }
+        await uploadAttachment(form, ticketId, attachmentType);
       }
       toast.success("Chamado criado com sucesso.");
       setForm({
@@ -176,6 +183,46 @@ export default function CreateTicketPage() {
     }
   };
 
+  // Handler especial para seleção de parceiro (admin)
+  const handlePartnerSelect = (value: string) => {
+    setForm((prev) => ({ ...prev, partner_id: value, project_id: "" }));
+  };
+
+  // Se for admin-client, seleciona o parceiro automaticamente e esconde o campo
+  React.useEffect(() => {
+    if (profile === "admin-client" && user?.partner_id) {
+      setForm((prev) => ({ ...prev, partner_id: String(user.partner_id) }));
+    }
+  }, [profile, user?.partner_id]);
+
+  // Filtragem de projetos conforme perfil
+  let projectOptionsParams: Record<string, string> = {};
+  let onlyUserProject = false;
+  if (profile === "admin-adm" && form.partner_id) {
+    projectOptionsParams = { partnerId: String(form.partner_id) };
+  } else if ((profile === "manager-adm" || profile === "manager-client") && user?.partner_id) {
+    projectOptionsParams = { partnerId: String(user.partner_id) };
+  } else if (profile === "admin-client" && user?.partner_id) {
+    projectOptionsParams = { partnerId: String(user.partner_id) };
+  } else if ((profile === "functional-adm" || profile === "functional-client") && user?.project_id) {
+    projectOptionsParams = { projectId: String(user.project_id) };
+    onlyUserProject = true;
+  }
+  const { projects } = useProjectOptions(projectOptionsParams);
+  // Para functional, filtrar client-side também
+  const filteredProjects = onlyUserProject && user?.project_id
+    ? projects.filter((p) => String(p.id) === String(user.project_id))
+    : projects;
+
+  if (loadingProfile) {
+    return <div>Carregando perfil...</div>;
+  }
+
+  // Se for functional, bloqueia acesso
+  if (profile === "functional-adm" || profile === "functional-client") {
+    return <DeniedAccessPage />;
+  }
+
   return (
     <div className="w-full max-w-full mx-auto flex flex-col gap-4">
         <div>
@@ -186,8 +233,9 @@ export default function CreateTicketPage() {
         <CardContent>
           <form className="space-y-6 mt-6" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-sm font-medium mb-1">Título</label>
+                <label htmlFor="title" className="block text-sm font-medium mb-1">Título</label>
                 <Input
+                  id="title"
                   name="title"
                   value={form.title}
                   onChange={handleChange}
@@ -196,18 +244,44 @@ export default function CreateTicketPage() {
                 />
               </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Só admins podem escolher o parceiro */}
+              {profile === "admin-adm" ? (
+                <div>
+                  <label htmlFor="partner_id" className="block text-sm font-medium mb-1">Parceiro</label>
+                  <Select
+                    value={form.partner_id}
+                    onValueChange={handlePartnerSelect}
+                    disabled={loading}
+                  >
+                    <SelectTrigger className="w-full" id="partner_id">
+                      <SelectValue placeholder="Selecione o parceiro" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredPartners.map((p) => (
+                        <SelectItem key={String(p.id)} value={String(p.id)}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+              {/* Projeto: desabilitado até selecionar parceiro para admin */}
               <div>
-                <label className="block text-sm font-medium mb-1">Projeto</label>
+                <label htmlFor="project_id" className="block text-sm font-medium mb-1">Projeto</label>
                 <Select
                   value={form.project_id}
                   onValueChange={(v) => handleSelect("project_id", v)}
-                  disabled={loading}
+                  disabled={
+                    loading ||
+                    ((profile === "admin-adm" || profile === "admin-client") && !form.partner_id)
+                  }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full" id="project_id">
                     <SelectValue placeholder="Selecione o projeto" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((p) => (
+                    {filteredProjects.map((p) => (
                       <SelectItem key={String(p.id)} value={String(p.id)}>
                         {p.name}
                       </SelectItem>
@@ -216,32 +290,13 @@ export default function CreateTicketPage() {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Parceiro</label>
-                <Select
-                  value={form.partner_id}
-                  onValueChange={(v) => handleSelect("partner_id", v)}
-                  disabled={loading}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o parceiro" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {partners.map((p) => (
-                      <SelectItem key={String(p.id)} value={String(p.id)}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Tipo Chamado</label>
+                <label htmlFor="category_id" className="block text-sm font-medium mb-1">Tipo Chamado</label>
                 <Select
                   value={form.category_id}
                   onValueChange={(v) => handleSelect("category_id", v)}
                   disabled={loading}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full" id="category_id">
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -254,13 +309,13 @@ export default function CreateTicketPage() {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Módulo Associado</label>
+                <label htmlFor="module_id" className="block text-sm font-medium mb-1">Módulo Associado</label>
                 <Select
                   value={form.module_id}
                   onValueChange={(v) => handleSelect("module_id", v)}
                   disabled={loading}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full" id="module_id">
                     <SelectValue placeholder="Selecione o módulo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -273,13 +328,13 @@ export default function CreateTicketPage() {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Prioridade</label>
+                <label htmlFor="priority_id" className="block text-sm font-medium mb-1">Prioridade</label>
                 <Select
                   value={form.priority_id}
                   onValueChange={(v) => handleSelect("priority_id", v)}
                   disabled={loading}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full" id="priority_id">
                     <SelectValue placeholder="Selecione a prioridade" />
                   </SelectTrigger>
                   <SelectContent>
@@ -293,14 +348,15 @@ export default function CreateTicketPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Descrição do Chamado</label>
+              <label htmlFor="description" className="block text-sm font-medium mb-1">Descrição do Chamado</label>
               <textarea
+                id="description"
                 name="description"
                 value={form.description}
                 onChange={handleChange}
                 required
                 disabled={loading}
-                className="w-full h-48 border rounded p-2"
+                className="w-full h-48 border-2 bg-secondary text-foreground rounded p-2 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] outline-none"
               />
             </div>
             {error && (
@@ -308,13 +364,13 @@ export default function CreateTicketPage() {
             )}
               <div className="md:col-span-2 flex gap-4 items-end">
                 <div className="w-1/6">
-                  <label className="block text-sm font-medium mb-1">Tipo do Anexo</label>
+                  <label htmlFor="attachment_type" className="block text-sm font-medium mb-1">Tipo do Anexo</label>
                   <Select
                     value={attachmentType}
                     onValueChange={handleAttachmentType}
                     disabled={loading}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full" id="attachment_type">
                       <SelectValue placeholder="Selecione o tipo do anexo" />
                     </SelectTrigger>
                     <SelectContent>
@@ -327,8 +383,9 @@ export default function CreateTicketPage() {
                   </Select>
                 </div>
                 <div className="w-1/3">
-                  <label className="block text-sm font-medium mb-1">Anexo</label>
+                  <label htmlFor="attachment" className="block text-sm font-medium mb-1">Anexo</label>
                   <Input
+                    id="attachment"
                     type="file"
                     accept="*"
                     onChange={handleFile}

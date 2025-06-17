@@ -40,6 +40,8 @@ export function useProjectOptions({
           ...p,
           name: p.projectName || p.name || p.projectDesc || p.id,
         }));
+        // Filtrar apenas projetos AMS
+        filtered = filtered.filter((p: ProjectOption) => (p.project_type?.toLowerCase?.() === 'ams'));
         if (profile === 'manager-adm' && userPartnerId) {
           filtered = filtered.filter((p: { partner_id: string; }) => p.partner_id === userPartnerId);
         } else if ((profile === 'functional-adm' || profile === 'functional-client') && projectId) {
