@@ -210,18 +210,20 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Carregando permissões...</span>
             </div>
+          )}          {/* Checkbox de mensagem privada - apenas para usuários não-clientes */}
+          {!user?.is_client && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="privateSwitch" className="text-sm text-muted-foreground font-medium">
+                Mensagem Privada
+              </label>
+              <Switch 
+                id="privateSwitch" 
+                checked={isPrivate} 
+                onCheckedChange={setIsPrivate}
+                disabled={validationsLoading}
+              />
+            </div>
           )}
-          <div className="flex items-center gap-2">
-            <label htmlFor="privateSwitch" className="text-sm text-muted-foreground font-medium">
-              Mensagem Privada
-            </label>
-            <Switch 
-              id="privateSwitch" 
-              checked={isPrivate} 
-              onCheckedChange={setIsPrivate}
-              disabled={validationsLoading}
-            />
-          </div>
           <div className="flex items-center gap-2 min-w-60">
             <label htmlFor="statusSelect" className="text-sm text-muted-foreground font-medium">
               Status

@@ -12,6 +12,16 @@ export async function GET(req: NextRequest) {
   if (!ticket_id && !ref_msg_id) {
     return NextResponse.json({ error: "ticket_id ou ref_msg_id é obrigatório" }, { status: 400 });
   }
+
+  // Autentica o usuário para verificar se é client
+  const { user, error: authError } = await authenticateRequest();
+  if (authError) {
+    return authError;
+  }
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const supabase = await createClient();
 
   // Monta a query dinâmica
@@ -27,6 +37,11 @@ export async function GET(req: NextRequest) {
     }
   } else if (ticket_id) {
     query = query.eq("ticket_id", ticket_id);
+  }
+
+  // Se o usuário é cliente, filtrar apenas mensagens não-privadas
+  if (user.is_client) {
+    query = query.eq("is_private", false);
   }
 
   const { data: messagesData, error: messagesError } = await query;
