@@ -21,7 +21,6 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const loadProjectData = async () => {
       try {
-        // Primeiro, tentar obter os dados do sessionStorage
         const cachedData = sessionStorage.getItem(`project-${id}`);
         if (cachedData) {
           const projectData = JSON.parse(cachedData);
