@@ -43,11 +43,10 @@ export function useCanUserLogHours(projectId?: string, contractHoursMax?: number
 }
 
 // Hook para verificar se o usuário pode enviar mensagens
-export function useCanUserSendMessage(projectId?: string, userInContract?: boolean) {
+export function useCanUserSendMessage(projectId?: string, userInContract?: boolean | null, contractLoading?: boolean) {
   const { user } = useCurrentUser();
   const [canSend, setCanSend] = useState(false);
   const [reason, setReason] = useState<string>("");
-
   useEffect(() => {
     if (!user) {
       setCanSend(false);
@@ -61,20 +60,32 @@ export function useCanUserSendMessage(projectId?: string, userInContract?: boole
       setReason("Usuário está suspenso/inativo");
       return;
     }
-
+    
     // Para usuários clientes (Funcional Administrativo / Key-User Cliente)
     if (user.is_client) {
+      // Se ainda está carregando os dados do contrato, aguardar
+      if (contractLoading) {
+        setCanSend(false);
+        setReason("Verificando vinculação ao contrato...");
+        return;
+      }
+      
       // Verifica se o usuário está no contrato
       if (userInContract === false) {
         setCanSend(false);
         setReason("Usuário não está vinculado ao contrato");
         return;
       }
-    }
-
-    setCanSend(true);
+      
+      // Se userInContract é null e não está carregando, considerar como não vinculado para projetos específicos
+      if (userInContract === null && projectId) {
+        setCanSend(false);
+        setReason("Não foi possível verificar a vinculação ao contrato");
+        return;
+      }
+    }    setCanSend(true);
     setReason("");
-  }, [user, userInContract]);
+  }, [user, userInContract, contractLoading, projectId]);
 
   return { 
     canSend, 
@@ -87,9 +98,7 @@ export function useCanUserSendMessage(projectId?: string, userInContract?: boole
 export function useUserInContract(projectId?: string) {
   const { user } = useCurrentUser();
   const [userInContract, setUserInContract] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
+  const [loading, setLoading] = useState(false);  useEffect(() => {
     if (!user?.id || !projectId) {
       setUserInContract(null);
       return;
@@ -100,11 +109,14 @@ export function useUserInContract(projectId?: string) {
     // Faz uma consulta para verificar se o usuário está vinculado ao projeto
     fetch(`/api/project-resources?project_id=${projectId}`)
       .then((res) => res.json())
-      .then((data) => {        // Verifica se o usuário está na lista de recursos do projeto
+      .then((data) => {
+        // Verifica se o usuário está na lista de recursos do projeto
         const userResource = Array.isArray(data) ? data.find((resource: { user_id: string; is_suspended: boolean }) => resource.user_id === user.id) : null;
+        
         setUserInContract(!!userResource);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Erro ao verificar vinculação:", error);
         setUserInContract(false);
       })
       .finally(() => {

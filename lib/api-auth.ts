@@ -35,7 +35,7 @@ export async function authenticateRequest(): Promise<{
     // Buscar dados completos do usuário
     const { data: userData, error: userError } = await supabase
       .from('user')
-      .select('id, email, role, partner_id, is_client, first_name, last_name')
+      .select('*')
       .eq('id', user.id)
       .single();
 

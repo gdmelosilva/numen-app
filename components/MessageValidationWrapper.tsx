@@ -2,11 +2,11 @@ import React from 'react';
 import { useCanUserLogHours, useCanUserSendMessage, useUserInContract } from '@/hooks/useCanUserLog';
 
 interface MessageValidationWrapperProps {
-  projectId: string;
-  contractHoursMax?: number;
-  children: React.ReactNode;
-  showHoursValidation?: boolean;
-  showMessageValidation?: boolean;
+  readonly projectId: string;
+  readonly contractHoursMax?: number;
+  readonly children: React.ReactNode;
+  readonly showHoursValidation?: boolean;
+  readonly showMessageValidation?: boolean;
 }
 
 /**
@@ -19,10 +19,23 @@ export function MessageValidationWrapper({
   children, 
   showHoursValidation = false,
   showMessageValidation = false 
-}: MessageValidationWrapperProps) {
-  const { userInContract, loading: contractLoading } = useUserInContract(projectId);
+}: MessageValidationWrapperProps) {  const { userInContract, loading: contractLoading } = useUserInContract(projectId);
   const { canLog, reason: hoursReason, loading: hoursLoading } = useCanUserLogHours(projectId, contractHoursMax);
-  const { canSend, reason: messageReason, isClient } = useCanUserSendMessage(projectId, userInContract ?? undefined);
+  const { canSend, reason: messageReason, isClient } = useCanUserSendMessage(projectId, userInContract ?? undefined, contractLoading);
+
+  // Debug temporário
+  if (process.env.NODE_ENV === 'development') {
+    console.log('MessageValidationWrapper Debug:', {
+      projectId,
+      userInContract,
+      contractLoading,
+      canSend,
+      messageReason,
+      isClient,
+      canLog,
+      hoursReason
+    });
+  }
 
   if (contractLoading || hoursLoading) {
     return (
