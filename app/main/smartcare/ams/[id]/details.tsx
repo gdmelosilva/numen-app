@@ -17,6 +17,7 @@ interface ProjectDetailsTabProps {
 
 export default function ProjectDetailsTab({ project, editMode, setEditMode }: ProjectDetailsTabProps) {
   console.log('[ProjectDetailsTab] project recebido:', project);
+  console.log('[ProjectDetailsTab] project.project_type:', project.project_type);
   // Determine if the project is closed (status 'Encerrado')
   const isClosed = (() => {
     let status = '';
@@ -209,9 +210,9 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     setEditMode(false);
     setError(null);
   };
-
   // Logar valor do input de cobrança antes do return
   console.log('[ProjectDetailsTab] render input hours_max:', form.hours_max);
+  console.log('[ProjectDetailsTab] form.project_type para condição AMS:', form.project_type);
 
   return (
     <>
@@ -334,13 +335,11 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
                     <div>{project.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>
                   )}
                 </div>
-              </div>
-            {/* Seção de cobrança só aparece se for AMS */}
-            {form.project_type === "AMS" && (
-              <div className="md:col-span-4 pt-6">
-                <h2 className="flex items-center text-lg font-semibold pt-4 pb-3">
-                  <CircleDollarSignIcon className="w-4 h-4 mr-2" />Informações de Cobrança
-                </h2>
+              </div>            {/* Seção de cobrança sempre aparece no SmartCare AMS */}
+            <div className="md:col-span-4 pt-6">
+              <h2 className="flex items-center text-lg font-semibold pt-4 pb-3">
+                <CircleDollarSignIcon className="w-4 h-4 mr-2" />Informações de Cobrança
+              </h2>
                 {/* Linha 1: Horas Máx, Horas Baseline */}
                 <div className="grid gap-6 md:grid-cols-4">
                   <div>
@@ -373,10 +372,8 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
                   <div>
                     <Label htmlFor="value_hr_warn" className="text-xs text-muted-foreground">Valor Hora Aviso</Label>
                     <Input id="value_hr_warn" name="value_hr_warn" type="number" step="0.01" value={form.value_hr_warn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                </div>
+                  </div>                </div>
               </div>
-            )}
           </form>
         </CardContent>
       </Card>
