@@ -29,6 +29,78 @@ export async function POST(req: NextRequest) {
       ? user_id.id
       : user_id;
 
+    // Verificações de negócio antes de permitir o apontamento
+
+    // 1. Verificar se o usuário está ativo
+    const { data: userData, error: userError } = await supabase
+      .from('user')
+      .select('is_active')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !userData) {
+      return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
+    }
+
+    if (!userData.is_active) {
+      return NextResponse.json({ error: "Usuário está suspenso/inativo e não pode apontar horas." }, { status: 403 });
+    }
+
+    // 2. Verificar se o usuário está vinculado ao projeto
+    const { data: projectResources, error: projectResourcesError } = await supabase
+      .from('project_resources')
+      .select('user_id, is_suspended')
+      .eq('project_id', project_id)
+      .eq('user_id', userId);
+
+    if (projectResourcesError) {
+      return NextResponse.json({ error: "Erro ao verificar vinculação ao projeto." }, { status: 500 });
+    }
+
+    if (!projectResources || projectResources.length === 0) {
+      return NextResponse.json({ error: "Usuário não está vinculado a este projeto." }, { status: 403 });
+    }
+
+    const userResource = projectResources[0];
+    if (userResource.is_suspended) {
+      return NextResponse.json({ error: "Usuário está suspenso neste projeto e não pode apontar horas." }, { status: 403 });
+    }
+
+    // 3. Verificar se as horas do contrato foram extrapoladas
+    const { data: contractData, error: contractError } = await supabase
+      .from('project')
+      .select('hours_max')
+      .eq('id', project_id)
+      .single();
+
+    if (contractError) {
+      return NextResponse.json({ error: "Erro ao verificar dados do contrato." }, { status: 500 });
+    }
+
+    if (contractData?.hours_max) {
+      // Buscar horas já apontadas pelo usuário no projeto
+      const { data: existingHours, error: hoursError } = await supabase
+        .from('ticket_hours')
+        .select('minutes')
+        .eq('project_id', project_id)
+        .eq('user_id', userId);
+
+      if (hoursError) {
+        return NextResponse.json({ error: "Erro ao verificar horas existentes." }, { status: 500 });
+      }
+
+      const totalMinutesUsed = (existingHours || []).reduce((sum, item) => sum + (item.minutes ?? 0), 0);
+      const totalHoursUsed = totalMinutesUsed / 60;
+      const newTotalHours = totalHoursUsed + (minutes / 60);
+
+      if (newTotalHours > contractData.hours_max) {
+        return NextResponse.json({ 
+          error: `Apontamento excede o limite de horas do contrato. Limite: ${contractData.hours_max}h, Já utilizado: ${totalHoursUsed.toFixed(2)}h, Tentativa de adicionar: ${(minutes / 60).toFixed(2)}h` 
+        }, { status: 403 });
+      }
+    }
+
+    // Se passou por todas as validações, pode inserir o apontamento
     const { data, error } = await supabase.from("ticket_hours").insert([
       {
         project_id,

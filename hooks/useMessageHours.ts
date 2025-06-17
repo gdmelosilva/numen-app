@@ -15,7 +15,7 @@ export function useMessageHours(messageId?: string) {
       .then((data) => {
         // Suporta múltiplos apontamentos, soma todos os minutos
         if (Array.isArray(data) && data.length > 0) {
-          const totalMinutes = data.reduce((sum, item) => sum + (item.minutes || 0), 0);
+          const totalMinutes = data.reduce((sum, item) => sum + (item.minutes ?? 0), 0);
           setHours(totalMinutes / 60);
         } else {
           setHours(null);

@@ -7,6 +7,7 @@ import { PauseCircle, PlayCircle } from "lucide-react";
 import { EditProjectUserHoursButton } from "@/components/EditProjectUserHoursButton";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { ColoredBadge } from "@/components/ui/colored-badge";
+import { getModuleOptions } from "@/hooks/useOptions";
 
 type User = BaseUser & {
   horas_consumidas?: number;
@@ -15,7 +16,45 @@ type User = BaseUser & {
   project_resource_id?: number;
 };
 
-export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[] => [
+// Cache global para os módulos - agora com Map para acesso O(1)
+const modulesMap = new Map<string, string>();
+let modulesLoaded = false;
+
+// Inicializa o cache de módulos
+const initializeModulesCache = async () => {
+  if (modulesLoaded) return;
+  
+  try {
+    const modules = await getModuleOptions();
+    modules.forEach(module => {
+      modulesMap.set(String(module.id), module.name);
+    });
+    modulesLoaded = true;
+  } catch (error) {
+    console.error('Error loading modules:', error);
+  }
+};
+
+// Componente simplificado que usa o cache
+const ModuleDisplay: React.FC<{ moduleId?: string }> = ({ moduleId }) => {
+  if (!moduleId) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  const moduleName = modulesMap.get(String(moduleId));
+  
+  if (!moduleName) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  return <span>{moduleName}</span>;
+};
+
+export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[] => {
+  // Inicializa o cache de módulos na primeira chamada
+  initializeModulesCache();
+  
+  return [
   {
     accessorKey: "first_name",
     header: "Nome",
@@ -24,11 +63,10 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
   {
     accessorKey: "email",
     header: "E-mail",
-  },
-  {
+  },  {
     accessorKey: "tel_contact",
     header: "Telefone",
-    cell: ({ row }) => row.original.tel_contact || "-",
+    cell: ({ row }) => row.original.tel_contact ?? "-",
   },
   {
     accessorKey: "role",
@@ -63,11 +101,10 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
     id: "is_suspended",
     header: "Status",
     cell: ({ row }) => <ColoredBadge value={row.original.is_suspended} type="suspended" />,
-  },
-  {
+  },  {
     accessorKey: "user_functional",
     header: "Alocação",
-    cell: ({ row }) => row.original.user_functional || <span className="text-muted-foreground">-</span>,
+    cell: ({ row }) => <ModuleDisplay moduleId={row.original.user_functional} />,
   },
   {
     id: "actions",
@@ -148,11 +185,11 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
               </TooltipTrigger>
               <TooltipContent>Desvincular usuário do projeto</TooltipContent>
             </Tooltip>
-          </div>
-        </TooltipProvider>
+          </div>        </TooltipProvider>
       );
     },
     enableSorting: false,
     enableHiding: false,
   },
 ];
+};
