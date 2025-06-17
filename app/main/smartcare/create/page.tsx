@@ -31,7 +31,7 @@ const useCategoryOptions = () => {
 };
 const usePriorityOptions = () => {
   const [priorities] = useState([
-    { id: "1", name: "Baixa" },
+    { id: "1", name: "Normal" },
     { id: "2", name: "Média" },
     { id: "3", name: "Alta" },
   ]);
