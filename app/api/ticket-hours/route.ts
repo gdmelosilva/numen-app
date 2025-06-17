@@ -44,9 +44,7 @@ export async function POST(req: NextRequest) {
 
     if (!userData.is_active) {
       return NextResponse.json({ error: "Usuário está suspenso/inativo e não pode apontar horas." }, { status: 403 });
-    }
-
-    // 2. Verificar se o usuário está vinculado ao projeto
+    }    // 2. Verificar se o usuário está vinculado ao projeto
     const { data: projectResources, error: projectResourcesError } = await supabase
       .from('project_resources')
       .select('user_id, is_suspended')

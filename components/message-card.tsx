@@ -53,13 +53,6 @@ export function MessageCard({ msg }: MessageCardProps) {
             <UserCircle className="w-4 h-4" />
             {msg.user?.name || "Usuário desconhecido"}
             {/* Exibe horas ao lado do nome se sistêmica */}
-            {msg.is_system && (
-              hours != null ? (
-                <span className="ml-2 text-xs text-blue-700 font-semibold">| {hours.toFixed(2)}h apontadas</span>
-              ) : (
-                <span className="ml-2 text-xs text-gray-400">| Nenhuma hora</span>
-              )
-            )}
           </div>
           {msg.msgHours && (
             <div className="flex items-center gap-1">

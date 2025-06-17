@@ -19,10 +19,10 @@ export function useCurrentUser() {
         }
         const { data: userData } = await supabase
           .from('user')
-          .select('id, email, role, partner_id, is_active, is_client, first_name, last_name')
+          .select('*')
           .eq('id', authUser.id)
           .single();
-        setUser(userData || null);
+        setUser(userData ?? null);
       } catch {
         setUser(null);
       } finally {

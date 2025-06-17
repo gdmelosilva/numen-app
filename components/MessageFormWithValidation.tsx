@@ -13,10 +13,9 @@ export function MessageForm({ projectId, contractHoursMax, onSubmit }: MessageFo
   const [hours, setHours] = useState<number | undefined>();
   const [isPrivate, setIsPrivate] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { userInContract } = useUserInContract(projectId);
+  const { userInContract, loading } = useUserInContract(projectId);
   const { canLog } = useCanUserLogHours(projectId, contractHoursMax);
-  const { canSend } = useCanUserSendMessage(projectId, userInContract ?? undefined);
+  const { canSend } = useCanUserSendMessage(projectId, userInContract ?? undefined, loading);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

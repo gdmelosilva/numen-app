@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import type { Ticket } from "@/types/tickets";
 import TicketHourDialogButton, { TicketHourData } from "./ticket-hour-dialog-button";
 import { useCanUserLogHours, useCanUserSendMessage, useUserInContract } from "@/hooks/useCanUserLog";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface StatusOption {
   value: string;
@@ -23,6 +24,7 @@ interface MessageFormProps {
 }
 
 const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, statusOptions = [] }) => {
+  const { user } = useCurrentUser();
   const [newMessage, setNewMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -32,7 +34,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
   const [statusList, setStatusList] = useState<StatusOption[]>(statusOptions);
   const [statusLoading, setStatusLoading] = useState(false);  // Hooks de validação
   const { userInContract, loading: contractLoading } = useUserInContract(ticket.project_id);
-  const { canSend, reason: messageReason } = useCanUserSendMessage(ticket.project_id, userInContract ?? undefined);
+  const { canSend, reason: messageReason } = useCanUserSendMessage(ticket.project_id, userInContract ?? undefined, contractLoading);
   const { canLog, reason: hoursReason, loading: hoursLoading } = useCanUserLogHours(ticket.project_id);
 
   // Loading geral das validações
@@ -89,7 +91,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
           if (!uploadRes.ok) throw new Error("Erro no upload dos anexos");
         }
       }      // Se houver dados de apontamento, faz a requisição para /api/ticket-hours
-      if (ticketHourData) {
+      if (ticketHourData && user?.id) {
         // Monta timestamps completos para appoint_start e appoint_end
         const appointDate = ticketHourData.appointDate;
         const appointStart = appointDate && ticketHourData.appointStart
@@ -98,17 +100,14 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
         const appointEnd = appointDate && ticketHourData.appointEnd
           ? `${appointDate}T${ticketHourData.appointEnd}:00`
           : null;
-        
-        const hoursRes = await fetch("/api/ticket-hours", {
+          const hoursRes = await fetch("/api/ticket-hours", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             project_id: ticket.project_id,
             ticket_id: ticket.id,
             message_id: createdMsg.id,
-            user_id: typeof ticket.created_by_user === 'object' && ticket.created_by_user !== null && 'id' in ticket.created_by_user
-              ? ticket.created_by_user.id
-              : ticket.created_by,
+            user_id: user.id, // Usar o usuário atual, não o criador do ticket
             minutes: ticketHourData.minutes,
             appoint_date: appointDate,
             appoint_start: appointStart,
