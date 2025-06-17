@@ -72,6 +72,21 @@ export async function getPriorityOptions(): Promise<{
   return data ?? [];
 }
 
+// Função para opções de módulos
+export async function getModuleOptions(): Promise<{
+  id: string; name: string; description: string 
+}[]> {
+  const { data, error } = await supabase
+    .from('ticket_modules')
+    .select('*');
+
+  if (error) {
+    console.error('Error fetching modules:', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export enum UserRole {
   Admin = 1,
   Manager = 2,

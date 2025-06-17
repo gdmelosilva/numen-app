@@ -10,9 +10,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 import { usePartnerOptions } from "@/hooks/usePartnerOptions";
-import { useTicketModules } from "@/hooks/useTicketModules";
 import {
   Card,
   CardContent
@@ -20,21 +20,21 @@ import {
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useProjectOptions } from "@/hooks/useProjectOptions";
 import DeniedAccessPage from "@/components/DeniedAccessPage";
-import { getPriorityOptions, getCategoryOptions } from "@/hooks/useOptions";
+import { getPriorityOptions, getCategoryOptions, getModuleOptions } from "@/hooks/useOptions";
 
 export default function CreateTicketPage() {
   const { profile, loading: loadingProfile, user } = useUserProfile();
   const { partners } = usePartnerOptions();
-  const { modules } = useTicketModules();
-
-  // Estados para categorias e prioridades AMS
+  // Estados para categorias, prioridades e módulos AMS
   const [categories, setCategories] = React.useState<{ id: string; name: string; description: string }[]>([]);
   const [priorities, setPriorities] = React.useState<{ id: string; name: string }[]>([]);
+  const [modules, setModules] = React.useState<{ id: string; name: string; description: string }[]>([]);
 
-  // Carregar categorias e prioridades AMS
+  // Carregar categorias, prioridades e módulos AMS
   React.useEffect(() => {
     getCategoryOptions(true).then((data) => setCategories(data ?? []));
     getPriorityOptions().then((data) => setPriorities(data ?? []));
+    getModuleOptions().then((data) => setModules(data ?? []));
   }, []);
 
   // Filtragem de parceiros conforme perfil
@@ -141,7 +141,6 @@ export default function CreateTicketPage() {
       throw new Error(data.error ?? "Erro ao enviar anexo");
     }
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -149,6 +148,11 @@ export default function CreateTicketPage() {
     try {
       if (!form.project_id || !form.partner_id) {
         setError("Selecione o projeto e o parceiro.");
+        setLoading(false);
+        return;
+      }
+      if (form.attachment && !attachmentType) {
+        setError("Selecione o tipo do anexo quando um arquivo for adicionado.");
         setLoading(false);
         return;
       }
@@ -223,9 +227,10 @@ export default function CreateTicketPage() {
         </div>
       <Card className="w-full">
         <CardContent>
-          <form className="space-y-6 mt-6" onSubmit={handleSubmit}>
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium mb-1">Título</label>
+          <form className="space-y-6 mt-6" onSubmit={handleSubmit}>              <div>
+                <label htmlFor="title" className="block text-sm font-medium mb-1">
+                  Título <span className="text-destructive">*</span>
+                </label>
                 <Input
                   id="title"
                   name="title"
@@ -237,9 +242,10 @@ export default function CreateTicketPage() {
               </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Só admins podem escolher o parceiro */}
-              {profile === "admin-adm" ? (
-                <div>
-                  <label htmlFor="partner_id" className="block text-sm font-medium mb-1">Parceiro</label>
+              {profile === "admin-adm" ? (                <div>
+                  <label htmlFor="partner_id" className="block text-sm font-medium mb-1">
+                    Parceiro <span className="text-destructive">*</span>
+                  </label>
                   <Select
                     value={form.partner_id}
                     onValueChange={handlePartnerSelect}
@@ -258,9 +264,10 @@ export default function CreateTicketPage() {
                   </Select>
                 </div>
               ) : null}
-              {/* Projeto: desabilitado até selecionar parceiro para admin */}
-              <div>
-                <label htmlFor="project_id" className="block text-sm font-medium mb-1">Projeto</label>
+              {/* Projeto: desabilitado até selecionar parceiro para admin */}              <div>
+                <label htmlFor="project_id" className="block text-sm font-medium mb-1">
+                  Projeto <span className="text-destructive">*</span>
+                </label>
                 <Select
                   value={form.project_id}
                   onValueChange={(v) => handleSelect("project_id", v)}
@@ -280,17 +287,19 @@ export default function CreateTicketPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <label htmlFor="category_id" className="block text-sm font-medium mb-1">Tipo Chamado</label>
+              </div>              <div>
+                <label htmlFor="category_id" className="block text-sm font-medium mb-1">
+                  Tipo Chamado <span className="text-destructive">*</span>
+                </label>
                 <Select
                   value={form.category_id}
                   onValueChange={(v) => handleSelect("category_id", v)}
                   disabled={loading}
-                >
-                  <SelectTrigger className="w-full" id="category_id">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>                  <SelectContent>
+                >                  <SelectTrigger className="w-full" id="category_id">
+                    <SelectValue placeholder="Selecione o tipo">
+                      {form.category_id && categories.find(c => String(c.id) === form.category_id)?.name}
+                    </SelectValue>
+                  </SelectTrigger><SelectContent>
                     {(categories ?? []).map((c) => (
                       <SelectItem key={String(c.id)} value={String(c.id)}>
                         <div className="flex flex-col">
@@ -301,28 +310,33 @@ export default function CreateTicketPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <label htmlFor="module_id" className="block text-sm font-medium mb-1">Módulo Associado</label>
+              </div>              <div>
+                <label htmlFor="module_id" className="block text-sm font-medium mb-1">
+                  Módulo Associado <span className="text-destructive">*</span>
+                </label>
                 <Select
                   value={form.module_id}
                   onValueChange={(v) => handleSelect("module_id", v)}
                   disabled={loading}
-                >
-                  <SelectTrigger className="w-full" id="module_id">
-                    <SelectValue placeholder="Selecione o módulo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modules.map((m) => (
+                >                  <SelectTrigger className="w-full" id="module_id">
+                    <SelectValue placeholder="Selecione o módulo">
+                      {form.module_id && modules.find(m => String(m.id) === form.module_id)?.name}
+                    </SelectValue>
+                  </SelectTrigger>                  <SelectContent>
+                    {(modules ?? []).map((m) => (
                       <SelectItem key={String(m.id)} value={String(m.id)}>
-                        {m.name}
+                        <div className="flex flex-col">
+                          <span>{m.name}</span>
+                          <span className="text-xs italic text-muted-foreground lowercase">{m.description}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <label htmlFor="priority_id" className="block text-sm font-medium mb-1">Prioridade</label>
+              </div>              <div>
+                <label htmlFor="priority_id" className="block text-sm font-medium mb-1">
+                  Prioridade <span className="text-destructive">*</span>
+                </label>
                 <Select
                   value={form.priority_id}
                   onValueChange={(v) => handleSelect("priority_id", v)}
@@ -339,9 +353,10 @@ export default function CreateTicketPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium mb-1">Descrição do Chamado</label>
+            </div>            <div>
+              <label htmlFor="description" className="block text-sm font-medium mb-1">
+                Descrição do Chamado <span className="text-destructive">*</span>
+              </label>
               <textarea
                 id="description"
                 name="description"
@@ -351,46 +366,61 @@ export default function CreateTicketPage() {
                 disabled={loading}
                 className="w-full h-48 border-2 bg-secondary text-foreground rounded p-2 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] outline-none"
               />
-            </div>
-            {error && (
+            </div>            {error && (
               <div className="text-destructive text-sm">{error}</div>
             )}
-              <div className="md:col-span-2 flex gap-4 items-end">
-                <div className="w-1/6">
-                  <label htmlFor="attachment_type" className="block text-sm font-medium mb-1">Tipo do Anexo</label>
-                  <Select
-                    value={attachmentType}
-                    onValueChange={handleAttachmentType}
-                    disabled={loading}
-                  >
-                    <SelectTrigger className="w-full" id="attachment_type">
-                      <SelectValue placeholder="Selecione o tipo do anexo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Evidencia de Erro">Evidência de Erro</SelectItem>
-                      <SelectItem value="Evidencia de Teste">Evidência de Teste</SelectItem>
-                      <SelectItem value="Especificação">Especificação</SelectItem>
-                      <SelectItem value="Detalhamento de Chamado">Detalhamento de Chamado</SelectItem>
-                      <SelectItem value="Arquivo Contratual">Arquivo Contratual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="w-1/3">
-                  <label htmlFor="attachment" className="block text-sm font-medium mb-1">Anexo</label>
-                  <Input
-                    id="attachment"
-                    type="file"
-                    accept="*"
-                    onChange={handleFile}
-                    disabled={loading}
-                  />
-                  {form.attachment && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Arquivo selecionado: {form.attachment.name}
-                    </div>
-                  )}
-                </div>
+              {/* Seção de Anexo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">              <div>
+                <label htmlFor="attachment" className="block text-sm font-medium mb-1">Anexo</label>
+                <Input
+                  id="attachment"
+                  type="file"
+                  accept="*"
+                  onChange={handleFile}
+                  disabled={loading}
+                  placeholder="Selecionar arquivo"
+                />
               </div>
+              
+              {form.attachment && (
+                <div className="flex gap-2 items-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, attachment: null }));
+                      setAttachmentType("");
+                    }}
+                    className="h-9 w-9 p-0 text-destructive hover:text-destructive"
+                    title="Remover anexo"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <div className="flex-1">
+                    <label htmlFor="attachment_type" className="block text-sm font-medium mb-1">
+                      Tipo do Anexo <span className="text-destructive">*</span>
+                    </label>
+                    <Select
+                      value={attachmentType}
+                      onValueChange={handleAttachmentType}
+                      disabled={loading}
+                    >
+                      <SelectTrigger className="w-full" id="attachment_type">
+                        <SelectValue placeholder="Selecione o tipo do anexo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Evidencia de Erro">Evidência de Erro</SelectItem>
+                        <SelectItem value="Evidencia de Teste">Evidência de Teste</SelectItem>
+                        <SelectItem value="Especificação">Especificação</SelectItem>
+                        <SelectItem value="Detalhamento de Chamado">Detalhamento de Chamado</SelectItem>
+                        {/* <SelectItem value="Arquivo Contratual">Arquivo Contratual</SelectItem> */}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 type="submit"
