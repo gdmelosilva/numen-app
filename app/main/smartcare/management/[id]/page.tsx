@@ -18,7 +18,22 @@ import { MessageCard } from "@/components/message-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useUserContext } from "@/components/user-context";
-import type { User, UserWithModule } from "@/types/users";
+import type { UserWithModule } from "@/types/users";
+import { ForwardButton } from "@/components/ForwardButton";
+
+// Define o tipo correto para o recurso retornado pelo backend
+interface TicketResource {
+  user_id: string;
+  ticket_id: string;
+  user?: {
+    id: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    is_active?: boolean;
+    is_client?: boolean;
+  };
+}
 
 export default function TicketDetailsPage() {
   const { id } = useParams();
@@ -47,7 +62,7 @@ export default function TicketDetailsPage() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const { user: currentUser } = useUserContext();
-  const [resources, setResources] = useState<User[]>([]);
+  const [resources, setResources] = useState<TicketResource[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [showResourceDialog, setShowResourceDialog] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<UserWithModule[]>([]);
@@ -160,25 +175,17 @@ export default function TicketDetailsPage() {
     if (!ticket?.project_id) return;
     setResourcesLoading(true);
     try {
-      // Busca todos os recursos vinculados ao projeto
-      const res = await fetch(`/api/project-resources?project_id=${ticket.project_id}`);
-      if (!res.ok) throw new Error("Erro ao buscar recursos do projeto");
+      // Busca todos os recursos vinculados ao ticket (já vem com user)
+      const res = await fetch(`/api/ticket-resources?ticket_id=${ticket.id}`);
+      if (!res.ok) throw new Error("Erro ao buscar recursos do chamado");
       const data = await res.json();
-      // Busca detalhes dos usuários
-      if (Array.isArray(data) && data.length > 0) {
-        const ids = (data as { user_id: string }[]).map(r => r.user_id);
-        const usersRes = await fetch(`/api/admin/user-partner/by-ids?ids=${ids.join(",")}`);
-        const users = usersRes.ok ? await usersRes.json() : [];
-        setResources(Array.isArray(users) ? users : []);
-      } else {
-        setResources([]);
-      }
+      setResources(Array.isArray(data) ? data : []);
     } catch {
       setResources([]);
     } finally {
       setResourcesLoading(false);
     }
-  }, [ticket?.project_id]);
+  }, [ticket?.project_id, ticket?.id]);
 
   // Busca usuários disponíveis para vínculo
   const fetchAvailableUsers = useCallback(async () => {
@@ -444,8 +451,18 @@ export default function TicketDetailsPage() {
               <div className="text-muted-foreground text-sm italic">Nenhum recurso vinculado a este chamado.</div>
             ) : (
               <ul className="list-disc ml-6 space-y-1">
-                {resources.map((u) => (
-                  <li key={u.id} className="text-sm">{u.first_name} {u.last_name} ({u.email})</li>
+                {resources.map((r) => (
+                  <li key={r.user_id} className="text-sm flex items-center justify-between">
+                    <span>
+                      <strong>{r.user?.first_name} {r.user?.last_name}</strong> - <strong>{r.user?.is_client ? "Cliente" : "Numen"}</strong> - ({r.user?.email})
+                    </span>
+                    <ForwardButton 
+                      ticketId={ticket?.id} 
+                      userId={r.user_id} 
+                      userEmail={r.user?.email || ""}
+                      userName={`${r.user?.first_name || ''} ${r.user?.last_name || ''}`.trim()}
+                    />
+                  </li>
                 ))}
               </ul>
             )}
@@ -486,10 +503,10 @@ export default function TicketDetailsPage() {
                       </span>
                       <Button size="sm" onClick={async () => {
                         try {
-                          await fetch("/api/project-resources/link", {
+                          await fetch("/api/ticket-resources/link", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ project_id: ticket?.project_id, user_id: u.id, max_hours: 0, user_functional: null })
+                            body: JSON.stringify({ ticket_id: ticket?.id, user_id: u.id })
                           });
                           setShowResourceDialog(false);
                           fetchResources();
