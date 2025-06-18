@@ -82,13 +82,16 @@ export default function ProjectsDetailPage() {
             <Tabs defaultValue="usuarios" className="w-full">
               <TabsList className="mb-2">
                 <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-                <TabsTrigger value="chamados">Chamados</TabsTrigger>
+                <TabsTrigger value="chamados">Atividades</TabsTrigger>
               </TabsList>
               <TabsContent value="usuarios">
                 <ProjectUsersTab projectId={String(project.id)} />
-              </TabsContent>
-              <TabsContent value="chamados">
-                <ProjectTicketsTab projectId={String(project.id)} partnerId={String(project.partnerId)} />
+              </TabsContent>              <TabsContent value="chamados">
+                <ProjectTicketsTab 
+                  projectId={String(project.id)} 
+                  partnerId={String(project.partnerId)}
+                  project={project}
+                />
               </TabsContent>
             </Tabs>
           </div>

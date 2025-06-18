@@ -10,14 +10,16 @@ interface CreateTicketDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
-  partnerId: string; // <-- novo prop
+  partnerId: string;
   onCreated?: () => void;
-  categories: { id: string; name: string }[];
-  modules: { id: string; name: string }[];
+  categories: { id: string; name: string; description?: string }[];
+  modules: { id: string; name: string; description?: string }[];
   priorities: { id: string; name: string }[];
+  isAms?: boolean;
 }
 
-export default function CreateActivityDialog({ open, onOpenChange, projectId, partnerId, onCreated, categories, modules, priorities }: CreateTicketDialogProps) {
+export default function CreateActivityDialog({ open, onOpenChange, projectId, partnerId, onCreated, categories, modules, priorities, isAms = false }: CreateTicketDialogProps) {
+  console.log('CreateActivityDialog - isAms:', isAms); // DEBUG
   const [tab, setTab] = useState('dados');
   const [form, setForm] = useState({
     title: '',
@@ -56,9 +58,11 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
       partnerId,
       ...form
     });
-    setError(null);
-    // Validação local dos campos obrigatórios
-    if (!projectId || !partnerId || !form.title || !form.category_id || !form.module_id || !form.priority_id || !form.description) {
+    setError(null);    // Validação local dos campos obrigatórios
+    const requiredFieldsValid = !projectId || !partnerId || !form.title || 
+      (!isAms && !form.category_id) || !form.module_id || !form.priority_id || !form.description;
+    
+    if (requiredFieldsValid) {
       setError('Preencha todos os campos obrigatórios.');
       return;
     }
@@ -68,11 +72,12 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
       let ticketRes, ticketData;
       // Criação do chamado (sempre pega o retorno do ticket)
       if (form.attachment) {
-        const fd = new FormData();
-        fd.append('contractId', projectId);
+        const fd = new FormData();        fd.append('contractId', projectId);
         fd.append('partner_id', partnerId);
         fd.append('title', form.title);
-        fd.append('category_id', form.category_id);
+        if (!isAms && form.category_id) {
+          fd.append('category_id', form.category_id);
+        }
         fd.append('module_id', form.module_id);
         fd.append('priority_id', form.priority_id);
         fd.append('description', form.description);
@@ -84,27 +89,31 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
         });
         if (!ticketRes.ok) {
           const data = await ticketRes.json();
-          throw new Error(data.error || 'Erro ao criar chamado');
+          throw new Error(data.error || 'Erro ao criar atividade');
         }
         ticketData = await ticketRes.json();
         ticketId = ticketData?.id || ticketData?.data?.id;
-      } else {
+      } else {        const requestBody: Record<string, string> = {
+          contractId: projectId,
+          partner_id: partnerId,
+          title: form.title,
+          module_id: form.module_id,
+          priority_id: form.priority_id,
+          description: form.description,
+        };
+        
+        if (!isAms && form.category_id) {
+          requestBody.category_id = form.category_id;
+        }
+        
         ticketRes = await fetch('/api/tickets/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contractId: projectId,
-            partner_id: partnerId,
-            title: form.title,
-            category_id: form.category_id,
-            module_id: form.module_id,
-            priority_id: form.priority_id,
-            description: form.description,
-          }),
+          body: JSON.stringify(requestBody),
         });
         if (!ticketRes.ok) {
           const data = await ticketRes.json();
-          throw new Error(data.error || 'Erro ao criar chamado');
+          throw new Error(data.error || 'Erro ao criar a atividade');
         }
         ticketData = await ticketRes.json();
         ticketId = ticketData?.id || ticketData?.data?.id;
@@ -113,7 +122,7 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
       if (form.attachment && ticketId) {
         // Busca mensagens do ticket
         const msgRes = await fetch(`/api/messages?ticket_id=${ticketId}`);
-        if (!msgRes.ok) throw new Error('Erro ao buscar mensagem do chamado');
+        if (!msgRes.ok) throw new Error('Erro ao buscar mensagem da atividade');
         const msgs = await msgRes.json();
         const systemMsg = Array.isArray(msgs) && msgs.length > 0 ? msgs[0] : null;
         if (!systemMsg?.id) throw new Error('Mensagem do sistema não encontrada');
@@ -132,7 +141,7 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
           throw new Error(data.error || 'Erro ao enviar anexo');
         }
       }
-      toast.success('Chamado criado com sucesso.');
+      toast.success('Atividade criada com sucesso.');
       setForm({ title: '', category_id: '', module_id: '', priority_id: '', description: '', attachment: null });
       setAttachmentType('');
       onOpenChange(false);
@@ -148,7 +157,7 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Abrir Chamado</DialogTitle>
+          <DialogTitle>Abrir Atividade</DialogTitle>
         </DialogHeader>
         <Tabs value={tab} onValueChange={setTab} className="mb-4">
           <TabsList>
@@ -156,26 +165,28 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
             <TabsTrigger value="anexo">Anexo</TabsTrigger>
           </TabsList>
           <TabsContent value="dados">
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div>
+            <form className="space-y-4" onSubmit={handleSubmit}>              <div>
                 <label className="block text-sm font-medium mb-1">Título</label>
                 <Input name="title" value={form.title} onChange={handleChange} required disabled={loading} />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Tipo Chamado</label>
-                <Select value={form.category_id} onValueChange={v => handleSelect('category_id', v)} disabled={loading}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(c => (
-                      <SelectItem key={String(c.id)} value={String(c.id)}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* DEBUG: isAms = {JSON.stringify(isAms)} */}
+              {!isAms && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tipo de Atividade</label>
+                  <Select value={form.category_id} onValueChange={v => handleSelect('category_id', v)} disabled={loading}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(c => (
+                        <SelectItem key={String(c.id)} value={String(c.id)}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-1">Módulo Associado</label>
                 <Select value={form.module_id} onValueChange={v => handleSelect('module_id', v)} disabled={loading}>
@@ -207,12 +218,12 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Descrição do Chamado</label>
+                <label className="block text-sm font-medium mb-1">Descrição da Atividade</label>
                 <textarea name="description" value={form.description} onChange={handleChange} required disabled={loading} className="w-full h-24 border rounded p-2" />
               </div>
               {error && <div className="text-destructive text-sm">{error}</div>}
               <DialogFooter>
-                <Button type="submit" variant="colored2" disabled={loading}>{loading ? 'Enviando...' : 'Criar Chamado'}</Button>
+                <Button type="submit" variant="colored2" disabled={loading}>{loading ? 'Enviando...' : 'Criar Atividade'}</Button>
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancelar</Button>
                 </DialogClose>
@@ -230,7 +241,7 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
                   <SelectItem value="Evidencia de Erro">Evidência de Erro</SelectItem>
                   <SelectItem value="Evidencia de Teste">Evidência de Teste</SelectItem>
                   <SelectItem value="Especificação">Especificação</SelectItem>
-                  <SelectItem value="Detalhamento de Chamado">Detalhamento de Chamado</SelectItem>
+                  <SelectItem value="Detalhamento da Atividade">Detalhamento da Atividade</SelectItem>
                   <SelectItem value="Arquivo Contratual">Arquivo Contratual</SelectItem>
                 </SelectContent>
               </Select>
