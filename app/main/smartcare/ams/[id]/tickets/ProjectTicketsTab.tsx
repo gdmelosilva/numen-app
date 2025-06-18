@@ -5,6 +5,7 @@ import type { Ticket } from '@/types/tickets';
 import CreateTicketDialog from './CreateTicketDialog';
 import { Button } from '@/components/ui/button';
 import { File } from 'lucide-react';
+import { getCategoryOptions, getPriorityOptions, getModuleOptions } from '@/hooks/useOptions';
 
 interface ProjectTicketsTabProps {
     projectId: string;
@@ -16,10 +17,9 @@ export default function ProjectTicketsTab({ projectId, partnerId }: ProjectTicke
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [openDialog, setOpenDialog] = useState(false);
-    // Estados para selects
-    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-    const [modules, setModules] = useState<{ id: string; name: string }[]>([]);
+    const [openDialog, setOpenDialog] = useState(false);    // Estados para selects
+    const [categories, setCategories] = useState<{ id: string; name: string; description: string }[]>([]);
+    const [modules, setModules] = useState<{ id: string; name: string; description: string }[]>([]);
     const [priorities, setPriorities] = useState<{ id: string; name: string }[]>([]);
 
     useEffect(() => {
@@ -30,12 +30,11 @@ export default function ProjectTicketsTab({ projectId, partnerId }: ProjectTicke
             .then(data => setTickets(Array.isArray(data) ? data : data?.data ?? []))
             .catch(err => setError(typeof err === 'string' ? err : 'Erro ao buscar tickets'))
             .finally(() => setLoading(false));
-    }, [projectId]);
-
-    useEffect(() => {
-        fetch('/api/options?type=ticket_categories').then(r => r.json()).then(d => setCategories(Array.isArray(d) ? d : []));
-        fetch('/api/options?type=ticket_modules').then(r => r.json()).then(d => setModules(Array.isArray(d) ? d : []));
-        fetch('/api/options?type=ticket_priorities').then(r => r.json()).then(d => setPriorities(Array.isArray(d) ? d : []));
+    }, [projectId]);    useEffect(() => {
+        // Para SmartCare AMS, usar categorias com is_ams = true
+        getCategoryOptions(true).then((data) => setCategories(data ?? []));
+        getPriorityOptions().then((data) => setPriorities(data ?? []));
+        getModuleOptions().then((data) => setModules(data ?? []));
     }, []);
 
     return (
