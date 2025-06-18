@@ -22,7 +22,7 @@ export type MessageCardProps = {
 
 export function MessageCard({ msg }: MessageCardProps) {
   // Exibe horas sistêmicas diretamente do campo system_hours
-  const hours = msg.is_system ? msg.system_hours ?? null : null;
+  // const hours = msg.is_system ? msg.system_hours ?? null : null;
 
   return (
     <div

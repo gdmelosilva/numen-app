@@ -23,28 +23,24 @@ interface MessageFormProps {
   statusOptions?: StatusOption[];
 }
 
-const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, statusOptions = [] }) => {
-  const { user } = useCurrentUser();
-  const [newMessage, setNewMessage] = useState("");
+const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, statusOptions = [] }) => {  const { user } = useCurrentUser();  const [newMessage, setNewMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [attachmentType, setAttachmentType] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(ticket.status_id ? String(ticket.status_id) : "");
   const [sending, setSending] = useState(false);
   const [ticketHourData, setTicketHourData] = useState<TicketHourData | null>(null);
   const [statusList, setStatusList] = useState<StatusOption[]>(statusOptions);
-  const [statusLoading, setStatusLoading] = useState(false);  // Hooks de validação
+  const [statusLoading, setStatusLoading] = useState(false);
+
+  // Verificar se é usuário funcional ou cliente - ocultar status e apontamento de horas
+  const isFunctionalOrClient = user?.role === 3 || user?.is_client === true;// Hooks de validação
   const { userInContract, loading: contractLoading } = useUserInContract(ticket.project_id);
   const { canSend, reason: messageReason } = useCanUserSendMessage(ticket.project_id, userInContract ?? undefined, contractLoading);
   const { canLog, reason: hoursReason, loading: hoursLoading } = useCanUserLogHours(ticket.project_id);
-
   // Loading geral das validações
   const validationsLoading = contractLoading || hoursLoading;
 
-  const fileNameDisplay = selectedFiles.length > 0 ? (
-    <div className="mb-2 text-sm text-muted-foreground">
-      Arquivos selecionados: <span className="font-medium">{selectedFiles.map((file) => file.name).join(", ")}</span>
-    </div>
-  ) : null;
   async function handleSend() {
     if (!newMessage.trim()) return;
 
@@ -52,22 +48,29 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
     if (!canSend) {
       toast.error(`Não é possível enviar mensagem: ${messageReason}`);
       return;
+    }    if (ticketHourData && !canLog) {
+      toast.error(`Não é possível apontar horas: ${hoursReason}`);
+      return;
+    }    // Para usuários funcionais e clientes, não permitir apontamento de horas
+    if (ticketHourData && isFunctionalOrClient) {
+      toast.error("Usuários funcionais e clientes não podem apontar horas");
+      return;
     }
 
-    if (ticketHourData && !canLog) {
-      toast.error(`Não é possível apontar horas: ${hoursReason}`);
+    // Validar tipo de anexo se houver arquivos
+    if (selectedFiles.length > 0 && !attachmentType) {
+      toast.error("Selecione o tipo do anexo antes de enviar");
       return;
     }
 
     setSending(true);
-    try {
-      const res = await fetch(`/api/messages`, {
+    try {      const res = await fetch(`/api/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           body: newMessage,
           is_private: isPrivate,
-          status_id: selectedStatus ? Number(selectedStatus) : null,
+          status_id: isFunctionalOrClient ? null : (selectedStatus ? Number(selectedStatus) : null),
           ticket_id: ticket.id,
         }),
       });
@@ -77,21 +80,21 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
         throw new Error(errorData.error ?? "Erro ao criar mensagem");
       }
       
-      const createdMsg = await res.json();
-
-      if (selectedFiles.length > 0) {
+      const createdMsg = await res.json();      if (selectedFiles.length > 0) {
         for (const file of selectedFiles) {
           const formData = new FormData();
           formData.append("file", file);
           formData.append("messageId", createdMsg.id);
+          if (attachmentType) formData.append("att_type", attachmentType);
           const uploadRes = await fetch("/api/attachment", {
             method: "POST",
             body: formData,
           });
           if (!uploadRes.ok) throw new Error("Erro no upload dos anexos");
         }
-      }      // Se houver dados de apontamento, faz a requisição para /api/ticket-hours
-      if (ticketHourData && user?.id) {
+      }// Se houver dados de apontamento, faz a requisição para /api/ticket-hours
+      // Não permitir apontamento para usuários funcionais e clientes
+      if (ticketHourData && user?.id && !isFunctionalOrClient) {
         // Monta timestamps completos para appoint_start e appoint_end
         const appointDate = ticketHourData.appointDate;
         const appointStart = appointDate && ticketHourData.appointStart
@@ -119,10 +122,9 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
           const hoursError = await hoursRes.json();
           throw new Error(`Erro ao apontar horas: ${hoursError.error ?? 'Erro desconhecido'}`);
         }
-      }
-
-      setNewMessage("");
+      }      setNewMessage("");
       setSelectedFiles([]);
+      setAttachmentType("");
       setSelectedStatus("");
       setTicketHourData(null);
       toast.success("Mensagem enviada com sucesso!");
@@ -149,7 +151,8 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
     } finally {
       setStatusLoading(false);
     }
-  }  return (
+  }
+  return (
     <div className="w-full space-y-2 mt-4">
       {/* Loading das validações */}
       {validationsLoading && (
@@ -182,7 +185,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
         </div>
       )}
 
-      {!validationsLoading && !canLog && ticketHourData && (
+      {!validationsLoading && !canLog && ticketHourData && !isFunctionalOrClient && (
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -199,66 +202,80 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
                 <p className="mt-1 text-xs">As horas registradas serão removidas automaticamente.</p>
               </div>
             </div>
-          </div>
-        </div>
+          </div>        </div>
       )}
 
-      {fileNameDisplay}
-      <Card className="w-full py-2 rounded-md">        <CardContent className="flex flex-col md:flex-row justify-start items-center gap-6 py-0 px-6">
+      <Card className="w-full py-2 rounded-md"><CardContent className="flex flex-col md:flex-row justify-start items-center gap-6 py-0 px-6">
           {validationsLoading && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Carregando permissões...</span>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <label htmlFor="privateSwitch" className="text-sm text-muted-foreground font-medium">
-              Mensagem Privada
-            </label>
-            <Switch 
-              id="privateSwitch" 
-              checked={isPrivate} 
-              onCheckedChange={setIsPrivate}
-              disabled={validationsLoading}
-            />
-          </div>
-          <div className="flex items-center gap-2 min-w-60">
-            <label htmlFor="statusSelect" className="text-sm text-muted-foreground font-medium">
-              Status
-            </label>            <Select
-              value={selectedStatus}
-              onValueChange={setSelectedStatus}
-              onOpenChange={(open) => { if (open) fetchStatusOptions(); }}
-              disabled={validationsLoading}
-            >
-              <SelectTrigger className="min-w-60">
-                <SelectValue placeholder="Selecionar status" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusLoading ? (
-                  <div className="px-2 py-1 text-xs text-muted-foreground">Carregando...</div>
-                ) : statusList.length > 0 ? (
-                  statusList.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))
-                ) : (
-                  <div className="px-2 py-1 text-xs text-muted-foreground">Nenhum status encontrado</div>
-                )}
-              </SelectContent>
-            </Select>
-          </div>          <TicketHourDialogButton 
-            onSave={setTicketHourData} 
-            initialData={ticketHourData}
-          />
-          {!canLog && (
-            <span className="text-xs text-red-600 bg-red-100 rounded px-2 py-1">
-              Apontamento bloqueado
-            </span>
+
+          {/* Checkbox de mensagem privada - apenas para usuários não-clientes */}
+          {!user?.is_client && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="privateSwitch" className="text-sm text-muted-foreground font-medium">
+                Mensagem Privada
+              </label>
+              <Switch 
+                id="privateSwitch" 
+                checked={isPrivate} 
+                onCheckedChange={setIsPrivate}
+                disabled={validationsLoading}
+              />
+            </div>
           )}
-          {ticketHourData && canLog && (
-            <span className="text-xs text-green-700 bg-green-100 rounded px-2 py-1 ml-2">
-              Horas registradas: {Math.floor(ticketHourData.minutes / 60)}h{ticketHourData.minutes % 60 > 0 ? ` ${ticketHourData.minutes % 60}min` : ''}
-            </span>
+
+          {/* Status selection - ocultar para usuários funcionais e clientes */}
+          {!isFunctionalOrClient && (
+            <div className="flex items-center gap-2 min-w-60">
+              <label htmlFor="statusSelect" className="text-sm text-muted-foreground font-medium">
+                Status
+              </label>
+              <Select
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+                onOpenChange={(open) => { if (open) fetchStatusOptions(); }}
+                disabled={validationsLoading}
+              >
+                <SelectTrigger className="min-w-60">
+                  <SelectValue placeholder="Selecionar status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusLoading ? (
+                    <div className="px-2 py-1 text-xs text-muted-foreground">Carregando...</div>
+                  ) : statusList.length > 0 ? (
+                    statusList.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1 text-xs text-muted-foreground">Nenhum status encontrado</div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Hour tracking - ocultar para usuários funcionais e clientes */}
+          {!isFunctionalOrClient && (
+            <>
+              <TicketHourDialogButton 
+                onSave={setTicketHourData} 
+                initialData={ticketHourData}
+              />
+              {!canLog && (
+                <span className="text-xs text-red-600 bg-red-100 rounded px-2 py-1">
+                  Apontamento bloqueado
+                </span>
+              )}
+              {ticketHourData && canLog && (
+                <span className="text-xs text-green-700 bg-green-100 rounded px-2 py-1 ml-2">
+                  Horas registradas: {Math.floor(ticketHourData.minutes / 60)}h{ticketHourData.minutes % 60 > 0 ? ` ${ticketHourData.minutes % 60}min` : ''}
+                </span>
+              )}
+            </>
           )}
         </CardContent>
       </Card>      <Textarea
@@ -266,27 +283,60 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
         disabled={sending || validationsLoading}
-      /><div className="flex items-center gap-2">        <Button 
-          onClick={handleSend} 
-          disabled={!newMessage.trim() || sending || !canSend || validationsLoading}
-          className={(!canSend && !validationsLoading) ? "opacity-50 cursor-not-allowed" : ""}
-        >
-          {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {(() => {
-            if (validationsLoading) return "Verificando...";
-            if (!canSend) return "Envio Bloqueado";
-            return "Enviar Mensagem";
-          })()}
-        </Button>        <Input
-          type="file"
-          multiple
-          onChange={(e) => {
-            const files = Array.from(e.target.files || []);
-            setSelectedFiles(files);
-          }}
-          className="text-sm"
-          disabled={sending || validationsLoading}
-        />
+      /><div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Input
+            type="file"
+            multiple
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              setSelectedFiles(files);
+              if (files.length === 0) {
+                setAttachmentType("");
+              }
+            }}
+            className="text-sm flex-1"
+            disabled={sending || validationsLoading}
+          />
+          
+          {selectedFiles.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="attachment_type" className="text-sm font-medium whitespace-nowrap">
+                Tipo do Anexo <span className="text-destructive">*</span>
+              </label>
+              <Select
+                value={attachmentType}
+                onValueChange={setAttachmentType}
+                disabled={sending || validationsLoading}
+              >
+                <SelectTrigger className="w-60" id="attachment_type">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Evidencia de Erro">Evidência de Erro</SelectItem>
+                  <SelectItem value="Evidencia de Teste">Evidência de Teste</SelectItem>
+                  <SelectItem value="Especificação">Especificação</SelectItem>
+                  <SelectItem value="Detalhamento de Chamado">Detalhamento de Chamado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handleSend} 
+            disabled={!newMessage.trim() || sending || !canSend || validationsLoading}
+            className={(!canSend && !validationsLoading) ? "opacity-50 cursor-not-allowed" : ""}
+          >
+            {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            {(() => {
+              if (validationsLoading) return "Verificando...";
+              if (!canSend) return "Envio Bloqueado";
+              return "Enviar Mensagem";
+            })()}
+          </Button>
+        </div>
       </div>
     </div>
   );
