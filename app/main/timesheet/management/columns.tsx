@@ -11,6 +11,10 @@ export type TimesheetRow = {
   appoint_date: string;
   total_minutes: number;
   is_approved: boolean;
+    project: {
+        projectName: string;
+        projectDesc: string;
+    };
 };
 
 export const columns: ColumnDef<TimesheetRow>[] = [
@@ -24,6 +28,11 @@ export const columns: ColumnDef<TimesheetRow>[] = [
             return <span>{format(new Date(date), "dd/MM/yyyy")}</span>;
         },
     },
+ 	{
+		header: ({ column }) => <DataTableColumnHeader column={column} title="Descrição" />, 
+		accessorFn: (row) => row.project?.projectName || "",
+		id: "descricao",
+	},
     {
         accessorKey: "total_minutes",
         header: ({ column }) => (
