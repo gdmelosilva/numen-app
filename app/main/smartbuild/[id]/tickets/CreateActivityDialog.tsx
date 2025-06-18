@@ -100,9 +100,9 @@ export default function CreateActivityDialog({ open, onOpenChange, projectId, pa
           module_id: form.module_id,
           priority_id: form.priority_id,
           description: form.description,
+          type_id: '2',
         };
-        
-        if (!isAms && form.category_id) {
+          if (!isAms && form.category_id) {
           requestBody.category_id = form.category_id;
         }
         
