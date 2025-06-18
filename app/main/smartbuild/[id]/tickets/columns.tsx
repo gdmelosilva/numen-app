@@ -1,8 +1,5 @@
-"use client";
-
 import { ColumnDef } from "@tanstack/react-table";
 import type { Ticket } from "@/types/tickets";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,58 +10,71 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Row } from "@tanstack/react-table";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 
-export const columns: ColumnDef<Ticket>[] = [
-  {
-    accessorKey: "external_id",
-    header: "ID",
-    cell: ({ row }) => String(row.original.external_id).padStart(5, "0"),
-  },
-  {
-    accessorKey: "title",
-    header: "Título",
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => row.original.status?.name || "-",
-  },
-  {
-    accessorKey: "priority",
-    header: "Prioridade",
-    cell: ({ row }) => row.original.priority?.name || "-",
-  },
-  {
-    accessorKey: "type",
-    header: "Tipo",
-    cell: ({ row }) => row.original.type?.name || "-",
-  },
-  {
-    accessorKey: "created_at",
-    header: "Criado em",
-    cell: ({ row }) =>
-      row.original.created_at
-        ? new Date(row.original.created_at).toLocaleDateString("pt-BR")
-        : "-",
-  },
-  {
-    accessorKey: "is_closed",
-    header: "Fechado?",
-    cell: ({ row }) =>
-      row.original.is_closed ? (
-        <Badge variant="secondary">Sim</Badge>
-      ) : (
-        <Badge variant="outline">Não</Badge>
+export function getTicketColumns({ priorities, types, statuses }: {
+  priorities: { id: string | number; name: string }[];
+  types: { id: string | number; name: string }[];
+  statuses: { id: string | number; name: string }[];
+}): ColumnDef<Ticket>[] {
+  return [
+    {
+      accessorKey: "external_id",
+      header: "ID",
+      cell: ({ row }) => String(row.original.external_id).padStart(5, "0"),
+    },
+    {
+      accessorKey: "title",
+      header: "Título",
+    },
+    {
+      accessorKey: "status_id",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.original.status?.name ?? statuses.find(s => String(s.id) === String(row.original.status_id))?.name;
+        return <ColoredBadge value={status} type="status" />;
+      },
+    },
+    {
+      accessorKey: "priority_id",
+      header: "Prioridade",
+      cell: ({ row }) => {
+        const priority = row.original.priority?.name ?? priorities.find(p => String(p.id) === String(row.original.priority_id))?.name;
+        return <ColoredBadge value={priority} type="priority" />;
+      },
+    },
+    {
+      accessorKey: "type_id",
+      header: "Tipo",
+      cell: ({ row }) => {
+        const type = row.original.type?.name ?? types.find(t => String(t.id) === String(row.original.type_id))?.name;
+        return <ColoredBadge value={type} type="ticket_type" />;
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: "Criado em",
+      cell: ({ row }) =>
+        row.original.created_at
+          ? new Date(row.original.created_at).toLocaleDateString("pt-BR")
+          : "-",
+    },
+    {
+      accessorKey: "is_closed",
+      header: "Fechado?",
+      cell: ({ row }) => (
+        <ColoredBadge value={row.original.is_closed} type="boolean" />
       ),
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: ActionsCell,
-    enableSorting: false,
-    enableHiding: false,
-  },
-];
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ActionsCell,
+      enableSorting: false,
+      enableHiding: false,
+    },
+  ];
+}
 
 function ActionsCell({ row }: { row: Row<Ticket> }) {
   const ticket = row.original;
@@ -83,7 +93,8 @@ function ActionsCell({ row }: { row: Row<Ticket> }) {
       <DropdownMenuContent align="end" className="w-[160px]">
         <DropdownMenuItem
           onClick={() => {
-            router.push(`/main/smartbuild/${ticket.project_id}/${ticket.id}`);
+              router.push(`/main/smartcare/management/${ticket.external_id}`);
+            // router.push(`/main/smartbuild/${ticket.project_id}/${ticket.id}`);
           }}
         >
           Detalhes

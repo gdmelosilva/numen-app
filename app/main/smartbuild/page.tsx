@@ -154,7 +154,7 @@ export default function TicketManagementPage() {
           <Card>
             <CardContent className="pt-6 relative">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="projectExtId">ID</Label>
                   <Input
                     id="projectExtId"
@@ -163,7 +163,7 @@ export default function TicketManagementPage() {
                     onChange={e => handleFilterChange("projectExtId", e.target.value)}
                     disabled={loading}
                   />
-                </div>
+                </div> */}
                 <div className="space-y-2">
                   <Label htmlFor="projectName">Título</Label>
                   <Input

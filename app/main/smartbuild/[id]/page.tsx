@@ -4,67 +4,52 @@ import { useState, useEffect } from "react";
 import { notFound, useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import type { Contract } from "@/types/contracts";
+import type { Contract as AMSContract } from "@/types/contracts";
 import ProjectDetailsTab from "./details";
 import ProjectDashboardTab from "./dashboard";
+import ProjectUsersTab from "./users/ProjectUsersTab";
+import ProjectTicketsTab from "./tickets/ProjectTicketsTab";
 
-export default function ProjectDetailPage() {
+export default function ProjectsDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const [project, setProject] = useState<Contract | null>(null);
+  const [project, setProject] = useState<AMSContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [mainTab, setMainTab] = useState("detalhes");
-  const [detailsTab, setDetailsTab] = useState("tickets");
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     const loadProjectData = async () => {
       try {
-        const cachedData = sessionStorage.getItem(`project-${id}`);
-        if (cachedData) {
-          const projectData = JSON.parse(cachedData);
-          setProject(projectData);
-          setLoading(false);
-          return;
-        }
-
-        // Se não encontrar no cache, fazer fetch da API
-        const response = await fetch(`/api/smartbuild?id=${id}`);
+        const response = await fetch(`/api/smartbuild?details=true&project_id=${id}`);
         if (!response.ok) {
           setError(true);
           setLoading(false);
           return;
         }
-        
-        const { data } = await response.json();
-        const projectData = Array.isArray(data) ? data[0] : data;
-        
+        const data = await response.json();
+        let projectData;
+        if (Array.isArray(data)) {
+          projectData = data[0];
+        } else if (Array.isArray(data.data)) {
+          projectData = data.data[0];
+        } else {
+          projectData = data.data ?? data;
+        }
         if (!projectData) {
           setError(true);
           setLoading(false);
           return;
         }
-
         setProject(projectData);
-        // Salva no sessionStorage para navegação rápida futura
-        sessionStorage.setItem(`project-${id}`, JSON.stringify(projectData));
         setLoading(false);
-      } catch (err) {
-        console.error("Erro ao carregar projeto:", err);
+      } catch {
         setError(true);
         setLoading(false);
       }
     };
-
-    // Sempre tenta pegar do sessionStorage primeiro
-    const cachedData = sessionStorage.getItem(`project-${id}`);
-    if (cachedData) {
-      setProject(JSON.parse(cachedData));
-      setLoading(false);
-    } else {
-      loadProjectData();
-    }
+    loadProjectData();
   }, [id]);
 
   if (loading) {
@@ -91,9 +76,22 @@ export default function ProjectDetailPage() {
             project={project}
             editMode={editMode}
             setEditMode={setEditMode}
-            tab={detailsTab}
-            setTab={setDetailsTab}
           />
+          {/* Tabs secundárias para Usuários e Chamados */}
+          <div className="mt-8">
+            <Tabs defaultValue="usuarios" className="w-full">
+              <TabsList className="mb-2">
+                <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+                <TabsTrigger value="chamados">Chamados</TabsTrigger>
+              </TabsList>
+              <TabsContent value="usuarios">
+                <ProjectUsersTab projectId={String(project.id)} />
+              </TabsContent>
+              <TabsContent value="chamados">
+                <ProjectTicketsTab projectId={String(project.id)} partnerId={String(project.partnerId)} />
+              </TabsContent>
+            </Tabs>
+          </div>
         </TabsContent>
         <TabsContent value="dashboard">
           <ProjectDashboardTab project={project} />
