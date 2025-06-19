@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import type { Ticket } from "@/types/tickets";
 import { columns } from "./columns";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, ChevronDown, ChevronUp, Trash } from "lucide-react";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface Filters {
   external_id: string;
@@ -27,11 +28,12 @@ interface Filters {
   created_at: string;
   planned_end_date: string;
   actual_end_date: string;
+  user_tickets?: string; // Campo especial para filtrar tickets do usuário
 }
 
 export default function TicketManagementPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [filters, setFilters] = useState<Filters>({
+  const { user, profile, loading: profileLoading } = useUserProfile();
+  const [tickets, setTickets] = useState<Ticket[]>([]);  const [filters, setFilters] = useState<Filters>({
     external_id: "",
     title: "",
     description: "",
@@ -48,33 +50,94 @@ export default function TicketManagementPage() {
     created_at: "",
     planned_end_date: "",
     actual_end_date: "",
+    user_tickets: "",
   });
-  const [pendingFilters, setPendingFilters] = useState<Filters>(filters);
-  const [loading, setLoading] = useState(false);
+  const [pendingFilters, setPendingFilters] = useState<Filters>(filters);  const [loading, setLoading] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
-
-  const buildTicketQueryParams = (customFilters: Filters) => {
+  const buildTicketQueryParams = useCallback((customFilters: Filters) => {
     const queryParams = new URLSearchParams();
-    if (customFilters.external_id) queryParams.append("external_id", customFilters.external_id);
-    if (customFilters.title) queryParams.append("title", customFilters.title);
-    if (customFilters.description) queryParams.append("description", customFilters.description);
-    if (customFilters.category_id) queryParams.append("category_id", customFilters.category_id);
-    if (customFilters.type_id) queryParams.append("type_id", customFilters.type_id);
-    if (customFilters.module_id) queryParams.append("module_id", customFilters.module_id);
-    if (customFilters.status_id) queryParams.append("status_id", customFilters.status_id);
-    if (customFilters.priority_id) queryParams.append("priority_id", customFilters.priority_id);
-    if (customFilters.partner_id) queryParams.append("partner_id", customFilters.partner_id);
-    if (customFilters.project_id) queryParams.append("project_id", customFilters.project_id);
-    if (customFilters.created_by) queryParams.append("created_by", customFilters.created_by);
-    if (customFilters.is_closed) queryParams.append("is_closed", customFilters.is_closed);
-    if (customFilters.is_private) queryParams.append("is_private", customFilters.is_private);
-    if (customFilters.created_at) queryParams.append("created_at", customFilters.created_at);
-    if (customFilters.planned_end_date) queryParams.append("planned_end_date", customFilters.planned_end_date);
-    if (customFilters.actual_end_date) queryParams.append("actual_end_date", customFilters.actual_end_date);
+    const filterKeys = [
+      'external_id', 'title', 'description', 'category_id', 'type_id',
+      'module_id', 'status_id', 'priority_id', 'partner_id', 'project_id',
+      'created_by', 'is_closed', 'is_private', 'created_at',
+      'planned_end_date', 'actual_end_date', 'user_tickets'
+    ] as const;
+    
+    filterKeys.forEach(key => {
+      if (customFilters[key]) {
+        queryParams.append(key, customFilters[key]);
+      }
+    });
+    
     return queryParams;
-  };
+  }, []);
+  // Função para buscar projetos vinculados ao usuário
+  const fetchUserProjects = useCallback(async (userId: string): Promise<string[]> => {
+    try {
+      const response = await fetch(`/api/project-resources?user_id=${userId}`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return Array.isArray(data) ? data.map((resource: { project_id: string }) => resource.project_id) : [];
+    } catch (error) {
+      console.error("Erro ao buscar projetos do usuário:", error);
+      return [];
+    }
+  }, []);
+  // Função para buscar tickets vinculados ao usuário
+  const fetchUserTickets = useCallback(async (userId: string): Promise<string[]> => {
+    try {
+      const response = await fetch(`/api/ticket-resources?user_id=${userId}`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      // Retorna os IDs dos tickets (não external_id, mas o ID interno)
+      return Array.isArray(data) ? data.map((resource: { ticket_id: string }) => resource.ticket_id) : [];
+    } catch (error) {
+      console.error("Erro ao buscar tickets do usuário:", error);
+      return [];
+    }
+  }, []);
 
-  const fetchTickets = async (customFilters: Filters) => {
+  // Função para aplicar filtros baseados no perfil do usuário
+  const handleUserProfile = useCallback(async (customFilters: Filters): Promise<Filters> => {
+    if (!user || !profile) return customFilters;
+
+    const filteredQuery = { ...customFilters };
+
+    switch (profile) {
+      case 'admin-adm':
+        // Admin-adm: acesso total, sem filtros automáticos
+        break;
+      
+      case 'admin-client':
+      case 'manager-client':
+      case 'functional-client':
+        // Cliente: apenas tickets do seu parceiro
+        if (user.partner_id) {
+          filteredQuery.partner_id = user.partner_id;
+        }
+        break;      case 'manager-adm': {
+        // Manager-adm: tickets dos projetos onde tem recursos alocados
+        const managerProjects = await fetchUserProjects(user.id);        if (managerProjects.length > 0) {
+          // Backend deve interpretar múltiplos project_ids separados por vírgula
+          filteredQuery.project_id = managerProjects.join(',');
+        }
+        break;
+      }      case 'functional-adm': {
+        // Functional-adm: tickets onde está alocado como recurso (ticket-resource)
+        const userTicketIds = await fetchUserTickets(user.id);
+        if (userTicketIds.length > 0) {
+          // Usa parâmetro especial para filtrar por tickets do usuário
+          filteredQuery.user_tickets = user.id;
+        }
+        break;
+      }
+      default:
+        // Perfil não reconhecido, sem filtros especiais
+        break;
+    }return filteredQuery;
+  }, [user, profile, fetchUserProjects, fetchUserTickets]);
+
+  const fetchTickets = useCallback(async (customFilters: Filters) => {
     setLoading(true);
     try {
       const queryParams = buildTicketQueryParams(customFilters);
@@ -88,7 +151,22 @@ export default function TicketManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildTicketQueryParams]);
+  // Aplicar filtros de perfil sempre que o usuário mudar
+  useEffect(() => {
+    const applyProfileFilters = async () => {
+      if (user && profile && !profileLoading) {
+        const profileFilters = await handleUserProfile(filters);
+        if (JSON.stringify(profileFilters) !== JSON.stringify(filters)) {
+          setFilters(profileFilters);
+          setPendingFilters(profileFilters);
+          fetchTickets(profileFilters);
+        }
+      }
+    };
+
+    applyProfileFilters();
+  }, [user, profile, profileLoading, filters, handleUserProfile, fetchTickets]);
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
     setPendingFilters(prev => ({ ...prev, [key]: value }));
@@ -110,38 +188,43 @@ export default function TicketManagementPage() {
       status_id: "",
       priority_id: "",
       partner_id: "",
-      project_id: "",
-      created_by: "",
+      project_id: "",      created_by: "",
       is_closed: "",
       is_private: "",
       created_at: "",
       planned_end_date: "",
       actual_end_date: "",
+      user_tickets: "",
     };
     setPendingFilters(cleared);
     setFilters(cleared);
     fetchTickets(cleared);
   };
-
   // Função para gerar resumo dos filtros ativos
   const getActiveFiltersSummary = () => {
-    const summary: string[] = [];
-    if (pendingFilters.external_id) summary.push(`ID: ${pendingFilters.external_id}`);
-    if (pendingFilters.title) summary.push(`Título: ${pendingFilters.title}`);
-    if (pendingFilters.description) summary.push(`Descrição: ${pendingFilters.description}`);
-    if (pendingFilters.category_id) summary.push(`Categoria: ${pendingFilters.category_id}`);
-    if (pendingFilters.type_id) summary.push(`Tipo: ${pendingFilters.type_id}`);
-    if (pendingFilters.module_id) summary.push(`Módulo: ${pendingFilters.module_id}`);
-    if (pendingFilters.status_id) summary.push(`Status: ${pendingFilters.status_id}`);
-    if (pendingFilters.priority_id) summary.push(`Prioridade: ${pendingFilters.priority_id}`);
-    if (pendingFilters.partner_id) summary.push(`Parceiro: ${pendingFilters.partner_id}`);
-    if (pendingFilters.project_id) summary.push(`Projeto: ${pendingFilters.project_id}`);
-    if (pendingFilters.created_by) summary.push(`Criado por: ${pendingFilters.created_by}`);
-    if (pendingFilters.is_closed) summary.push(`Encerrado: ${pendingFilters.is_closed}`);
-    if (pendingFilters.is_private) summary.push(`Privado: ${pendingFilters.is_private}`);
-    if (pendingFilters.created_at) summary.push(`Criado em: ${pendingFilters.created_at}`);
-    if (pendingFilters.planned_end_date) summary.push(`Prev. Fim: ${pendingFilters.planned_end_date}`);
-    if (pendingFilters.actual_end_date) summary.push(`Fim Real: ${pendingFilters.actual_end_date}`);
+    const filterMap = [
+      { key: 'external_id', label: 'ID' },
+      { key: 'title', label: 'Título' },
+      { key: 'description', label: 'Descrição' },
+      { key: 'category_id', label: 'Categoria' },
+      { key: 'type_id', label: 'Tipo' },
+      { key: 'module_id', label: 'Módulo' },
+      { key: 'status_id', label: 'Status' },
+      { key: 'priority_id', label: 'Prioridade' },
+      { key: 'partner_id', label: 'Parceiro' },
+      { key: 'project_id', label: 'Projeto' },
+      { key: 'created_by', label: 'Criado por' },
+      { key: 'is_closed', label: 'Encerrado' },
+      { key: 'is_private', label: 'Privado' },
+      { key: 'created_at', label: 'Criado em' },
+      { key: 'planned_end_date', label: 'Prev. Fim' },
+      { key: 'actual_end_date', label: 'Fim Real' }
+    ];
+    
+    const summary = filterMap
+      .filter(({ key }) => pendingFilters[key as keyof Filters])
+      .map(({ key, label }) => `${label}: ${pendingFilters[key as keyof Filters]}`);
+    
     return summary.length ? summary.join(", ") : "Nenhum filtro ativo";
   };
 
