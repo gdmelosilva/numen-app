@@ -70,15 +70,14 @@ export default function TicketManagementPage() {
     });
       return queryParams;
   }, []);
-
   // Função para buscar projetos que o manager gerencia
   const fetchManagedProjects = useCallback(async (userId: string): Promise<string[]> => {
     try {
-      // Busca projetos onde o usuário é manager ou tem role de gerenciamento
-      const response = await fetch(`/api/projects?manager_id=${userId}`);
+      // Busca na tabela project-resource onde o usuário tem função gerencial
+      const response = await fetch(`/api/project-resources?user_id=${userId}&user_functional=manager`);
       if (!response.ok) return [];
       const data = await response.json();
-      return Array.isArray(data) ? data.map((project: { id: string }) => project.id) : [];
+      return Array.isArray(data) ? data.map((resource: { project_id: string }) => resource.project_id) : [];
     } catch (error) {
       console.error("Erro ao buscar projetos gerenciados:", error);
       return [];
