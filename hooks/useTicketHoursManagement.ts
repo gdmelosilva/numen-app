@@ -6,32 +6,36 @@ export interface TicketHour {
   appoint_date: string;
   minutes: number;
   is_approved: boolean;
+  ticket_id?: string;
+  appoint_start?: string;
+  appoint_end?: string;
+  project?: {
+    projectName: string;
+    projectDesc: string;
+  };
 }
 
-export interface TicketHourGrouped {
+export interface TimesheetRow {
+  id: string;
   appoint_date: string;
   total_minutes: number;
   is_approved: boolean;
-  ids: string[];
-  project?: {
+  project: {
     projectName: string;
     projectDesc: string;
   };
-}
-
-export interface TicketHourWithProject extends TicketHour {
-  project?: {
-    projectName: string;
-    projectDesc: string;
-  };
+  children?: TimesheetRow[];
+  // Campos adicionais para TicketHour
+  ticket_id?: string;
+  appoint_start?: string;
+  appoint_end?: string;
 }
 
 export function useTicketHoursManagement() {
-  const [data, setData] = useState<TicketHourGrouped[]>([]);
+  const [data, setData] = useState<TimesheetRow[]>([]);
   const [loading, setLoading] = useState(false);
   const { user, loading: userLoading } = useCurrentUser();
 
-  // Novo: função fetchTicketHours parametrizada
   const fetchTicketHours = useCallback(async (year?: number, month?: number) => {
     if (userLoading || !user) return;
     setLoading(true);
@@ -39,30 +43,23 @@ export function useTicketHoursManagement() {
       let apiUrl = "/api/ticket-hours";
       const params = new URLSearchParams();
 
-      // Lógica de filtragem baseada no tipo de usuário
       if (user.role === 3 && !user.is_client) {
-        // Funcional Administrativo - filtrar por user_id
         params.append("user_id", user.id);
       } else if (user.role === 2 && !user.is_client) {
-        // Gerente Administrativo - filtrar por user_id
         params.append("user_id", user.id);
       } else if ((user.role === 1 || user.role === 2) && user.is_client && user.partner_id) {
-        // Administrador Cliente ou Gerente Cliente - buscar projetos AMS do partner
         try {
           const projectResponse = await fetch(`/api/smartcare/ams-projects`);
           if (projectResponse.ok) {
             const projects = await projectResponse.json();
             if (projects && projects.length > 0) {
-              // Se existir projeto AMS, filtrar por project_id do primeiro projeto AMS encontrado
               params.append("project_id", projects[0].id);
             } else {
-              // Se não existir projeto AMS, retornar dados vazios
               setData([]);
               setLoading(false);
               return;
             }
           } else {
-            // Em caso de erro na busca de projetos, retornar dados vazios
             setData([]);
             setLoading(false);
             return;
@@ -75,41 +72,44 @@ export function useTicketHoursManagement() {
         }
       }
 
-      // Novo: adiciona ano e mês se fornecidos
       if (year !== undefined && month !== undefined) {
         params.append("year", String(year));
-        params.append("month", String(month + 1)); // JS: 0-based, API: 1-based
+        params.append("month", String(month + 1));
       }
-
-      // Construir URL com parâmetros se existirem
       if (params.toString()) {
         apiUrl += `?${params.toString()}`;
       }
-
       const response = await fetch(apiUrl);
       if (!response.ok) {
         throw new Error("Erro ao buscar dados de ticket-hours");
       }
-
-      const rows: TicketHourWithProject[] = await response.json();
-      
+      const rows: TicketHour[] = await response.json();
       // Agrupa por appoint_date e is_approved
-      const grouped: Record<string, TicketHourGrouped> = {};
+      const grouped: Record<string, TimesheetRow> = {};
       rows.forEach((row) => {
         const key = `${row.appoint_date}|${row.is_approved}`;
         if (!grouped[key]) {
           grouped[key] = {
+            id: key,
             appoint_date: row.appoint_date,
             total_minutes: 0,
             is_approved: row.is_approved,
-            ids: [],
-            project: row.project,
+            project: row.project ?? { projectName: '', projectDesc: '' },
+            children: [],
           };
-        }
-        grouped[key].total_minutes += row.minutes || 0;
-        grouped[key].ids.push(row.id);
+        }        grouped[key].total_minutes += row.minutes || 0;
+        grouped[key].children!.push({
+          id: row.id,
+          appoint_date: row.appoint_date,
+          total_minutes: row.minutes,
+          is_approved: row.is_approved,
+          project: row.project ?? { projectName: '', projectDesc: '' },
+          children: undefined,
+          ticket_id: row.ticket_id,
+          appoint_start: row.appoint_start,
+          appoint_end: row.appoint_end,
+        });
       });
-      
       setData(Object.values(grouped));
     } catch (error) {
       console.error("Erro ao carregar ticket hours:", error);
