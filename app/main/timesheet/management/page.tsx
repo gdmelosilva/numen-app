@@ -31,10 +31,12 @@ const TimeSheetManagementPage = () => {
 	const statusHours = workedHours // Substitua por cálculo real de status
 
 	// Adiciona o campo id para cada linha (usando appoint_date + is_approved)
-	const tableData: TimesheetRow[] = data.map((row) => ({
-		...row,
-		id: `${row.appoint_date}|${row.is_approved}`,
-	}))
+    const tableData: TimesheetRow[] = data.map((row) => ({
+        ...row,
+        id: `${row.appoint_date}|${row.is_approved}`,
+        total_minutes: row.total_minutes,
+        project: row.project ?? { projectName: '', projectDesc: '' },
+    }))
 
 	return (
         <Card className='p-8 h-full'>
