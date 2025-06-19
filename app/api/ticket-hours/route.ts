@@ -129,12 +129,24 @@ export async function GET(req: NextRequest) {
     const message_id = searchParams.get("message_id");
     const user_id = searchParams.get("user_id");
     const project_id = searchParams.get("project_id");
+    const year = searchParams.get("year");
+    const month = searchParams.get("month");
     // Permite busca flexível: por message_id, user_id, project_id, ou todos
     let query = supabase.from("ticket_hours")
-    .select("*, project:project_id(projectName, projectDesc)");
+      .select("*, project:project_id(projectName, projectDesc)");
     if (message_id) query = query.eq("message_id", message_id);
     if (user_id) query = query.eq("user_id", user_id);
     if (project_id) query = query.eq("project_id", project_id);
+    // Novo: filtro por ano e mês
+    if (year && month) {
+      // appoint_date no formato YYYY-MM-DD
+      const monthStr = String(month).padStart(2, '0');
+      const start = `${year}-${monthStr}-01`;
+      // Pega último dia do mês
+      const endDate = new Date(Number(year), Number(month), 0); // month já é 1-based
+      const end = `${year}-${monthStr}-${String(endDate.getDate()).padStart(2, '0')}`;
+      query = query.gte('appoint_date', start).lte('appoint_date', end);
+    }
     const { data, error } = await query;
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
