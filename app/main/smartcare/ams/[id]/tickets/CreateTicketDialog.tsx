@@ -72,10 +72,10 @@ export default function CreateTicketDialog({ open, onOpenChange, projectId, part
         fd.append('contractId', projectId);
         fd.append('partner_id', partnerId);
         fd.append('title', form.title);
-        fd.append('category_id', form.category_id);
-        fd.append('module_id', form.module_id);
+        fd.append('category_id', form.category_id);        fd.append('module_id', form.module_id);
         fd.append('priority_id', form.priority_id);
         fd.append('description', form.description);
+        fd.append('type_id', '1'); // SmartCare AMS é sempre type_id = 1
         // Não envia o arquivo ainda
         ticketRes = await fetch('/api/tickets/create', {
           method: 'POST',
@@ -90,8 +90,7 @@ export default function CreateTicketDialog({ open, onOpenChange, projectId, part
       } else {
         ticketRes = await fetch('/api/tickets/create', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          headers: { 'Content-Type': 'application/json' },          body: JSON.stringify({
             contractId: projectId,
             partner_id: partnerId,
             title: form.title,
@@ -99,6 +98,7 @@ export default function CreateTicketDialog({ open, onOpenChange, projectId, part
             module_id: form.module_id,
             priority_id: form.priority_id,
             description: form.description,
+            type_id: '1', // SmartCare AMS é sempre type_id = 1
           }),
         });
         if (!ticketRes.ok) {

@@ -83,10 +83,10 @@ export default function CreateTicketPage() {
       fd.append("contractId", formData.project_id);
       fd.append("partner_id", formData.partner_id);
       fd.append("title", formData.title);
-      fd.append("category_id", formData.category_id);
-      fd.append("module_id", formData.module_id);
+      fd.append("category_id", formData.category_id);      fd.append("module_id", formData.module_id);
       fd.append("priority_id", formData.priority_id);
       fd.append("description", formData.description);
+      fd.append("type_id", "1"); // SmartCare é sempre AMS
       const ticketRes = await fetch("/api/tickets/create", {
         method: "POST",
         body: fd,
@@ -105,10 +105,10 @@ export default function CreateTicketPage() {
           contractId: formData.project_id,
           partner_id: formData.partner_id,
           title: formData.title,
-          category_id: formData.category_id,
-          module_id: formData.module_id,
+          category_id: formData.category_id,          module_id: formData.module_id,
           priority_id: formData.priority_id,
           description: formData.description,
+          type_id: "1", // SmartCare é sempre AMS
         }),
       });
       if (!ticketRes.ok) {

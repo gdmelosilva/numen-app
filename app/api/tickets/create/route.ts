@@ -12,31 +12,28 @@ export async function POST(req: NextRequest) {
 
   // Detecta se é multipart/form-data
   const contentType = req.headers.get("content-type") || "";
-  if (contentType.includes("multipart/form-data")) {
-    const formData = await req.formData();
+  if (contentType.includes("multipart/form-data")) {    const formData = await req.formData();
     const contractId = formData.get("contractId") as string;
     const partner_id = formData.get("partner_id") as string | null;
     const title = formData.get("title") as string;
     const category_id = formData.get("category_id") as string;
     const module_id = formData.get("module_id") as string;
     const priority_id = formData.get("priority_id") as string;
-    const description = formData.get("description") as string;
+    const description = formData.get("description") as string;    const type_id = formData.get("type_id") as string;
     const attachment = formData.get("file") as File | null;
 
-    // Validação detalhada dos campos obrigatórios (FormData)
+    console.log('DEBUG API FormData - type_id recebido:', type_id);    // Validação detalhada dos campos obrigatórios (FormData)
     const missingFields = [];
     if (!contractId) missingFields.push('contractId');
     if (!partner_id) missingFields.push('partner_id');
     if (!title) missingFields.push('title');
-    if (!category_id) missingFields.push('category_id');
+    // category_id é opcional (só obrigatório para type_id = 2 - SmartBuild)
     if (!module_id) missingFields.push('module_id');
     if (!priority_id) missingFields.push('priority_id');
     if (!description) missingFields.push('description');
     if (missingFields.length > 0) {
       return NextResponse.json({ error: `Campo(s) obrigatório(s) faltando: ${missingFields.join(', ')}` }, { status: 400 });
-    }
-
-    // Cria o ticket
+    }    // Cria o ticket
     const { data: ticket, error } = await supabase
       .from("ticket")
       .insert([
@@ -44,11 +41,11 @@ export async function POST(req: NextRequest) {
           project_id: contractId,
           partner_id,
           title,
-          category_id: Number(category_id),
+          category_id: category_id ? Number(category_id) : null,
           module_id: Number(module_id),
           priority_id: Number(priority_id),
           description,
-          type_id: 1, // AMS
+          type_id: type_id ? Number(type_id) : 1, // Usa o type_id enviado ou 1 como padrão
           status_id: 1, // Pendente ou status inicial padrão
           is_closed: false,
           is_private: false,
@@ -89,7 +86,6 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json(ticket);
   }
-
   // Fallback: JSON puro (sem anexo)
   const body = await req.json();
   const {
@@ -99,34 +95,33 @@ export async function POST(req: NextRequest) {
     category_id,
     module_id,
     priority_id,
-    description
+    description,    type_id
   } = body;
 
+  console.log('DEBUG API JSON - type_id recebido:', type_id);
   // Validação detalhada dos campos obrigatórios (JSON)
   const missingFieldsJson = [];
   if (!contractId) missingFieldsJson.push('contractId');
   if (!partner_id) missingFieldsJson.push('partner_id');
   if (!title) missingFieldsJson.push('title');
-  if (!category_id) missingFieldsJson.push('category_id');
+  // category_id é opcional (só obrigatório para type_id = 2 - SmartBuild)
   if (!module_id) missingFieldsJson.push('module_id');
   if (!priority_id) missingFieldsJson.push('priority_id');
   if (!description) missingFieldsJson.push('description');
   if (missingFieldsJson.length > 0) {
     return NextResponse.json({ error: `Campo(s) obrigatório(s) faltando: ${missingFieldsJson.join(', ')}` }, { status: 400 });
-  }
-
-  const { data, error } = await supabase
+  }  const { data, error } = await supabase
     .from("ticket")
     .insert([
       {
         project_id: contractId,
         partner_id,
         title,
-        category_id: Number(category_id),
+        category_id: category_id ? Number(category_id) : null,
         module_id: Number(module_id),
         priority_id: Number(priority_id),
         description,
-        type_id: 1, // AMS
+        type_id: type_id ? Number(type_id) : 1, // Usa o type_id enviado ou 1 como padrão
         status_id: 1, // Pendente ou status inicial padrão
         is_closed: false,
         is_private: false,
