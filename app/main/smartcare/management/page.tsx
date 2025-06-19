@@ -68,21 +68,23 @@ export default function TicketManagementPage() {
         queryParams.append(key, customFilters[key]);
       }
     });
-    
-    return queryParams;
+      return queryParams;
   }, []);
-  // Função para buscar projetos vinculados ao usuário
-  const fetchUserProjects = useCallback(async (userId: string): Promise<string[]> => {
+
+  // Função para buscar projetos que o manager gerencia
+  const fetchManagedProjects = useCallback(async (userId: string): Promise<string[]> => {
     try {
-      const response = await fetch(`/api/project-resources?user_id=${userId}`);
+      // Busca projetos onde o usuário é manager ou tem role de gerenciamento
+      const response = await fetch(`/api/projects?manager_id=${userId}`);
       if (!response.ok) return [];
       const data = await response.json();
-      return Array.isArray(data) ? data.map((resource: { project_id: string }) => resource.project_id) : [];
+      return Array.isArray(data) ? data.map((project: { id: string }) => project.id) : [];
     } catch (error) {
-      console.error("Erro ao buscar projetos do usuário:", error);
+      console.error("Erro ao buscar projetos gerenciados:", error);
       return [];
     }
   }, []);
+
   // Função para buscar tickets vinculados ao usuário
   const fetchUserTickets = useCallback(async (userId: string): Promise<string[]> => {
     try {
@@ -116,13 +118,14 @@ export default function TicketManagementPage() {
           filteredQuery.partner_id = user.partner_id;
         }
         break;      case 'manager-adm': {
-        // Manager-adm: tickets dos projetos onde tem recursos alocados
-        const managerProjects = await fetchUserProjects(user.id);        if (managerProjects.length > 0) {
+        // Manager-adm: tickets dos projetos que o usuário gerencia
+        const managedProjects = await fetchManagedProjects(user.id);
+        if (managedProjects.length > 0) {
           // Backend deve interpretar múltiplos project_ids separados por vírgula
-          filteredQuery.project_id = managerProjects.join(',');
+          filteredQuery.project_id = managedProjects.join(',');
         }
         break;
-      }      case 'functional-adm': {
+      }case 'functional-adm': {
         // Functional-adm: tickets onde está alocado como recurso (ticket-resource)
         const userTicketIds = await fetchUserTickets(user.id);
         if (userTicketIds.length > 0) {
@@ -134,8 +137,8 @@ export default function TicketManagementPage() {
       default:
         // Perfil não reconhecido, sem filtros especiais
         break;
-    }return filteredQuery;
-  }, [user, profile, fetchUserProjects, fetchUserTickets]);
+    }    return filteredQuery;
+  }, [user, profile, fetchUserTickets, fetchManagedProjects]);
 
   const fetchTickets = useCallback(async (customFilters: Filters) => {
     setLoading(true);
