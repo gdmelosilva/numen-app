@@ -4,17 +4,20 @@ import { Row } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Edit, Trash2, Check, X } from "lucide-react";
-import { TimesheetRow } from "@/app/main/timesheet/management/columns";
+import { TimesheetRow, TicketHour } from "@/app/main/timesheet/management/columns";
 import { AuthenticatedUser } from "@/lib/api-auth";
 import { toast } from "sonner";
 
 interface TimesheetRowActionsProps {
-  row: Row<TimesheetRow>;
+  row: Row<TimesheetRow> | Row<TicketHour>;
   user: AuthenticatedUser;
 }
 
 export function TimesheetRowActions({ row, user }: TimesheetRowActionsProps) {
   const data = row.original;
+  
+  // Verificar se é um TimesheetRow ou TicketHour
+  const isApproved = 'is_approved' in data ? data.is_approved : false;
 
   const handleUpdate = () => {
     toast.info("Funcionalidade de atualização em desenvolvimento");
@@ -81,13 +84,13 @@ export function TimesheetRowActions({ row, user }: TimesheetRowActionsProps) {
             Excluir
           </DropdownMenuItem>
         )}
-        {canApprove && !data.is_approved && (
+        {canApprove && !isApproved && (
           <DropdownMenuItem onClick={handleApprove} className="text-green-600">
             <Check className="mr-2 h-4 w-4" />
             Aprovar
           </DropdownMenuItem>
         )}
-        {canReject && data.is_approved && (
+        {canReject && isApproved && (
           <DropdownMenuItem onClick={handleReject} className="text-orange-600">
             <X className="mr-2 h-4 w-4" />
             Reprovar

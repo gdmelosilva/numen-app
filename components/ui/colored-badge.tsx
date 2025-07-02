@@ -33,7 +33,6 @@ const statusColorMap: Record<string, BadgeVariant> = {
   red: 'destructive',     // Encerrado
   colorless: 'outline',   // Suspenso
   gray: 'secondary',      // Ticket - Ag.Atendimento
-  orange: 'primary'       // Ticket - Em Análise
 };
 
 // Mapeamento para status de projeto

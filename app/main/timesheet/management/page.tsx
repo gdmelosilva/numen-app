@@ -122,13 +122,16 @@ const TimeSheetManagementPage = () => {
                         launchedDays={launchedDays}
                         workedHours={workedHours}
                         statusHours={statusHours}
-                    />                </div>                <div className="w-full max-w-full">                    <DataTable
+                    />
+                </div>
+                <div className="w-full max-w-full">
+                    <DataTable
                         columns={columns as never}
                         data={tableData as never}
                         meta={{ 
                             expanded, 
                             setExpanded,
-                            showUserInChildren: user && !user.is_client && (user.role === 1 || user.role === 2)
+                            showUserInChildren: Boolean(user && !user.is_client && (user.role === 1 || user.role === 2))
                         }}
                     />
                     {loading && <div className="text-center mt-4">Carregando...</div>}

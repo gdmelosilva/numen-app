@@ -198,7 +198,7 @@ export const getChildColumns = (user: AuthenticatedUser | null): ColumnDef<Ticke
   if (user && !user.is_client) {
     childColumns.push({
       id: "actions",
-      cell: ({ row }) => <TimesheetRowActions row={row as any} user={user} />,
+      cell: ({ row }) => <TimesheetRowActions row={row} user={user} />,
     });
   }
 
