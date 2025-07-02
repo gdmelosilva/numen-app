@@ -62,32 +62,36 @@ const TimeSheetManagementPage = () => {
 	const workedMinutes = data.reduce((acc, row) => acc + (row.total_minutes || 0), 0)
 	const workedHours = `${String(Math.floor(workedMinutes / 60)).padStart(2, '0')}:${String(workedMinutes % 60).padStart(2, '0')}`
 	const statusHours = workedHours 
-	// Filtra os dados conforme o mês e ano selecionados
-	const filteredData = data.filter(row => {
-	    if (!row.appoint_date) return false;
-	    const date = new Date(row.appoint_date);
-	    return date.getFullYear() === year && date.getMonth() === month;
-	});
-		// Converte os dados do hook para o formato esperado pelas colunas
-	const tableData = filteredData.map(row => ({
-		id: row.id,
-		appoint_date: row.appoint_date,
-		total_minutes: row.total_minutes,
-		is_approved: row.is_approved,
-		project: row.project,
-		children: row.children?.map(child => ({
-			id: child.id,
-			appoint_date: child.appoint_date,
-			total_minutes: child.total_minutes,
-			is_approved: child.is_approved,
-			project: child.project,
-			// Campos extras para TicketHour (se necessário)
-			minutes: child.total_minutes,
-			ticket_id: child.id,
-			appoint_start: child.appoint_start ? new Date(child.appoint_start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-',
-			appoint_end: child.appoint_end ? new Date(child.appoint_end).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'
-		}))
-	}))
+
+	// Função para converter data UTC para data local sem conversão de fuso horário
+	const parseUTCDateAsLocal = (utcDateString: string) => {
+		const datePart = utcDateString.split('T')[0];
+		const [year, month, day] = datePart.split('-').map(Number);
+		return new Date(year, month - 1, day);
+	};
+
+	// Converte os dados do hook para o formato esperado pelas colunas e ordena por data
+	const tableData = data
+		.sort((a, b) => parseUTCDateAsLocal(a.appoint_date).getTime() - parseUTCDateAsLocal(b.appoint_date).getTime())
+		.map(row => ({
+			id: row.id,
+			appoint_date: row.appoint_date,
+			total_minutes: row.total_minutes,
+			is_approved: row.is_approved,
+			project: row.project,
+			children: row.children?.map(child => ({
+				id: child.id,
+				appoint_date: child.appoint_date,
+				total_minutes: child.total_minutes,
+				is_approved: child.is_approved,
+				project: child.project,
+				// Campos extras para TicketHour (se necessário)
+				minutes: child.total_minutes,
+				ticket_id: child.id,
+				appoint_start: child.appoint_start ? new Date(child.appoint_start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-',
+				appoint_end: child.appoint_end ? new Date(child.appoint_end).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'
+			}))
+		}));
 
 	return (
         <Card className='p-8 h-full'>

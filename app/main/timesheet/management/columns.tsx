@@ -71,7 +71,12 @@ export const columns: ColumnDef<TimesheetRow>[] = [
         ),
         cell: ({ getValue }) => {
             const date = getValue() as string;
-            return <span>{format(new Date(date), "dd/MM/yyyy")}</span>;
+            const parseUTCDateAsLocal = (utcDateString: string) => {
+                const datePart = utcDateString.split('T')[0];
+                const [year, month, day] = datePart.split('-').map(Number);
+                return new Date(year, month - 1, day);
+            };
+            return <span>{format(parseUTCDateAsLocal(date), "dd/MM/yyyy")}</span>;
         },
     },
  	{

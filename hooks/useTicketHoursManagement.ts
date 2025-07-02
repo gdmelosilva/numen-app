@@ -84,10 +84,16 @@ export function useTicketHoursManagement() {
         throw new Error("Erro ao buscar dados de ticket-hours");
       }
       const rows: TicketHour[] = await response.json();
+      
+      console.log('Dados brutos da API:', rows);
+      console.log('URL da API:', apiUrl);
+      
       // Agrupa por appoint_date e is_approved
       const grouped: Record<string, TimesheetRow> = {};
       rows.forEach((row) => {
         const key = `${row.appoint_date}|${row.is_approved}`;
+        console.log('Processando row:', row, 'Key:', key);
+        
         if (!grouped[key]) {
           grouped[key] = {
             id: key,
@@ -110,7 +116,11 @@ export function useTicketHoursManagement() {
           appoint_end: row.appoint_end,
         });
       });
-      setData(Object.values(grouped));
+      
+      const finalData = Object.values(grouped);
+      console.log('Dados agrupados finais:', finalData);
+      
+      setData(finalData);
     } catch (error) {
       console.error("Erro ao carregar ticket hours:", error);
       setData([]);
