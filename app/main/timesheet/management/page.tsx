@@ -5,10 +5,12 @@ import { Card } from '@/components/ui/card'
 import { DataTable } from '@/components/ui/data-table'
 import { TimesheetSidebar } from '@/components/TimesheetSidebar'
 import { useTicketHoursManagement } from '@/hooks/useTicketHoursManagement'
-import { columns } from './columns'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { getColumns } from './columns'
 
 const TimeSheetManagementPage = () => {
 	const { data, loading, fetchTicketHours } = useTicketHoursManagement()
+	const { user } = useCurrentUser()
 
 	const today = new Date()
 	const [year, setYear] = useState(today.getFullYear())
@@ -78,12 +80,16 @@ const TimeSheetManagementPage = () => {
 			appoint_date: row.appoint_date,
 			total_minutes: row.total_minutes,
 			is_approved: row.is_approved,
+			user_name: row.user_name,
+			user_id: row.user_id,
 			project: row.project,
 			children: row.children?.map(child => ({
 				id: child.id,
 				appoint_date: child.appoint_date,
 				total_minutes: child.total_minutes,
 				is_approved: child.is_approved,
+				user_name: child.user_name,
+				user_id: child.user_id,
 				project: child.project,
 				// Campos extras para TicketHour (se necessário)
 				minutes: child.total_minutes,
@@ -92,6 +98,9 @@ const TimeSheetManagementPage = () => {
 				appoint_end: child.appoint_end ? new Date(child.appoint_end).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'
 			}))
 		}));
+
+	// Obter colunas baseadas no perfil do usuário
+	const columns = getColumns(user);
 
 	return (
         <Card className='p-8 h-full'>
@@ -116,7 +125,11 @@ const TimeSheetManagementPage = () => {
                     />                </div>                <div className="w-full max-w-full">                    <DataTable
                         columns={columns as never}
                         data={tableData as never}
-                        meta={{ expanded, setExpanded }}
+                        meta={{ 
+                            expanded, 
+                            setExpanded,
+                            showUserInChildren: user && !user.is_client && (user.role === 1 || user.role === 2)
+                        }}
                     />
                     {loading && <div className="text-center mt-4">Carregando...</div>}
                 </div>

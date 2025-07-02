@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import {
   ColumnDef,
   flexRender,
@@ -19,7 +20,10 @@ import { useState, useEffect } from "react"
 interface DataTableProps<TData extends { id?: number|string }, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  meta?: Record<string, unknown>
+  meta?: Record<string, unknown> & {
+    childTable?: (children: TData[]) => React.ReactNode
+    showUserInChildren?: boolean
+  }
   onSelectionChange?: (ids: (number|string)[]) => void
   onRowClick?: (row: TData) => void
 }
@@ -123,20 +127,26 @@ export function DataTable<
                 </TableRow>,
                 // Renderiza filhos se expandido
                 expanded && expanded[row.original.id as string] && row.original.children && row.original.children.length > 0 ? (
-                  row.original.children.map((child) => (
-                    <TableRow key={child.id} className="bg-muted/40">
-                      <TableCell />
-                      <TableCell colSpan={columns.length - 1} className="py-2">
-                        <div className="flex flex-col md:flex-row md:gap-8 text-xs md:text-sm">
-                          <span><b>Projeto:</b> {child.project?.projectName || '-'}</span>
-                          <span><b>Ticket:</b> {child.ticket_id || '-'}</span>
-                          <span><b>Horas:</b> {((child.minutes || 0) / 60).toFixed(2)}h</span>
-                          <span><b>Início:</b> {child.appoint_start || '-'}</span>
-                          <span><b>Fim:</b> {child.appoint_end || '-'}</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  <TableRow key={`${row.id}-children`} className="bg-muted/40">
+                    <TableCell />
+                    <TableCell colSpan={columns.length - 1} className="py-2">
+                      <div className="space-y-2">
+                        {row.original.children.map((child) => (
+                          <div key={child.id} className="flex flex-col md:flex-row md:gap-8 text-xs md:text-sm border-l-2 border-muted pl-4">
+                            <span><b>Projeto:</b> {child.project?.projectName || '-'}</span>
+                            <span><b>Ticket:</b> {child.ticket_id || '-'}</span>
+                            <span><b>Horas:</b> {((child.minutes || 0) / 60).toFixed(2)}h</span>
+                            <span><b>Início:</b> {child.appoint_start || '-'}</span>
+                            <span><b>Fim:</b> {child.appoint_end || '-'}</span>
+                            {/* Mostrar usuário apenas para admin (role 1) e manager (role 2) não-clientes */}
+                            {meta?.showUserInChildren && 'user_name' in child && child.user_name ? (
+                              <span><b>Usuário:</b> {String(child.user_name)}</span>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ) : null
               ])
             ) : (

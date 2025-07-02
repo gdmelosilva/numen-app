@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       appoint_end,
     } = body;
 
-    if (!project_id || !ticket_id || !message_id || !user_id || !minutes || !appoint_date || !appoint_start || !appoint_end) {
+    if (!project_id || !ticket_id || !user_id || !minutes || !appoint_date || !appoint_start || !appoint_end) {
       return NextResponse.json({ error: "Dados obrigatórios faltando." }, { status: 400 });
     }
 

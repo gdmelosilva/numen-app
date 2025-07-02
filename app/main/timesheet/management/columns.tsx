@@ -2,20 +2,23 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import { DataTableRowActions } from "@/components/ui/data-table-row-actions";
 import { format } from "date-fns";
 import { ColoredBadge } from "@/components/ui/colored-badge";
+import { AuthenticatedUser } from "@/lib/api-auth";
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { TimesheetRowActions } from "@/components/TimesheetRowActions";
 
 export type TimesheetRow = {
   id: string; // Usar appoint_date como id
   appoint_date: string;
   total_minutes: number;
   is_approved: boolean;
-    project: {
-        projectName: string;
-        projectDesc: string;
-    };
+  user_name?: string;
+  user_id?: string;
+  project: {
+    projectName: string;
+    projectDesc: string;
+  };
   children?: TicketHour[];
 };
 
@@ -27,6 +30,8 @@ export type TicketHour = {
   ticket_id?: string;
   appoint_start?: string;
   appoint_end?: string;
+  user_name?: string;
+  user_id?: string;
   project?: {
     projectName: string;
     projectDesc: string;
@@ -38,7 +43,8 @@ type TableMeta = {
   setExpanded: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 };
 
-export const columns: ColumnDef<TimesheetRow>[] = [
+export const getColumns = (user: AuthenticatedUser | null): ColumnDef<TimesheetRow>[] => {
+  const baseColumns: ColumnDef<TimesheetRow>[] = [
     {
         id: 'expander',
         header: '',
@@ -79,11 +85,11 @@ export const columns: ColumnDef<TimesheetRow>[] = [
             return <span>{format(parseUTCDateAsLocal(date), "dd/MM/yyyy")}</span>;
         },
     },
- 	{
-		header: ({ column }) => <DataTableColumnHeader column={column} title="Descrição" />, 
-		accessorFn: (row) => row.project?.projectName || "",
-		id: "descricao",
-	},
+    {
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Descrição" />, 
+      accessorFn: (row) => row.project?.projectName || "",
+      id: "descricao",
+    },
     {
         accessorKey: "total_minutes",
         header: ({ column }) => (
@@ -108,9 +114,93 @@ export const columns: ColumnDef<TimesheetRow>[] = [
                 <ColoredBadge type="boolean" value={false} />
             );
         },
+    }
+  ];
+
+  // Adicionar coluna de ações baseada no perfil do usuário
+  if (user && !user.is_client) {
+    baseColumns.push({
+      id: "actions",
+      cell: ({ row }) => <TimesheetRowActions row={row} user={user} />,
+    });
+  }
+
+  return baseColumns;
+};
+
+export const getChildColumns = (user: AuthenticatedUser | null): ColumnDef<TicketHour>[] => {
+  const childColumns: ColumnDef<TicketHour>[] = [
+    {
+      accessorKey: "appoint_start",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Início" />
+      ),
+      cell: ({ getValue }) => {
+        const time = getValue() as string;
+        return <span>{time || "-"}</span>;
+      },
     },
     {
-        id: "actions",
-        cell: ({ row }) => <DataTableRowActions row={row} />,
+      accessorKey: "appoint_end", 
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Fim" />
+      ),
+      cell: ({ getValue }) => {
+        const time = getValue() as string;
+        return <span>{time || "-"}</span>;
+      },
+    }
+  ];
+
+  // Adicionar coluna de usuário apenas para admin (role 1) e manager (role 2) não-clientes
+  if (user && !user.is_client && (user.role === 1 || user.role === 2)) {
+    childColumns.push({
+      accessorKey: "user_name",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Usuário" />
+      ),
+      cell: ({ getValue }) => {
+        const userName = getValue() as string;
+        return <span>{userName || "-"}</span>;
+      },
+    });
+  }
+
+  childColumns.push(
+    {
+      accessorKey: "minutes",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Horas" />
+      ),
+      cell: ({ getValue }) => {
+        const minutes = getValue() as number;
+        const hours = (minutes / 60).toFixed(2);
+        return <span>{hours} h</span>;
+      },
     },
-];
+    {
+      accessorKey: "is_approved",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
+      cell: ({ getValue }) => {
+        const approved = getValue() as boolean;
+        return approved ? (
+          <ColoredBadge type="boolean" value={true} />
+        ) : (
+          <ColoredBadge type="boolean" value={false} />
+        );
+      },
+    }
+  );
+
+  // Adicionar ações apenas para usuários não-clientes
+  if (user && !user.is_client) {
+    childColumns.push({
+      id: "actions",
+      cell: ({ row }) => <TimesheetRowActions row={row as any} user={user} />,
+    });
+  }
+
+  return childColumns;
+};
