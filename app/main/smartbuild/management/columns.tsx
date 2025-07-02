@@ -10,6 +10,11 @@ export const columns: ColumnDef<Ticket>[] = [
 		cell: ({ row }) => String(row.original.external_id).padStart(5, "0"),
 	},
 	{
+		accessorKey: "partner.partner_desc",
+		header: "Parceiro",
+		cell: ({ row }) => String(row.original.partner?.partner_desc),
+	},
+		{
 		accessorKey: "title",
 		header: "Título",
 	},

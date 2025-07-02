@@ -36,7 +36,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
   const [statusLoading, setStatusLoading] = useState(false);
 
   // Verificar se é usuário funcional ou cliente - ocultar status e apontamento de horas
-  const isFunctionalOrClient = user?.role === 3 || user?.is_client === true;// Hooks de validação
+  const isFunctionalOrClient = user?.is_client === true;// Hooks de validação
   const { userInContract, loading: contractLoading } = useUserInContract(ticket.project_id);
   const { canSend, reason: messageReason } = useCanUserSendMessage(ticket.project_id, userInContract ?? undefined, contractLoading, ticket.partner_id);
   const { canLog, reason: hoursReason, loading: hoursLoading } = useCanUserLogHours(ticket.project_id);
@@ -78,6 +78,10 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
 
     setSending(true);
     try {
+      // Verificar se o status foi alterado antes de enviar a mensagem
+      const currentTicketStatusId = ticket.status_id !== undefined && ticket.status_id !== null ? Number(ticket.status_id) : null;
+      const willUpdateStatus = statusIdToSend !== null && statusIdToSend !== currentTicketStatusId;
+
       const res = await fetch(`/api/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,7 +98,26 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
         throw new Error(errorData.error ?? "Erro ao criar mensagem");
       }
       
-      const createdMsg = await res.json();      if (selectedFiles.length > 0) {
+      const createdMsg = await res.json();
+
+      // Se o status foi alterado, atualizar o ticket
+      if (willUpdateStatus) {
+        const ticketUpdateRes = await fetch(`/api/tickets`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            status_id: statusIdToSend,
+          }),
+        });
+
+        if (!ticketUpdateRes.ok) {
+          const ticketError = await ticketUpdateRes.json();
+          throw new Error(`Erro ao atualizar status do ticket: ${ticketError.error ?? 'Erro desconhecido'}`);
+        }
+      }
+
+      if (selectedFiles.length > 0) {
         for (const file of selectedFiles) {
           const formData = new FormData();
           formData.append("file", file);
