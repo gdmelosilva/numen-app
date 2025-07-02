@@ -156,27 +156,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ticket não encontrado." }, { status: 404 });
   }
 
-  // 3. Para usuários clientes, verificar se estão no contrato
-  if (user.is_client) {
-    const { data: projectResources, error: projectResourcesError } = await supabase
-      .from('project_resources')
-      .select('user_id, is_suspended')
-      .eq('project_id', ticketData.project_id)
-      .eq('user_id', user.id);
+  // 3. Para usuários clientes, verificar se o ticket é do parceiro correto
+  // if (user.is_client) {
+  //   // Buscar o partner_id do projeto
+  //   const { data: projectData, error: projectError } = await supabase
+  //     .from('project')
+  //     .select('partner_id')
+  //     .eq('id', ticketData.project_id)
+  //     .single();
 
-    if (projectResourcesError) {
-      return NextResponse.json({ error: "Erro ao verificar vinculação ao projeto." }, { status: 500 });
-    }
+  //   if (projectError || !projectData) {
+  //     return NextResponse.json({ error: "Projeto não encontrado." }, { status: 404 });
+  //   }
 
-    if (!projectResources || projectResources.length === 0) {
-      return NextResponse.json({ error: "Usuário não está vinculado a este contrato e não pode enviar mensagens." }, { status: 403 });
-    }
-
-    const userResource = projectResources[0];
-    if (userResource.is_suspended) {
-      return NextResponse.json({ error: "Usuário está suspenso neste projeto e não pode enviar mensagens." }, { status: 403 });
-    }
-  }
+  //   if (String(projectData.partner_id) !== String(user.partner_id)) {
+  //     return NextResponse.json({ error: "Usuário não pertence ao parceiro deste contrato e não pode enviar mensagens." }, { status: 403 });
+  //   }
+  // }
 
   // Se passou por todas as validações, pode inserir a mensagem
   const { data, error } = await supabase

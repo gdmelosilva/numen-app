@@ -23,6 +23,12 @@ export function ForwardButton({ ticketId, userId, userEmail, userName, onSuccess
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, ticket_id: ticketId, email: userEmail, name: userName })
       });
+      // Torna usuário responsável pelo ticket
+      await fetch("/api/ticket-resources", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, ticket_id: ticketId, is_main: true})
+      });
       if (onSuccess) onSuccess();
       alert("Status atualizado e e-mail enviado!");
     } catch {

@@ -8,14 +8,14 @@ interface MessageFormProps {
   readonly onSubmit: (data: { body: string; hours?: number; is_private: boolean }) => Promise<void>;
 }
 
-export function MessageForm({ projectId, contractHoursMax, onSubmit }: MessageFormProps) {
+export function MessageForm({ projectId, contractHoursMax, onSubmit, partnerId }: MessageFormProps & { partnerId?: string }) {
   const [message, setMessage] = useState('');
   const [hours, setHours] = useState<number | undefined>();
   const [isPrivate, setIsPrivate] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { userInContract, loading } = useUserInContract(projectId);
   const { canLog } = useCanUserLogHours(projectId, contractHoursMax);
-  const { canSend } = useCanUserSendMessage(projectId, userInContract ?? undefined, loading);
+  const { canSend } = useCanUserSendMessage(projectId, userInContract ?? undefined, loading, partnerId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import type { Contract } from "@/types/contracts";
 import { columns } from "./columns";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, ChevronDown, ChevronUp, Trash } from "lucide-react";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface Filters {
   projectExtId: string;
@@ -24,6 +25,7 @@ interface Filters {
 }
 
 export default function TicketManagementPage() {
+  const { user, profile, loading: profileLoading } = useUserProfile();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filters, setFilters] = useState<Filters>({
     projectExtId: "",
@@ -41,7 +43,21 @@ export default function TicketManagementPage() {
   const [loading, setLoading] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
-  const buildProjectQueryParams = (customFilters: Filters) => {
+  // Função para aplicar filtros baseados no perfil do usuário
+  const handleUserProfile = useCallback(async (customFilters: Filters): Promise<Filters> => {
+    if (!user || !profile) return customFilters;
+
+    const filteredQuery = { ...customFilters };
+
+    // Se o usuário é cliente, apenas mostrar projetos do seu parceiro
+    if (user.is_client && user.partner_id) {
+      filteredQuery.partnerId = user.partner_id;
+    }
+
+    return filteredQuery;
+  }, [user, profile]);
+
+  const buildProjectQueryParams = useCallback((customFilters: Filters) => {
     const queryParams = new URLSearchParams();
     if (customFilters.projectExtId) queryParams.append("projectExtId", customFilters.projectExtId);
     if (customFilters.projectName) queryParams.append("projectName", customFilters.projectName);
@@ -54,12 +70,14 @@ export default function TicketManagementPage() {
     if (customFilters.start_date) queryParams.append("start_date", customFilters.start_date);
     if (customFilters.end_at) queryParams.append("end_at", customFilters.end_at);
     return queryParams;
-  };
+  }, []);
 
-  const fetchContracts = async (customFilters: Filters) => {
+  const fetchContracts = useCallback(async (customFilters: Filters) => {
     setLoading(true);
     try {
-      const queryParams = buildProjectQueryParams(customFilters);
+      // Apply user profile-based filtering
+      const profileFilters = await handleUserProfile(customFilters);
+      const queryParams = buildProjectQueryParams(profileFilters);
       const response = await fetch(`/api/smartbuild?${queryParams.toString()}`);
       if (!response.ok) throw new Error("Erro ao buscar contratos");
       const data = await response.json();
@@ -70,7 +88,27 @@ export default function TicketManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildProjectQueryParams, handleUserProfile]);
+
+  // Apply user profile filters when user changes
+  useEffect(() => {
+    const applyProfileFilters = async () => {
+      if (user && profile && !profileLoading) {
+        const profileFilters = await handleUserProfile(filters);
+        if (JSON.stringify(profileFilters) !== JSON.stringify(filters)) {
+          setFilters(profileFilters);
+          setPendingFilters(profileFilters);
+          fetchContracts(profileFilters);
+        } else {
+          // Load initial data if no profile-specific filtering needed
+          fetchContracts(filters);
+        }
+      }
+    };
+
+    applyProfileFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, profile, profileLoading]);
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
     setPendingFilters(prev => ({ ...prev, [key]: value }));

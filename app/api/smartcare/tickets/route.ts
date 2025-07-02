@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     // Busca tickets vinculados ao projeto AMS (ajuste o nome das tabelas/relacionamentos conforme seu schema)
     const { data, error } = await supabase
       .from('ticket')
-      .select('*')
+      .select('*, status:fk_status(*), priority:fk_priority(*), type:fk_type(*)')
       .eq('project_id', projectId);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

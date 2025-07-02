@@ -85,8 +85,11 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
 
   // Garante que o valor do status está sempre sincronizado com as opções
   useEffect(() => {
-    if (statusOptions.length > 0 && form.project_status && !statusOptions.some(opt => opt.id === form.project_status)) {
-      setForm(f => ({ ...f, project_status: statusOptions[0].id }));
+    if (statusOptions.length > 0 && form.project_status) {
+      const hasValidStatus = statusOptions.some(opt => String(opt.id) === String(form.project_status));
+      if (!hasValidStatus) {
+        setForm(f => ({ ...f, project_status: statusOptions[0].id }));
+      }
     }
   }, [statusOptions, form.project_status]);
 
@@ -94,7 +97,10 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     // Fetch project status options
     fetch("/api/options?type=project_status")
       .then((res) => res.json())
-      .then((data) => setStatusOptions(Array.isArray(data) ? data : []));
+      .then((data) => {
+        setStatusOptions(Array.isArray(data) ? data : []);
+      })
+      .catch(err => console.error('Erro ao carregar status:', err));
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -277,7 +283,32 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             </div>            {/* Status */}
             <div>
               <Label htmlFor="project_status" className="text-xs text-muted-foreground">Status</Label>
-              <Input id="project_status" name="project_status" value={statusOptions.find(s => s.id === form.project_status)?.name || ""} className="h-9" disabled />
+              {editMode ? (
+                <Select
+                  value={statusOptions.length > 0 && statusOptions.some(s => String(s.id) === String(form.project_status)) ? String(form.project_status) : ""}
+                  onValueChange={v => setForm(f => ({ ...f, project_status: v }))}
+                  disabled={!editMode}
+                >
+                  <SelectTrigger className="h-9 w-full max-w-full">
+                    <SelectValue placeholder="Selecione um status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(status => (
+                      <SelectItem key={status.id} value={String(status.id)}>
+                        {status.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input 
+                  id="project_status" 
+                  name="project_status" 
+                  value={statusOptions.find(s => String(s.id) === String(form.project_status))?.name || String(form.project_status || "")} 
+                  className="h-9" 
+                  disabled 
+                />
+              )}
             </div>
             {/* Horário de Abertura */}
             <div>

@@ -12,10 +12,18 @@ import { useRouter } from "next/navigation";
 import type { Row } from "@tanstack/react-table";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 
+// Adicione um tipo auxiliar para status com name e color opcionais
+interface StatusOption {
+  id: string | number;
+  name: string;
+  color?: string;
+  cor?: string;
+}
+
 export function getTicketColumns({ priorities, types, statuses }: {
   priorities: { id: string | number; name: string }[];
   types: { id: string | number; name: string }[];
-  statuses: { id: string | number; name: string }[];
+  statuses: StatusOption[];
 }): ColumnDef<Ticket>[] {
   return [
     {
@@ -31,8 +39,16 @@ export function getTicketColumns({ priorities, types, statuses }: {
       accessorKey: "status_id",
       header: "Status",
       cell: ({ row }) => {
-        const status = row.original.status?.name ?? statuses.find(s => String(s.id) === String(row.original.status_id))?.name;
-        return <ColoredBadge value={status} type="status" />;
+        let badgeValue;
+        if (row.original.status && typeof row.original.status === 'object') {
+          const s = row.original.status as StatusOption;
+          badgeValue = { name: s.name, color: s.color || s.cor || "" };
+        } else {
+          const statusId = String(row.original.status_id);
+          const statusObj = statuses.find(s => String(s.id) === statusId);
+          badgeValue = statusObj ? { name: statusObj.name, color: statusObj.color || statusObj.cor || "" } : statusId;
+        }
+        return <ColoredBadge value={badgeValue} type="project_status" />;
       },
     },
     {

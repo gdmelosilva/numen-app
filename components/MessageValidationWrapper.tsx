@@ -16,12 +16,13 @@ interface MessageValidationWrapperProps {
 export function MessageValidationWrapper({ 
   projectId, 
   contractHoursMax, 
+  partnerId, // novo parâmetro opcional
   children, 
   showHoursValidation = false,
   showMessageValidation = false 
-}: MessageValidationWrapperProps) {  const { userInContract, loading: contractLoading } = useUserInContract(projectId);
+}: MessageValidationWrapperProps & { partnerId?: string }) {  const { userInContract, loading: contractLoading } = useUserInContract(projectId);
   const { canLog, reason: hoursReason, loading: hoursLoading } = useCanUserLogHours(projectId, contractHoursMax);
-  const { canSend, reason: messageReason, isClient } = useCanUserSendMessage(projectId, userInContract ?? undefined, contractLoading);
+  const { canSend, reason: messageReason, isClient } = useCanUserSendMessage(projectId, userInContract ?? undefined, contractLoading, partnerId);
 
   // Debug temporário
   if (process.env.NODE_ENV === 'development') {

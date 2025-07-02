@@ -86,8 +86,7 @@ const menuVisibilityRules: MenuVisibilityRule[] = [
       "Utilitários",
       "TimeSheet",
       "TimeFlow - Faturamento",
-      // Esconder itens específicos da aba Administrativo
-      { parent: "Administrativo", items: ["Parceiros", "Contratos de Serviço"] },
+      "Administrativo",
     ],
   },
   {

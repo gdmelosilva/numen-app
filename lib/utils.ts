@@ -68,6 +68,24 @@ export const formatCEP = (value: string) => {
   }
 };
 
+// Format currency to Brazilian Real format
+export const formatCurrency = (value: number | string | null | undefined): string => {
+  if (value === null || value === undefined || value === '') {
+    return 'R$ 0,00';
+  }
+  
+  const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  if (isNaN(numericValue)) {
+    return 'R$ 0,00';
+  }
+  
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(numericValue);
+};
+
 export const export_to_xls = (data: unknown[], filename: string = 'export') => {
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();

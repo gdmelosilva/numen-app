@@ -20,11 +20,13 @@ import { Input } from "@/components/ui/input";
 import { useUserContext } from "@/components/user-context";
 import type { UserWithModule } from "@/types/users";
 import { ForwardButton } from "@/components/ForwardButton";
+import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 
 // Define o tipo correto para o recurso retornado pelo backend
 interface TicketResource {
   user_id: string;
   ticket_id: string;
+  is_main?: boolean;
   user?: {
     id: string;
     email?: string;
@@ -69,6 +71,7 @@ export default function TicketDetailsPage() {
   const [availableLoading, setAvailableLoading] = useState(false);
   const [resourceError, setResourceError] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState("");
+  const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
@@ -282,6 +285,17 @@ export default function TicketDetailsPage() {
     return '-';
   }
 
+  const hideResourceActions = currentUser && (currentUser.is_client || (currentUser.role === 3 && !currentUser.is_client));
+
+  // Função para obter o nome do status pelo id
+  function getStatusName(statusObj: unknown, statusId: string | number | undefined) {
+    if (statusesLoading) return "Carregando...";
+    if (statusObj && typeof statusObj === 'object' && 'name' in statusObj) return String((statusObj as { name: string }).name).trim();
+    if (!statusId) return "Sem status";
+    const found = ticketStatuses.find(s => String(s.id) === String(statusId));
+    return found ? String(found.name).trim() : "Sem status";
+  }
+
   return (
     <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
       <TabsList className="mb-4">
@@ -306,7 +320,9 @@ export default function TicketDetailsPage() {
                   <UserCircle className="w-4 h-4" />
                   {getTicketCreatorName(ticket)}
                 </div>
-                <Badge variant="default" className="text-md">{(typeof ticket.status === 'object' && ticket.status && 'name' in ticket.status) ? ticket.status.name : (typeof ticket.status_id === 'string' || typeof ticket.status_id === 'number' ? ticket.status_id : '-')}</Badge>
+                <Badge variant="default" className="text-md">
+                  {getStatusName(ticket.status, ticket.status_id)}
+                </Badge>
               </div>
               {/* <div className="flex flex-col items-end align-middle justify-center">
                 <span className="text-muted-foreground text-xs font-medium mb-1"></span>
@@ -439,7 +455,7 @@ export default function TicketDetailsPage() {
               <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium">
                 <UserCircle className="w-4 h-4" /> Recursos vinculados ao chamado
               </div>
-              {currentUser && !currentUser.is_client && (
+              {!hideResourceActions && (
                 <Button size="sm" variant="outline" onClick={() => { setShowResourceDialog(true); fetchAvailableUsers(); }}>
                   Vincular Recurso
                 </Button>
@@ -452,16 +468,51 @@ export default function TicketDetailsPage() {
             ) : (
               <ul className="list-disc ml-6 space-y-1">
                 {resources.map((r) => (
-                  <li key={r.user_id} className="text-sm flex items-center justify-between">
+                  <li key={r.user_id} className="text-sm flex items-center justify-between gap-2">
                     <span>
                       <strong>{r.user?.first_name} {r.user?.last_name}</strong> - <strong>{r.user?.is_client ? "Cliente" : "Numen"}</strong> - ({r.user?.email})
+                      {r.is_main && (
+                        <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-semibold">Responsável principal</span>
+                      )}
                     </span>
-                    <ForwardButton 
-                      ticketId={ticket?.id} 
-                      userId={r.user_id} 
-                      userEmail={r.user?.email || ""}
-                      userName={`${r.user?.first_name || ''} ${r.user?.last_name || ''}`.trim()}
-                    />
+                    {!hideResourceActions && (
+                      <div className="flex gap-2">
+                        {/* Botão para remover is_main se for o principal */}
+                        {r.is_main && (
+                          <Button size="sm" variant="outline" onClick={async () => {
+                            await fetch("/api/ticket-resources", {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ user_id: r.user_id, ticket_id: ticket?.id, is_main: false })
+                            });
+                            fetchResources();
+                          }}>
+                            Remover responsável
+                          </Button>
+                        )}
+                        {/* Botão para remover usuário do chamado */}
+                        <Button size="sm" variant="destructive" onClick={async () => {
+                          await fetch("/api/ticket-resources", {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ user_id: r.user_id, ticket_id: ticket?.id })
+                          });
+                          fetchResources();
+                        }}>
+                          Remover usuário
+                        </Button>
+                        {/* Botão Encaminhar, só se não for is_main */}
+                        {!r.is_main && (
+                          <ForwardButton 
+                            ticketId={ticket?.id} 
+                            userId={r.user_id} 
+                            userEmail={r.user?.email || ""}
+                            userName={`${r.user?.first_name || ''} ${r.user?.last_name || ''}`.trim()}
+                            onSuccess={fetchResources}
+                          />
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -481,42 +532,46 @@ export default function TicketDetailsPage() {
                   disabled={availableLoading}
                 />
               </div>
-              {availableLoading ? (
-                <div className="text-muted-foreground text-sm">Carregando usuários...</div>
-              ) : resourceError ? (
-                <div className="text-destructive text-sm">{resourceError}</div>
-              ) : availableUsers.length === 0 ? (
-                <div className="text-muted-foreground text-sm italic">Nenhum usuário disponível para vínculo.</div>
-              ) : (
-                <ul className="divide-y divide-muted-foreground/10">
-                  {availableUsers.filter(u =>
-                    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(searchUser.toLowerCase())
-                  ).map(u => (
-                    <li key={u.id} className="py-2 flex items-center justify-between">
-                      <span>
-                        {u.first_name} {u.last_name} ({u.email})
-                        {u.user_functional_name || u.ticket_module ? (
-                          <span className="ml-2 text-xs text-muted-foreground italic">
-                            - Módulo: {u.user_functional_name || u.ticket_module}
+              {!hideResourceActions && (
+                <>
+                  {availableLoading ? (
+                    <div className="text-muted-foreground text-sm">Carregando usuários...</div>
+                  ) : resourceError ? (
+                    <div className="text-destructive text-sm">{resourceError}</div>
+                  ) : availableUsers.length === 0 ? (
+                    <div className="text-muted-foreground text-sm italic">Nenhum usuário disponível para vínculo.</div>
+                  ) : (
+                    <ul className="divide-y divide-muted-foreground/10">
+                      {availableUsers.filter(u =>
+                        `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(searchUser.toLowerCase())
+                      ).map(u => (
+                        <li key={u.id} className="py-2 flex items-center justify-between">
+                          <span>
+                            {u.first_name} {u.last_name} ({u.email})
+                            {u.user_functional_name || u.ticket_module ? (
+                              <span className="ml-2 text-xs text-muted-foreground italic">
+                                - Módulo: {u.user_functional_name || u.ticket_module}
+                              </span>
+                            ) : null}
                           </span>
-                        ) : null}
-                      </span>
-                      <Button size="sm" onClick={async () => {
-                        try {
-                          await fetch("/api/ticket-resources/link", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ ticket_id: ticket?.id, user_id: u.id })
-                          });
-                          setShowResourceDialog(false);
-                          fetchResources();
-                        } catch {
-                          setResourceError("Erro ao vincular recurso");
-                        }
-                      }}>Vincular</Button>
-                    </li>
-                  ))}
-                </ul>
+                          <Button size="sm" onClick={async () => {
+                            try {
+                              await fetch("/api/ticket-resources/link", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ ticket_id: ticket?.id, user_id: u.id })
+                              });
+                              setShowResourceDialog(false);
+                              fetchResources();
+                            } catch {
+                              setResourceError("Erro ao vincular recurso");
+                            }
+                          }}>Vincular</Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
               )}
               <DialogFooter>
                 <DialogClose asChild>

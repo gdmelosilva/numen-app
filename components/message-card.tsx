@@ -1,6 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, UserCircle, Clock } from "lucide-react";
+import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 
 export type MessageCardProps = {
   msg: {
@@ -21,8 +22,14 @@ export type MessageCardProps = {
 };
 
 export function MessageCard({ msg }: MessageCardProps) {
-  // Exibe horas sistêmicas diretamente do campo system_hours
-  // const hours = msg.is_system ? msg.system_hours ?? null : null;
+  const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
+
+  function getStatusName(statusId: string | number | undefined) {
+    if (statusesLoading) return "Carregando...";
+    if (!statusId) return "Sem status";
+    const found = ticketStatuses.find(s => String(s.id) === String(statusId));
+    return found ? String(found.name).trim() : "Sem status";
+  }
 
   return (
     <div
@@ -31,7 +38,7 @@ export function MessageCard({ msg }: MessageCardProps) {
     >
       <div className="flex flex-col gap-1 text-xs text-muted-foreground">
         <div className="flex gap-2 flex-wrap">
-          <Badge variant="outline" className="w-fit">{msg.msgStatus || "Sem status"}</Badge>
+          <Badge variant="outline" className="w-fit">{getStatusName(msg.msgStatus)}</Badge>
           {msg.msgPrivate && <Badge variant="destructive" className="w-fit">Privado</Badge>}
           {msg.is_system ? (
             <Badge variant="outline" className="w-fit bg-red-500/20 text-red-700">Sistema</Badge>

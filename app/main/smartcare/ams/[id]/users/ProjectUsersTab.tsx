@@ -139,6 +139,11 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
 
     useEffect(() => { setPage(0); }, [search, partnerUsers]);
 
+    // Não renderiza nada nem faz fetch se for cliente
+    if (currentUser?.is_client) {
+        return null;
+    }
+
     if (loading) {
         return (
             <div className="text-center py-8">

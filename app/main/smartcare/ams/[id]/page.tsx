@@ -9,6 +9,7 @@ import ProjectDetailsTab from "./details";
 import ProjectDashboardTab from "./dashboard";
 import ProjectUsersTab from "./users/ProjectUsersTab";
 import ProjectTicketsTab from "./tickets/ProjectTicketsTab";
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 export default function AMSDetailPage() {
   const params = useParams();
@@ -18,6 +19,7 @@ export default function AMSDetailPage() {
   const [error, setError] = useState(false);
   const [mainTab, setMainTab] = useState("detalhes");
   const [editMode, setEditMode] = useState(false);
+  const { user: currentUser, loading: userLoading } = useCurrentUser();
 
   useEffect(() => {
     const loadProjectData = async () => {
@@ -52,7 +54,7 @@ export default function AMSDetailPage() {
     loadProjectData();
   }, [id]);
 
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -63,6 +65,9 @@ export default function AMSDetailPage() {
   if (error || !project) {
     notFound();
   }
+
+  // Esconde a aba Usuários para clientes
+  const showUsersTab = !currentUser?.is_client;
 
   return (
     <div className="w-full mx-auto mt-8 space-y-6">
@@ -79,14 +84,16 @@ export default function AMSDetailPage() {
           />
           {/* Tabs secundárias para Usuários e Chamados */}
           <div className="mt-8">
-            <Tabs defaultValue="usuarios" className="w-full">
+            <Tabs defaultValue={showUsersTab ? "usuarios" : "chamados"} className="w-full">
               <TabsList className="mb-2">
-                <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+                {showUsersTab && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
                 <TabsTrigger value="chamados">Chamados</TabsTrigger>
               </TabsList>
-              <TabsContent value="usuarios">
-                <ProjectUsersTab projectId={String(project.id)} />
-              </TabsContent>
+              {showUsersTab && (
+                <TabsContent value="usuarios">
+                  <ProjectUsersTab projectId={String(project.id)} />
+                </TabsContent>
+              )}
               <TabsContent value="chamados">
                 <ProjectTicketsTab projectId={String(project.id)} partnerId={String(project.partnerId)} />
               </TabsContent>

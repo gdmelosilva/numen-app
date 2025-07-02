@@ -27,7 +27,9 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [attachmentType, setAttachmentType] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState(ticket.status_id ? String(ticket.status_id) : "");
+  // Garante que o valor inicial de selectedStatus é sempre o status do ticket (string)
+  const initialStatusId = ticket.status_id !== undefined && ticket.status_id !== null ? String(ticket.status_id) : "";
+  const [selectedStatus, setSelectedStatus] = useState(initialStatusId);
   const [sending, setSending] = useState(false);
   const [ticketHourData, setTicketHourData] = useState<TicketHourData | null>(null);
   const [statusList, setStatusList] = useState<StatusOption[]>(statusOptions);
@@ -36,7 +38,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
   // Verificar se é usuário funcional ou cliente - ocultar status e apontamento de horas
   const isFunctionalOrClient = user?.role === 3 || user?.is_client === true;// Hooks de validação
   const { userInContract, loading: contractLoading } = useUserInContract(ticket.project_id);
-  const { canSend, reason: messageReason } = useCanUserSendMessage(ticket.project_id, userInContract ?? undefined, contractLoading);
+  const { canSend, reason: messageReason } = useCanUserSendMessage(ticket.project_id, userInContract ?? undefined, contractLoading, ticket.partner_id);
   const { canLog, reason: hoursReason, loading: hoursLoading } = useCanUserLogHours(ticket.project_id);
   // Loading geral das validações
   const validationsLoading = contractLoading || hoursLoading;
@@ -48,10 +50,12 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
     if (!canSend) {
       toast.error(`Não é possível enviar mensagem: ${messageReason}`);
       return;
-    }    if (ticketHourData && !canLog) {
+    }
+    if (ticketHourData && !canLog) {
       toast.error(`Não é possível apontar horas: ${hoursReason}`);
       return;
-    }    // Para usuários funcionais e clientes, não permitir apontamento de horas
+    }
+    // Para usuários funcionais e clientes, não permitir apontamento de horas
     if (ticketHourData && isFunctionalOrClient) {
       toast.error("Usuários funcionais e clientes não podem apontar horas");
       return;
@@ -63,14 +67,24 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
       return;
     }
 
+    // Determina o status_id a ser enviado
+    let statusIdToSend: number | null = null;
+    const ticketStatusId = ticket.status_id !== undefined && ticket.status_id !== null ? String(ticket.status_id) : "";
+    if (!selectedStatus || selectedStatus === ticketStatusId) {
+      statusIdToSend = ticket.status_id !== undefined && ticket.status_id !== null ? Number(ticket.status_id) : null;
+    } else {
+      statusIdToSend = Number(selectedStatus);
+    }
+
     setSending(true);
-    try {      const res = await fetch(`/api/messages`, {
+    try {
+      const res = await fetch(`/api/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           body: newMessage,
           is_private: isPrivate,
-          status_id: isFunctionalOrClient ? null : (selectedStatus ? Number(selectedStatus) : null),
+          status_id: statusIdToSend,
           ticket_id: ticket.id,
         }),
       });

@@ -8,6 +8,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 interface ProjectDetailsTabProps {
   project: Contract;
@@ -16,8 +17,6 @@ interface ProjectDetailsTabProps {
 }
 
 export default function ProjectDetailsTab({ project, editMode, setEditMode }: ProjectDetailsTabProps) {
-  console.log('[ProjectDetailsTab] project recebido:', project);
-  console.log('[ProjectDetailsTab] project.project_type:', project.project_type);
   // Determine if the project is closed (status 'Encerrado')
   const isClosed = (() => {
     let status = '';
@@ -40,9 +39,17 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
     end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
     project_type: project.project_type || "",
-    project_status: (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status)
-      ? project.project_status.id || ""
-      : (typeof project.project_status === "string" ? project.project_status : ""),
+    project_status: (() => {
+      if (typeof project.project_status === "object" && project.project_status !== null) {
+        if ("id" in project.project_status) {
+          return String(project.project_status.id || "");
+        } else if ("name" in project.project_status) {
+          // Busca o ID baseado no name
+          return String(project.project_status.name || "");
+        }
+      }
+      return typeof project.project_status === "string" ? project.project_status : "";
+    })(),
     is_wildcard: project.is_wildcard || false,
     is_247: project.is_247 || false,
     hours_max: project.hours_max ?? "",
@@ -55,7 +62,6 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     opening_time: project.opening_time ?? "",
     closing_time: project.closing_time ?? "",
   });
-  console.log('[ProjectDetailsTab] form inicial:', form);
 
   // Atualiza o form sempre que o project mudar
   useEffect(() => {
@@ -65,9 +71,17 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
       end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
       project_type: project.project_type || "",
-      project_status: (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status)
-        ? project.project_status.id || ""
-        : (typeof project.project_status === "string" ? project.project_status : ""),
+      project_status: (() => {
+        if (typeof project.project_status === "object" && project.project_status !== null) {
+          if ("id" in project.project_status) {
+            return String(project.project_status.id || "");
+          } else if ("name" in project.project_status) {
+            // Busca o ID baseado no name
+            return String(project.project_status.name || "");
+          }
+        }
+        return typeof project.project_status === "string" ? project.project_status : "";
+      })(),
       is_wildcard: project.is_wildcard || false,
       is_247: project.is_247 || false,
       hours_max: project.hours_max ?? "",
@@ -80,7 +94,6 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       opening_time: project.opening_time ?? "",
       closing_time: project.closing_time ?? "",
     };
-    console.log('[ProjectDetailsTab] useEffect project mudou, novo form:', novoForm);
     setForm(novoForm);
   }, [project]);
 
@@ -88,11 +101,28 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Garante que o valor do status está sempre sincronizado com as opções
+  useEffect(() => {
+    if (statusOptions.length > 0 && form.project_status) {
+      // Verifica se o status existe por ID ou por name
+      const hasValidStatus = statusOptions.some(opt => 
+        String(opt.id) === String(form.project_status) || 
+        String(opt.name) === String(form.project_status)
+      );
+      if (!hasValidStatus) {
+        setForm(f => ({ ...f, project_status: statusOptions[0].id }));
+      }
+    }
+  }, [statusOptions, form.project_status]);
+
   useEffect(() => {
     // Fetch project status options
     fetch("/api/options?type=project_status")
       .then((res) => res.json())
-      .then((data) => setStatusOptions(Array.isArray(data) ? data : []));
+      .then((data) => {
+        setStatusOptions(Array.isArray(data) ? data : []);
+      })
+      .catch(err => console.error('Erro ao carregar status:', err));
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,9 +147,15 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
         }
         // project_status pode ser objeto ou string
         if (key === "project_status") {
-          originalValue = typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status
-            ? project.project_status.id
-            : project.project_status;
+          if (typeof project.project_status === "object" && project.project_status !== null) {
+            if ("id" in project.project_status) {
+              originalValue = project.project_status.id;
+            } else if ("name" in project.project_status) {
+              originalValue = project.project_status.name;
+            }
+          } else {
+            originalValue = project.project_status;
+          }
         }
         // Lista de campos numéricos
         const numericFields = [
@@ -192,9 +228,16 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
       end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
       project_type: project.project_type || "",
-      project_status: (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status)
-        ? project.project_status.id || ""
-        : (typeof project.project_status === "string" ? project.project_status : ""),
+      project_status: (() => {
+        if (typeof project.project_status === "object" && project.project_status !== null) {
+          if ("id" in project.project_status) {
+            return String(project.project_status.id || "");
+          } else if ("name" in project.project_status) {
+            return String(project.project_status.name || "");
+          }
+        }
+        return typeof project.project_status === "string" ? project.project_status : "";
+      })(),
       is_wildcard: project.is_wildcard || false,
       is_247: project.is_247 || false,
       hours_max: project.hours_max ?? "",
@@ -210,9 +253,6 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     setEditMode(false);
     setError(null);
   };
-  // Logar valor do input de cobrança antes do return
-  console.log('[ProjectDetailsTab] render input hours_max:', form.hours_max);
-  console.log('[ProjectDetailsTab] form.project_type para condição AMS:', form.project_type);
 
   return (
     <>
@@ -280,7 +320,42 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             {/* Status */}
             <div>
               <Label htmlFor="project_status" className="text-xs text-muted-foreground">Status</Label>
-              <Input id="project_status" name="project_status" value={statusOptions.find(s => s.id === form.project_status)?.name || ""} className="h-9" disabled />
+              {editMode ? (
+                <Select
+                  value={(() => {
+                    // Busca por ID primeiro, depois por name
+                    const byId = statusOptions.find(s => String(s.id) === String(form.project_status));
+                    const byName = statusOptions.find(s => String(s.name) === String(form.project_status));
+                    return byId ? String(byId.id) : byName ? String(byName.id) : "";
+                  })()}
+                  onValueChange={v => setForm(f => ({ ...f, project_status: v }))}
+                  disabled={!editMode}
+                >
+                  <SelectTrigger className="h-9 w-full max-w-full">
+                    <SelectValue placeholder="Selecione um status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(status => (
+                      <SelectItem key={status.id} value={String(status.id)}>
+                        {status.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input 
+                  id="project_status" 
+                  name="project_status" 
+                  value={(() => {
+                    // Busca por ID primeiro, depois por name, senão usa o valor direto
+                    const byId = statusOptions.find(s => String(s.id) === String(form.project_status));
+                    const byName = statusOptions.find(s => String(s.name) === String(form.project_status));
+                    return byId?.name || byName?.name || String(form.project_status || "");
+                  })()} 
+                  className="h-9" 
+                  disabled 
+                />
+              )}
             </div>
             {/* Horário de Abertura */}
             <div>
@@ -359,20 +434,37 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
                 <div className="grid gap-6 md:grid-cols-4 mt-6">
                   <div>
                     <Label htmlFor="value_hr_normal" className="text-xs text-muted-foreground">Valor Hora Normal</Label>
-                    <Input id="value_hr_normal" name="value_hr_normal" type="number" step="0.01" value={form.value_hr_normal || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                    {editMode ? (
+                      <Input id="value_hr_normal" name="value_hr_normal" type="number" step="0.01" value={form.value_hr_normal || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                    ) : (
+                      <Input value={formatCurrency(form.value_hr_normal)} className="h-9" disabled />
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="value_hr_excdn" className="text-xs text-muted-foreground">Valor Hora Excedente</Label>
-                    <Input id="value_hr_excdn" name="value_hr_excdn" type="number" step="0.01" value={form.value_hr_excdn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                    {editMode ? (
+                      <Input id="value_hr_excdn" name="value_hr_excdn" type="number" step="0.01" value={form.value_hr_excdn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                    ) : (
+                      <Input value={formatCurrency(form.value_hr_excdn)} className="h-9" disabled />
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="value_hr_except" className="text-xs text-muted-foreground">Valor Hora Exceção</Label>
-                    <Input id="value_hr_except" name="value_hr_except" type="number" step="0.01" value={form.value_hr_except || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                    {editMode ? (
+                      <Input id="value_hr_except" name="value_hr_except" type="number" step="0.01" value={form.value_hr_except || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                    ) : (
+                      <Input value={formatCurrency(form.value_hr_except)} className="h-9" disabled />
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="value_hr_warn" className="text-xs text-muted-foreground">Valor Hora Aviso</Label>
-                    <Input id="value_hr_warn" name="value_hr_warn" type="number" step="0.01" value={form.value_hr_warn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>                </div>
+                    {editMode ? (
+                      <Input id="value_hr_warn" name="value_hr_warn" type="number" step="0.01" value={form.value_hr_warn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                    ) : (
+                      <Input value={formatCurrency(form.value_hr_warn)} className="h-9" disabled />
+                    )}
+                  </div>                
+                  </div>
               </div>
           </form>
         </CardContent>

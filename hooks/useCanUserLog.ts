@@ -43,7 +43,8 @@ export function useCanUserLogHours(projectId?: string, contractHoursMax?: number
 }
 
 // Hook para verificar se o usuário pode enviar mensagens
-export function useCanUserSendMessage(projectId?: string, userInContract?: boolean | null, contractLoading?: boolean) {
+// Adicione partnerId como parâmetro para validar cliente
+export function useCanUserSendMessage(projectId?: string, userInContract?: boolean | null, contractLoading?: boolean, partnerId?: string) {
   const { user } = useCurrentUser();
   const [canSend, setCanSend] = useState(false);
   const [reason, setReason] = useState<string>("");
@@ -60,32 +61,54 @@ export function useCanUserSendMessage(projectId?: string, userInContract?: boole
       setReason("Usuário está suspenso/inativo");
       return;
     }
-    
-    // Para usuários clientes (Funcional Administrativo / Key-User Cliente)
-    if (user.is_client) {
-      // Se ainda está carregando os dados do contrato, aguardar
+
+    // Administrador Administrativo (role=1, is_client=false) sempre pode
+    if (user.role === 1 && !user.is_client) {
+      setCanSend(true);
+      setReason("");
+      return;
+    }
+
+    // Gerente Administrativo (role=2, is_client=false) e Funcional Administrativo (role=3, is_client=false): só se alocado
+    if ((user.role === 2 || user.role === 3) && !user.is_client) {
       if (contractLoading) {
         setCanSend(false);
         setReason("Verificando vinculação ao contrato...");
         return;
       }
-      
-      // Verifica se o usuário está no contrato
-      if (userInContract === false) {
+      if (!userInContract) {
         setCanSend(false);
         setReason("Usuário não está vinculado ao contrato");
         return;
       }
-      
-      // Se userInContract é null e não está carregando, considerar como não vinculado para projetos específicos
-      if (userInContract === null && projectId) {
+      setCanSend(true);
+      setReason("");
+      return;
+    }
+
+    // Cliente (qualquer role, is_client=true): só se o contrato for do partner associado
+    if (user.is_client) {
+      if (contractLoading) {
         setCanSend(false);
-        setReason("Não foi possível verificar a vinculação ao contrato");
+        setReason("Verificando vínculo ao contrato...");
         return;
       }
-    }    setCanSend(true);
-    setReason("");
-  }, [user, userInContract, contractLoading, projectId]);
+      // Se o partnerId do projeto não bate com o do usuário, bloquear
+      if (partnerId && user.partner_id && String(partnerId) !== String(user.partner_id)) {
+        setCanSend(false);
+        setReason("Usuário não pertence ao parceiro deste contrato");
+        return;
+      }
+      // Para cliente, não precisa checar userInContract
+      setCanSend(true);
+      setReason("");
+      return;
+    }
+
+    // Outros casos: negar
+    setCanSend(false);
+    setReason("Permissão insuficiente para enviar mensagens");
+  }, [user, userInContract, contractLoading, projectId, partnerId]);
 
   return { 
     canSend, 
@@ -111,8 +134,9 @@ export function useUserInContract(projectId?: string) {
       .then((res) => res.json())
       .then((data) => {
         // Verifica se o usuário está na lista de recursos do projeto
-        const userResource = Array.isArray(data) ? data.find((resource: { user_id: string; is_suspended: boolean }) => resource.user_id === user.id) : null;
-        
+        const userResource = Array.isArray(data)
+          ? data.find((resource: { user_id: string; is_suspended: boolean }) => String(resource.user_id) === String(user.id))
+          : null;
         setUserInContract(!!userResource);
       })
       .catch((error) => {

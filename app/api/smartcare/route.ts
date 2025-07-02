@@ -132,7 +132,44 @@ export async function GET(req: NextRequest) {
     query = query.gte("planned_end_date", searchParams.get("planned_end_date"));
   }
   if (searchParams.get("actual_end_date")) {
-    query = query.gte("actual_end_date", searchParams.get("actual_end_date"));  }
+    query = query.gte("actual_end_date", searchParams.get("actual_end_date"));
+  }
+
+  // Filter by user_tickets (for functional-adm users)
+  if (searchParams.get("user_tickets")) {
+    const userId = searchParams.get("user_tickets");
+    // Get ticket IDs from ticket_resource where user_id matches
+    const { data: ticketResources } = await supabase
+      .from("ticket_resource")
+      .select("ticket_id")
+      .eq("user_id", userId);
+    
+    if (ticketResources && ticketResources.length > 0) {
+      const ticketIds = ticketResources.map(tr => tr.ticket_id);
+      query = query.in("id", ticketIds);
+    } else {
+      // No tickets for this user, return empty result
+      return NextResponse.json([]);
+    }
+  }
+
+  // Filter by resource_user_id (for admin filtering by specific user)
+  if (searchParams.get("resource_user_id")) {
+    const resourceUserId = searchParams.get("resource_user_id");
+    // Get ticket IDs from ticket_resource where user_id matches
+    const { data: ticketResources } = await supabase
+      .from("ticket_resource")
+      .select("ticket_id")
+      .eq("user_id", resourceUserId);
+    
+    if (ticketResources && ticketResources.length > 0) {
+      const ticketIds = ticketResources.map(tr => tr.ticket_id);
+      query = query.in("id", ticketIds);
+    } else {
+      // No tickets for this user, return empty result
+      return NextResponse.json([]);
+    }
+  }
 
   const { data, error } = await query;
 
