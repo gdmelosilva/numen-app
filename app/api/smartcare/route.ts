@@ -31,6 +31,33 @@ interface TicketRow {
   project?: { id: string; projectName: string };
   created_by_user?: { id: string; name: string };
   attachments?: { id: string; name: string; path: string }[];
+  ticket_resource?: { 
+    user_id: string; 
+    ticket_id: string; 
+    is_main: boolean;
+    user?: { 
+      id: string; 
+      first_name?: string; 
+      last_name?: string; 
+      email?: string; 
+      is_client?: boolean; 
+      is_active?: boolean; 
+    };
+  }[];
+  resources?: { 
+    id?: string; 
+    user_id: string; 
+    ticket_id: string; 
+    is_main: boolean;
+    user?: { 
+      id: string; 
+      first_name?: string; 
+      last_name?: string; 
+      email?: string; 
+      is_client?: boolean; 
+      is_active?: boolean; 
+    };
+  }[];
 }
 
 function mapTicketRow(row: unknown) {
@@ -63,13 +90,16 @@ function mapTicketRow(row: unknown) {
     partner: r.partner,
     project: r.project,
     created_by_user: r.created_by_user,
-    attachments: r.attachments || [], // Adiciona anexos se vierem do backend
+    attachments: r.attachments || [],
+    resources: r.ticket_resource || [],
   };
 }
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
-  const { searchParams } = new URL(req.url);  let query = supabase
+  const { searchParams } = new URL(req.url);
+
+  let query = supabase
     .from("ticket")
     .select(`*,
     module:fk_module(*),
@@ -79,7 +109,11 @@ export async function GET(req: NextRequest) {
     status:fk_status(*),
     type:fk_type(*),
     project:fk_project(*),
-    created_by: ticket_created_by_fkey(*)
+    created_by: ticket_created_by_fkey(*),
+    ticket_resource(
+      *,
+      user:user_id(id, first_name, last_name, email, is_client, is_active)
+    )
     `, { count: "exact" })
     .eq("type_id", 1);
 
@@ -177,7 +211,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Map DB rows to frontend shape (sem buscar anexos diretamente do ticket)
-  const tickets = (data || []).map(mapTicketRow);
+  if (!data || data.length === 0) {
+    return NextResponse.json([]);
+  }
+
+  // Map DB rows to frontend shape usando o join direto
+  const tickets = data.map(ticket => mapTicketRow(ticket));
+
   return NextResponse.json(tickets);
 }

@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, ChevronDown, ChevronUp, Trash } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Trash, Download } from "lucide-react";
+import { exportActivitiesToExcel } from "@/lib/export-file";
 
 interface TicketFilters {
   external_id: string;
@@ -114,17 +115,35 @@ export default function SmartbuildManagementPage() {
     setFilters(cleared);
   };
 
+  const handleExport = () => {
+    if (tickets.length === 0) {
+      alert("Não há dados para exportar");
+      return;
+    }
+    exportActivitiesToExcel(tickets, "atividades_smartbuild");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Tickets do Projeto</h2>
-        <Button
-          variant="colored2"
-          onClick={handleSearch}
-          disabled={loading}
-        >
-          <Search className="mr-2 h-4 w-4" /> Buscar
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={loading || tickets.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
+          <Button
+            variant="colored2"
+            onClick={handleSearch}
+            disabled={loading}
+          >
+            <Search className="mr-2 h-4 w-4" /> Buscar
+          </Button>
+        </div>
       </div>
       {filtersCollapsed ? (
         <Card>

@@ -93,8 +93,8 @@ function ActionsCell({ row }: { row: Row<Ticket> }) {
       <DropdownMenuContent align="end" className="w-[160px]">
         <DropdownMenuItem
           onClick={() => {
-              router.push(`/main/smartcare/management/${ticket.external_id}`);
-            // router.push(`/main/smartbuild/${ticket.project_id}/${ticket.id}`);
+              // router.push(`/main/smartcare/management/${ticket.id}`);
+            router.push(`/main/smartbuild/${ticket.project_id}/${ticket.id}`);
           }}
         >
           Detalhes

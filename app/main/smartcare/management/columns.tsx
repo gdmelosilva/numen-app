@@ -124,6 +124,34 @@ export const columns: ColumnDef<Ticket>[] = [
     cell: ({ row }) => row.original.planned_end_date ? format(new Date(row.original.planned_end_date), "dd/MM/yyyy", { locale: ptBR }) : "-",
   },
   {
+    accessorKey: "resources",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Recursos" />
+    ),
+    cell: ({ row }) => {
+      const resources = row.original.resources || [];
+      const count = resources.length;
+      if (count === 0) {
+        return <Badge variant="outline">0</Badge>;
+      }
+      
+      const mainResource = resources.find(r => r.is_main);
+      if (mainResource && mainResource.user) {
+        const userName = `${mainResource.user.first_name || ""} ${mainResource.user.last_name || ""}`.trim() 
+          || mainResource.user.email 
+          || mainResource.user.id;
+        return (
+          <div className="flex flex-col gap-1">
+            <Badge variant="approved">{userName} (Principal)</Badge>
+            {count > 1 && <Badge variant="secondary">+{count - 1} outros</Badge>}
+          </div>
+        );
+      }
+      
+      return <Badge variant="secondary">{count} recurso{count > 1 ? 's' : ''}</Badge>;
+    },
+  },
+  {
     id: "actions",
     cell: function ActionsCell({ row }) {
       const ticketId = row.original.external_id || row.original.id;

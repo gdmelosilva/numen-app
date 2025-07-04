@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, ChevronDown, ChevronUp, Trash } from "lucide-react";
+import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { exportTicketsToExcel } from "@/lib/export-file";
 
 interface Filters {
   external_id: string;
@@ -290,6 +291,17 @@ export default function TicketManagementPage() {
     setFilters(cleared);
     fetchTickets(cleared);
   };
+
+  const handleExportToExcel = () => {
+    if (tickets.length === 0) {
+      alert("Não há dados para exportar");
+      return;
+    }
+    
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `chamados_${timestamp}`;
+    exportTicketsToExcel(tickets, filename);
+  };
   // Função para gerar resumo dos filtros ativos
   const getActiveFiltersSummary = () => {
     const filterMap = [
@@ -328,13 +340,15 @@ export default function TicketManagementPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {/* <Button
+          <Button
             variant="outline"
-            onClick={() => setFiltersCollapsed(v => !v)}
-            aria-label={filtersCollapsed ? "Expandir filtros" : "Recolher filtros"}
+            onClick={handleExportToExcel}
+            disabled={loading || tickets.length === 0}
+            aria-label="Exportar para Excel"
           >
-            {filtersCollapsed ? "Mostrar filtros" : "Recolher filtros"}
-          </Button> */}
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
           <Button variant="colored2" onClick={handleSearch} disabled={loading}>
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>

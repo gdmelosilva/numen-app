@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, ChevronDown, ChevronUp, Trash } from "lucide-react";
+import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download } from "lucide-react";
+import { exportProjectsToExcel } from "@/lib/export-file";
 
 interface Filters {
     projectName: string;
@@ -95,6 +96,14 @@ export default function AMSAdminPage() {
         fetchContracts(cleared);
     };
 
+    const handleExport = () => {
+        if (contracts.length === 0) {
+            alert("Não há dados para exportar");
+            return;
+        }
+        exportProjectsToExcel(contracts as Record<string, unknown>[], "projetos_ams");
+    };
+
     const getActiveFiltersSummary = () => {
         const summary: string[] = [];
         if (pendingFilters.projectName) summary.push(`Título: ${pendingFilters.projectName}`);
@@ -123,6 +132,14 @@ export default function AMSAdminPage() {
                         disabled={loading}
                     >
                         <Search className="mr-2 h-4 w-4" /> Buscar
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={handleExport}
+                        disabled={loading}
+                        aria-label="Exportar para Excel"
+                    >
+                        <Download className="mr-2 h-4 w-4" /> Exportar
                     </Button>
                 </div>
             </div>

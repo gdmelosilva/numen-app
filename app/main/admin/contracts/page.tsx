@@ -6,7 +6,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
 import type { Contract } from "@/types/contracts";
 import { Button } from "@/components/ui/button";
-import { exportToCSV } from "@/lib/export-file";
+import { exportContractsToExcel } from "@/lib/export-file";
 import { ChevronDown, ChevronUp, Loader2, Search, Trash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -203,10 +203,10 @@ export default function ContractsPage() {
           <ContractCreateDialog />
           <Button
             variant="colored1"
-            onClick={() => exportToCSV(contracts, "projetos.csv")}
+            onClick={() => exportContractsToExcel(contracts, "contratos")}
             disabled={loading || isEditDialogOpen}
           >
-            Exportar CSV
+            Exportar Excel
           </Button>
         </div>
       </div>

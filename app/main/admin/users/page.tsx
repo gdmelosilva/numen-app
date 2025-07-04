@@ -6,7 +6,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns, User } from "./columns";
 import { Button } from "@/components/ui/button";
 import { UserCreateDialog } from "@/components/user-create-dialog";
-import { exportToCSV } from "@/lib/export-file";
+import { exportUsersToExcel } from "@/lib/export-file";
 import { Loader2, Search, ChevronDown, ChevronUp, Trash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -216,11 +216,11 @@ export default function UsersPage() {
           <UserCreateDialog onSuccess={fetchUsers} disabled={isEditDialogOpen} />
           <Button
             variant="secondary"
-            onClick={() => exportToCSV(users.map(u => ({ ...u })) as Record<string, unknown>[], "usuarios.csv")}
+            onClick={() => exportUsersToExcel(users.map(u => ({ ...u })) as Record<string, unknown>[], "usuarios")}
             disabled={users.length === 0 || isEditDialogOpen}
             className="bg-accent text-white hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Exportar CSV
+            Exportar Excel
           </Button>
         </div>
       </div>

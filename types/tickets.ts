@@ -4,6 +4,21 @@ export type TicketAttachment = {
   path: string;
 };
 
+export type TicketResource = {
+  id?: string;
+  user_id: string;
+  ticket_id: string;
+  is_main: boolean;
+  user?: {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    is_client?: boolean;
+    is_active?: boolean;
+  };
+};
+
 export type Ticket = {
   id: string;
   external_id: string;
@@ -37,4 +52,5 @@ export type Ticket = {
     first_name: string; id: string; name: string 
 };
   attachments?: TicketAttachment[];
+  resources?: TicketResource[];
 };

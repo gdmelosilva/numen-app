@@ -13,7 +13,7 @@ import { PartnerCreateDialog } from "@/components/partner-create-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getMarketSegments } from "@/hooks/useOptions";
 import type { MarketingInterface } from "@/types/marketing_segments";
-import { export_to_xls } from "@/lib/utils";
+import { exportPartnersToExcel } from "@/lib/export-file";
 
 interface Filters {
   partner_ext_id: string;
@@ -110,7 +110,7 @@ export default function PartnersPage() {
   };
 
   const handleExport = () => {
-    export_to_xls(partners, "parceiros");
+    exportPartnersToExcel(partners, "parceiros");
   };
 
   // Função para gerar resumo dos filtros ativos
