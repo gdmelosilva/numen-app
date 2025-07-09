@@ -139,8 +139,7 @@ export function useUserInContract(projectId?: string) {
           : null;
         setUserInContract(!!userResource);
       })
-      .catch((error) => {
-        console.error("Erro ao verificar vinculação:", error);
+      .catch(() => {
         setUserInContract(false);
       })
       .finally(() => {

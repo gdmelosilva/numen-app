@@ -30,8 +30,7 @@ export function UserDeactivate({ userId, currentStatus }: UserDeactivateProps) {
       setIsActive(newStatus);
       toast.success(`Usuário ${newStatus ? "ativado" : "desativado"} com sucesso!`);
       return true;
-    } catch (error) {
-      console.error("Erro ao atualizar status do usuário:", error);
+    } catch {
       toast.error("Erro ao atualizar status do usuário");
       return false;
     } finally {

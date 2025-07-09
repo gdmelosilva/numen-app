@@ -31,7 +31,6 @@ export function SmartbuildTableRowActions<TData extends Contract>({
     }
   }
   const handleCloseProject = async () => {
-    // TODO: Implement API call to close/end the project
     toast.info("Funcionalidade de encerrar projeto ainda não implementada.");
   }
   return (

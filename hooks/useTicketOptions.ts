@@ -36,8 +36,6 @@ export function useTicketOptions({
     if (partnerId) {
       url += `&partner_id=${partnerId}`;
     }
-    
-    console.log('Buscando tickets com URL:', url);
 
     fetch(url)
       .then(res => {
@@ -47,24 +45,18 @@ export function useTicketOptions({
         return res.json();
       })
       .then(data => {
-        console.log('Dados recebidos da API smartcare:', data);
-        
-        // A API retorna um array diretamente, não um objeto com propriedade data
         const ticketList = Array.isArray(data) ? data : [];
-        console.log('Lista de tickets:', ticketList);
         
         // Filtrar apenas tickets que não estão cancelados (podem receber apontamentos)
         // status_id: 1=Aberto, 2=Em Andamento, 3=Fechado, 4=Cancelado
         const availableTickets = ticketList.filter((ticket: TicketOption) => 
           ticket.status_id !== 4
         );
-        console.log('Tickets disponíveis após filtro:', availableTickets);
         
         setTickets(availableTickets);
         setLoading(false);
       })
-      .catch(err => {
-        console.error('Erro ao buscar tickets:', err);
+      .catch(() => {
         setError("Erro ao buscar tickets disponíveis");
         setTickets([]);
         setLoading(false);

@@ -33,7 +33,6 @@ export const useUsersForFilter = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar usuários';
       setError(errorMessage);
-      console.error('Error fetching users:', err);
     } finally {
       setLoading(false);
     }

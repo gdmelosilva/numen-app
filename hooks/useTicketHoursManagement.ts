@@ -119,8 +119,6 @@ export function useTicketHoursManagement() {
           ? `${row.appoint_date}|${row.is_approved}` 
           : `${row.appoint_date}|${row.is_approved}|${row.user_id || 'unknown'}`;
         
-        console.log('Processando row:', row, 'Key:', key);
-        
         if (!grouped[key]) {
           grouped[key] = {
             id: key,
@@ -154,11 +152,9 @@ export function useTicketHoursManagement() {
       });
       
       const finalData = Object.values(grouped);
-      console.log('Dados agrupados finais:', finalData);
       
       setData(finalData);
-    } catch (error) {
-      console.error("Erro ao carregar ticket hours:", error);
+    } catch {
       setData([]);
     } finally {
       setLoading(false);

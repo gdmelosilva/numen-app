@@ -8,7 +8,6 @@ export async function getTicketModules() {
     .from('ticket_modules')
     .select('id, name');
   if (error) {
-    console.error('Error fetching ticket_modules:', error);
     return [];
   }
   return data || [];

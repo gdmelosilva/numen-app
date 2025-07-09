@@ -10,7 +10,6 @@ export async function getRoleOptions(): Promise<Role[]> {
     .select('*');
 
   if (error) {
-    console.error('Error fetching roles:', error);
     return [];
   }
   
@@ -37,7 +36,7 @@ export async function getMarketSegments(): Promise<MarketingInterface[] | null> 
     .select('*')
     
     if (error) {
-      console.error('Error fetching marketing_segments');
+      return [];
     }
 
     return data || [];
@@ -51,7 +50,6 @@ export async function getCategoryOptions(ams: boolean = false): Promise<{ id: st
     .eq('is_ams', ams);
 
   if (error) {
-    console.error('Error fetching categories:', error);
     return [];
   }
   return data ?? [];
@@ -66,7 +64,6 @@ export async function getPriorityOptions(): Promise<{
     .select('*');
 
   if (error) {
-    console.error('Error fetching priorities:', error);
     return [];
   }
   return data ?? [];
@@ -81,7 +78,6 @@ export async function getModuleOptions(): Promise<{
     .select('*');
 
   if (error) {
-    console.error('Error fetching modules:', error);
     return [];
   }
   return data ?? [];

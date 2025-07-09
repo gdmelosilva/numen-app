@@ -36,8 +36,7 @@ async function fetchTicketsEstimatedHours(tickets: Ticket[], userIsClient: boole
         }
         
         return { ticketId, hours: totalHours };
-      } catch (error) {
-        console.error(`Erro ao buscar horas do ticket ${ticketId}:`, error);
+      } catch {
         return { ticketId, hours: 0 };
       }
     });
@@ -47,8 +46,8 @@ async function fetchTicketsEstimatedHours(tickets: Ticket[], userIsClient: boole
       estimatedHours[ticketId] = hours;
     });
     
-  } catch (error) {
-    console.error('Erro ao buscar horas estimadas:', error);
+  } catch {
+    // Silently handle errors
   }
   
   return estimatedHours;

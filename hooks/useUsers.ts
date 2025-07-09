@@ -27,7 +27,6 @@ export const useCreateUser = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao criar cargo';
       setError(errorMessage);
-      console.error('Error creating role:', err);
       return null;
     } finally {
       setIsLoading(false);

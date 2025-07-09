@@ -33,7 +33,6 @@ export function UpdatePasswordForm({
       const { error } = await supabase.auth.getSession();
       if (error) {
         setError("Link inválido ou expirado");
-        console.error("Auth error:", error);
       }
     };
 
