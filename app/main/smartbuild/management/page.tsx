@@ -29,6 +29,7 @@ interface TicketFilters {
 export default function SmartbuildManagementPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, loading: userLoading } = useCurrentUser();
   const [filters, setFilters] = useState<TicketFilters>({
@@ -115,12 +116,21 @@ export default function SmartbuildManagementPage() {
     setFilters(cleared);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (tickets.length === 0) {
       alert("Não há dados para exportar");
       return;
     }
-    exportActivitiesToExcel(tickets, "atividades_smartbuild");
+    
+    setExportLoading(true);
+    try {
+      await exportActivitiesToExcel(tickets, "atividades_smartbuild", user?.is_client || false);
+    } catch (error) {
+      console.error("Erro ao exportar:", error);
+      alert("Erro ao exportar dados. Tente novamente.");
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   return (
@@ -131,10 +141,19 @@ export default function SmartbuildManagementPage() {
           <Button
             variant="outline"
             onClick={handleExport}
-            disabled={loading || tickets.length === 0}
+            disabled={loading || tickets.length === 0 || exportLoading}
           >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar Excel
+            {exportLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Exportando...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Excel
+              </>
+            )}
           </Button>
           <Button
             variant="colored2"

@@ -7,6 +7,7 @@ import { TimesheetSidebar } from '@/components/TimesheetSidebar'
 import { useTicketHoursManagement } from '@/hooks/useTicketHoursManagement'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getColumns } from './columns'
+import { exportTimesheetReport } from '@/lib/export-file'
 
 const TimeSheetManagementPage = () => {
 	const { data, loading, fetchTicketHours } = useTicketHoursManagement()
@@ -16,17 +17,28 @@ const TimeSheetManagementPage = () => {
 	const [year, setYear] = useState(today.getFullYear())
 	const [month, setMonth] = useState(today.getMonth())
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+	const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
 	// Busca automática ao trocar mês/ano
 	useEffect(() => {
-		fetchTicketHours(year, month)
-	}, [year, month, fetchTicketHours])
+		fetchTicketHours(year, month, selectedUserId)
+	}, [year, month, selectedUserId, fetchTicketHours])
 
 	const handleYearChange = (y: number) => setYear(y)
 	const handleMonthChange = (m: number) => setMonth(m)
 	const handleAccept = () => {/* ação de aceite */}
-	const handleFilter = () => {/* ação de filtro */}
-	const handleReprocess = () => {/* ação de reprocessamento */}
+	const handleFilter = (userId: string | null) => {
+		setSelectedUserId(userId)
+	}
+	const handleDownloadReport = () => {
+		// Gerar nome do arquivo com data atual
+		const now = new Date()
+		const dateStr = now.toISOString().split('T')[0]
+		const filename = `relatorio-horas-${dateStr}`
+		
+		// Exportar relatório
+		exportTimesheetReport(data, filename, selectedUserId)
+	}
 
 	const lastUpdate = `${today.toLocaleDateString()} | ${today.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
 
@@ -72,6 +84,20 @@ const TimeSheetManagementPage = () => {
 		return new Date(year, month - 1, day);
 	};
 
+	// Função para converter data UTC para horário local brasileiro
+	const parseUTCTimeAsLocal = (utcTimeString: string | undefined) => {
+		if (!utcTimeString) return '-';
+		
+		// Remove o fuso horário da string para tratar como local
+		const localTimeString = utcTimeString.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
+		const date = new Date(localTimeString);
+		
+		// Verifica se a data é válida
+		if (isNaN(date.getTime())) return '-';
+		
+		return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+	};
+
 	// Converte os dados do hook para o formato esperado pelas colunas e ordena por data
 	const tableData = data
 		.sort((a, b) => parseUTCDateAsLocal(a.appoint_date).getTime() - parseUTCDateAsLocal(b.appoint_date).getTime())
@@ -93,9 +119,13 @@ const TimeSheetManagementPage = () => {
 				project: child.project,
 				// Campos extras para TicketHour (se necessário)
 				minutes: child.total_minutes,
-				ticket_id: child.id,
-				appoint_start: child.appoint_start ? new Date(child.appoint_start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-',
-				appoint_end: child.appoint_end ? new Date(child.appoint_end).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'
+				ticket_id: child.ticket_id,
+				project_id: child.project_id,
+				ticket_title: child.ticket_title,
+				ticket_type_id: child.ticket_type_id,
+				ticket_external_id: child.ticket_external_id,
+				appoint_start: parseUTCTimeAsLocal(child.appoint_start),
+				appoint_end: parseUTCTimeAsLocal(child.appoint_end)
 			}))
 		}));
 
@@ -116,12 +146,14 @@ const TimeSheetManagementPage = () => {
                         onMonthChange={handleMonthChange}
                         onAccept={handleAccept}
                         onFilter={handleFilter}
-                        onReprocess={handleReprocess}
+                        onDownloadReport={handleDownloadReport}
                         lastUpdate={lastUpdate}
                         estimatedHours={estimatedHours}
                         launchedDays={launchedDays}
                         workedHours={workedHours}
                         statusHours={statusHours}
+                        selectedUserId={selectedUserId}
+                        showUserFilter={Boolean(user && !user.is_client && user.role === 1)}
                     />
                 </div>
                 <div className="w-full max-w-full">
@@ -131,7 +163,12 @@ const TimeSheetManagementPage = () => {
                         meta={{ 
                             expanded, 
                             setExpanded,
-                            showUserInChildren: Boolean(user && !user.is_client && (user.role === 1 || user.role === 2))
+                            showUserInChildren: Boolean(user && !user.is_client && user.role === 1),
+                            user: user ? {
+                                id: user.id,
+                                role: user.role,
+                                is_client: user.is_client
+                            } : undefined
                         }}
                     />
                     {loading && <div className="text-center mt-4">Carregando...</div>}

@@ -12,8 +12,16 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { useTicketModules } from '@/hooks/useTicketModules';
 import { ColoredBadge } from '@/components/ui/colored-badge';
 
+// Tipo estendido para usuários do projeto
+type ProjectUser = User & {
+    is_suspended?: boolean;
+    user_functional?: string;
+    project_resource_id?: number;
+    horas_consumidas?: number;
+};
+
 export default function ProjectUsersTab({ projectId, isClosed }: { projectId: string; isClosed?: boolean }) {
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<ProjectUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showDialog, setShowDialog] = useState(false);
@@ -34,7 +42,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
         fetch(`/api/smartbuild/users?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar usuários'))
             .then(async (data) => {
-                const usersData: User[] = Array.isArray(data) ? data : data?.data || [];
+                const usersData: ProjectUser[] = Array.isArray(data) ? data : data?.data || [];
                 const resLinks = await fetch(`/api/project-resources?project_id=${projectId}`);
                 type ProjectResourceLink = { user_id: string; is_suspended: boolean };
                 const links: ProjectResourceLink[] = await resLinks.json();
@@ -111,7 +119,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     };
 
     // Preenche horas consumidas para cada usuário
-    const [usersWithHours, setUsersWithHours] = useState<(User & { horas_consumidas: number })[]>([]);
+    const [usersWithHours, setUsersWithHours] = useState<ProjectUser[]>([]);
     useEffect(() => {
         if (!users.length) return;
         let isMounted = true;
@@ -123,7 +131,10 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                 const totalMinutes = data.reduce((sum, item) => sum + (item.minutes || 0), 0);
                 horas_consumidas = +(totalMinutes / 60).toFixed(2);
             }
-            return { ...u, horas_consumidas };
+            return { 
+                ...u, 
+                horas_consumidas
+            };
         })).then(arr => { if (isMounted) setUsersWithHours(arr); });
         return () => { isMounted = false; };
     }, [users, projectId]);

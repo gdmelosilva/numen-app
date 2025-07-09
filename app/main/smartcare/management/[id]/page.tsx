@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 // import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File } from "lucide-react";
+import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File, Edit3 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import MessageForm from "@/components/message-form";
@@ -72,6 +72,15 @@ export default function TicketDetailsPage() {
   const [resourceError, setResourceError] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState("");
   const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
+  
+  // Estados para gerenciar a data de encerramento estimada
+  const [showDateDialog, setShowDateDialog] = useState(false);
+  const [plannedEndDate, setPlannedEndDate] = useState<string>("");
+  const [updatingDate, setUpdatingDate] = useState(false);
+  
+  // Estado para horas estimadas
+  const [estimatedHours, setEstimatedHours] = useState<number>(0);
+  const [loadingEstimatedHours, setLoadingEstimatedHours] = useState(false);
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
@@ -85,30 +94,39 @@ export default function TicketDetailsPage() {
     user: (() => {
       // 1. user
       if (typeof msg.user === 'object' && msg.user !== null) {
-        const u = msg.user as { name?: string; first_name?: string; last_name?: string };
+        const u = msg.user as { name?: string; first_name?: string; last_name?: string; is_client?: boolean };
         if (u.first_name || u.last_name) {
-          return { name: `${u.first_name || ''} ${u.last_name || ''}`.trim() };
+          return { 
+            name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
+            is_client: u.is_client
+          };
         }
-        if (u.name) return { name: u.name };
+        if (u.name) return { name: u.name, is_client: u.is_client };
       }
       // 2. created_by_user
       if (typeof msg.created_by_user === 'object' && msg.created_by_user !== null) {
-        const u = msg.created_by_user as { name?: string; first_name?: string; last_name?: string };
+        const u = msg.created_by_user as { name?: string; first_name?: string; last_name?: string; is_client?: boolean };
         if (u.first_name || u.last_name) {
-          return { name: `${u.first_name || ''} ${u.last_name || ''}`.trim() };
+          return { 
+            name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
+            is_client: u.is_client
+          };
         }
-        if (u.name) return { name: u.name };
+        if (u.name) return { name: u.name, is_client: u.is_client };
       }
       // 3. created_by (objeto ou string)
       if (typeof msg.created_by === 'object' && msg.created_by !== null) {
-        const u = msg.created_by as { name?: string; first_name?: string; last_name?: string };
+        const u = msg.created_by as { name?: string; first_name?: string; last_name?: string; is_client?: boolean };
         if (u.first_name || u.last_name) {
-          return { name: `${u.first_name || ''} ${u.last_name || ''}`.trim() };
+          return { 
+            name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
+            is_client: u.is_client
+          };
         }
-        if (u.name) return { name: u.name };
+        if (u.name) return { name: u.name, is_client: u.is_client };
         // fallback: se tiver email
         if ('email' in u && typeof (u as { email?: string }).email === 'string' && (u as { email?: string }).email) {
-          return { name: (u as { email?: string }).email! };
+          return { name: (u as { email?: string }).email!, is_client: u.is_client };
         }
       }
       if (typeof msg.created_by === 'string') return { name: msg.created_by };
@@ -136,8 +154,13 @@ export default function TicketDetailsPage() {
       const res = await fetch(`/api/messages?ticket_id=${ticket.id}`);
       if (!res.ok) throw new Error("Erro ao buscar mensagens");
       const msgs = await res.json();
-      setAllMessages(Array.isArray(msgs) ? msgs.map(mapMessageBackendToFrontend) : []);
+      const mappedMessages = Array.isArray(msgs) ? msgs.map(mapMessageBackendToFrontend) : [];
+      setAllMessages(mappedMessages);
       setMessagesLoaded(true);
+      
+      // Atualiza as horas estimadas quando as mensagens são atualizadas
+      // A função fetchEstimatedHours já considera a filtragem de mensagens privadas
+      await fetchEstimatedHours();
     } catch {
       setAllMessages([]);
     } finally {
@@ -156,6 +179,11 @@ export default function TicketDetailsPage() {
         const data = await response.json();
         const ticketData = Array.isArray(data) ? data[0] : data;
         setTicket(ticketData);
+        
+        // Inicializa a data de encerramento estimada se existir
+        if (ticketData.planned_end_date) {
+          setPlannedEndDate(ticketData.planned_end_date.split('T')[0]); // Formato YYYY-MM-DD
+        }
       } catch {
         setError("Erro ao buscar detalhes do chamado");
       } finally {
@@ -209,9 +237,50 @@ export default function TicketDetailsPage() {
     }
   }, [ticket?.project_id]);
 
+  // Função para buscar horas estimadas do ticket
+  const fetchEstimatedHours = useCallback(async () => {
+    if (!ticket?.id) return;
+    
+    setLoadingEstimatedHours(true);
+    try {
+      const response = await fetch(`/api/messages?ticket_id=${ticket.id}`);
+      if (!response.ok) throw new Error('Erro ao buscar horas estimadas');
+      
+      const messages = await response.json();
+      let totalHours = 0;
+      
+      if (Array.isArray(messages)) {
+        totalHours = messages.reduce((sum, msg) => {
+          // Para usuários clientes, só considerar mensagens não-privadas
+          if (currentUser?.is_client && msg.is_private) {
+            return sum;
+          }
+          
+          const hours = typeof msg.hours === 'number' ? msg.hours : 
+                       typeof msg.hours === 'string' ? parseFloat(msg.hours) : 0;
+          return sum + (isNaN(hours) ? 0 : hours);
+        }, 0);
+      }
+      
+      setEstimatedHours(totalHours);
+    } catch (error) {
+      console.error('Erro ao buscar horas estimadas:', error);
+      setEstimatedHours(0);
+    } finally {
+      setLoadingEstimatedHours(false);
+    }
+  }, [ticket?.id, currentUser?.is_client]);
+
   useEffect(() => {
     fetchResources();
   }, [fetchResources]);
+
+  // Buscar horas estimadas quando o ticket for carregado
+  useEffect(() => {
+    if (ticket?.id) {
+      fetchEstimatedHours();
+    }
+  }, [ticket?.id, fetchEstimatedHours]);
 
   // Paginação
   const goToPage = (page: number) => {
@@ -286,6 +355,41 @@ export default function TicketDetailsPage() {
   }
 
   const hideResourceActions = currentUser && (currentUser.is_client || (currentUser.role === 3 && !currentUser.is_client));
+
+  // Função para atualizar a data de encerramento estimada
+  const updatePlannedEndDate = async () => {
+    if (!ticket?.id || !plannedEndDate) return;
+    
+    setUpdatingDate(true);
+    try {
+      const response = await fetch(`/api/smartcare?id=${ticket.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planned_end_date: plannedEndDate
+        })
+      });
+      
+      if (!response.ok) throw new Error('Erro ao atualizar data');
+      
+      // Atualiza o ticket no estado local
+      setTicket(prev => prev ? { ...prev, planned_end_date: plannedEndDate } : null);
+      setShowDateDialog(false);
+      
+      // Força um novo fetch das mensagens se elas já foram carregadas
+      if (messagesLoaded) {
+        await refreshMessages();
+      }
+      
+      // Atualiza as horas estimadas também
+      await fetchEstimatedHours();
+    } catch (error) {
+      console.error('Erro ao atualizar data:', error);
+      alert('Erro ao atualizar data de encerramento estimada');
+    } finally {
+      setUpdatingDate(false);
+    }
+  };
 
   // Função para obter o nome do status pelo id
   function getStatusName(statusObj: unknown, statusId: string | number | undefined) {
@@ -375,6 +479,43 @@ export default function TicketDetailsPage() {
                   ? ticket.partner.partner_desc
                   : (typeof ticket.partner_id === 'string' || typeof ticket.partner_id === 'number' ? ticket.partner_id : '-')}</span>
               </div>
+              {/* Horas Estimadas - visível para todos os usuários */}
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Horas Estimadas</span>
+                <span>
+                  {loadingEstimatedHours ? (
+                    <div className="flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span className="text-xs text-muted-foreground">Calculando...</span>
+                    </div>
+                  ) : (
+                    `${estimatedHours > 0 ? estimatedHours.toFixed(1) : '0'}h`
+                  )}
+                </span>
+              </div>
+              {/* Data de Encerramento Estimada - só aparece para usuários não-clientes */}
+              {currentUser && !currentUser.is_client && (
+                <div className="flex flex-col">
+                  <span className="text-muted-foreground text-xs font-medium">Data de Encerramento Estimada</span>
+                  <div className="flex items-center gap-2">
+                    <span>
+                      {ticket.planned_end_date 
+                        ? new Date(ticket.planned_end_date).toLocaleDateString('pt-BR')
+                        : 'Não definida'
+                      }
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowDateDialog(true)}
+                      className="h-6 px-2 text-xs"
+                    >
+                      <Edit3 className="w-3 h-3 mr-1" />
+                      Alterar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             <Separator className="my-4 mb-4" />
             <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium mb-4">
@@ -518,6 +659,45 @@ export default function TicketDetailsPage() {
               </ul>
             )}
           </div>
+          
+          {/* Dialog para editar data de encerramento estimada */}
+          <Dialog open={showDateDialog} onOpenChange={setShowDateDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Alterar Data de Encerramento Estimada</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Data de Encerramento Estimada</label>
+                  <Input
+                    type="date"
+                    value={plannedEndDate}
+                    onChange={(e) => setPlannedEndDate(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowDateDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={updatePlannedEndDate}
+                  disabled={updatingDate}
+                >
+                  {updatingDate ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
           {/* Dialog para vincular recurso */}
           <Dialog open={showResourceDialog} onOpenChange={setShowResourceDialog}>
             <DialogContent className="max-w-lg">

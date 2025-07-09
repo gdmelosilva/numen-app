@@ -28,6 +28,8 @@ export type TicketHour = {
   minutes: number;
   is_approved: boolean;
   ticket_id?: string;
+  project_id?: string;
+  ticket_title?: string;
   appoint_start?: string;
   appoint_end?: string;
   user_name?: string;
@@ -152,8 +154,8 @@ export const getChildColumns = (user: AuthenticatedUser | null): ColumnDef<Ticke
     }
   ];
 
-  // Adicionar coluna de usuário apenas para admin (role 1) e manager (role 2) não-clientes
-  if (user && !user.is_client && (user.role === 1 || user.role === 2)) {
+  // Adicionar coluna de usuário apenas para administradores (role 1) não-clientes
+  if (user && !user.is_client && user.role === 1) {
     childColumns.push({
       accessorKey: "user_name",
       header: ({ column }) => (

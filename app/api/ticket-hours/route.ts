@@ -133,7 +133,12 @@ export async function GET(req: NextRequest) {
     const month = searchParams.get("month");
     // Permite busca flexível: por message_id, user_id, project_id, ou todos
     let query = supabase.from("ticket_hours")
-      .select("*, project:project_id(projectName, projectDesc)");
+      .select(`
+        *, 
+        project:project_id(projectName, projectDesc),
+        user:user_id(first_name, last_name),
+        ticket:ticket_id(title, type_id, external_id)
+      `);
     if (message_id) query = query.eq("message_id", message_id);
     if (user_id) query = query.eq("user_id", user_id);
     if (project_id) query = query.eq("project_id", project_id);

@@ -60,7 +60,7 @@ export default function TicketDetailsPage() {
     msgHours: typeof msg.hours === 'number' || typeof msg.hours === 'string' ? msg.hours : undefined,
     msgBody: typeof msg.body === 'string' ? msg.body : '',
     createdAt: typeof msg.created_at === 'string' ? msg.created_at : '',
-    user: typeof msg.user === 'object' && msg.user !== null ? (msg.user as { name?: string }) : { name: '' },
+    user: typeof msg.user === 'object' && msg.user !== null ? (msg.user as { name?: string; is_client?: boolean }) : { name: '' },
     attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
     is_system: Boolean(msg.is_system), // Mapeia is_system
     msg_ref: typeof msg.msg_ref === 'string' ? msg.msg_ref : undefined,

@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     const users = (data || []).map((row) => ({
       ...row.user,
       is_suspended: row.is_suspended,
-      max_hours: row.max_hours,
+      hours_max: row.max_hours,
       user_functional: row.user_functional,
       project_resource_id: row.id
     }));

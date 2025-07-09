@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
+import { UserFilterDialog } from '@/components/UserFilterDialog'
 
 interface TimesheetSidebarProps {
   year: number;
@@ -10,13 +11,15 @@ interface TimesheetSidebarProps {
   onYearChange: (year: number) => void;
   onMonthChange: (month: number) => void;
   onAccept: () => void;
-  onFilter: () => void;
-  onReprocess: () => void;
+  onFilter: (userId: string | null) => void;
+  onDownloadReport: () => void;
   lastUpdate: string;
   estimatedHours: number;
   launchedDays: number;
   workedHours: string;
   statusHours: string;
+  selectedUserId?: string | null;
+  showUserFilter?: boolean;
 }
 
 const months = [
@@ -29,24 +32,37 @@ export const TimesheetSidebar: React.FC<TimesheetSidebarProps> = ({
   month,
   onYearChange,
   onMonthChange,
-  onAccept,
   onFilter,
-  onReprocess,
+  onDownloadReport,
   lastUpdate,
   estimatedHours,
   launchedDays,
   workedHours,
   statusHours,
+  selectedUserId,
+  showUserFilter = false,
 }) => {
   return (
     <aside className="w-80 p-4 flex flex-col gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-xl shadow border-0">
       <div className="flex items-center gap-2 mb-2">
-        <Button variant="outline" onClick={onReprocess}>
+        <Button variant="outline" onClick={onDownloadReport}>
           Baixar Relatório de Horas
         </Button>
-        <Button variant="outline" onClick={onFilter}>
-          Filtrar
-        </Button>
+        {showUserFilter ? (
+          <UserFilterDialog
+            onApplyFilter={onFilter}
+            selectedUserId={selectedUserId || null}
+            trigger={
+              <Button variant="outline">
+                Filtrar
+              </Button>
+            }
+          />
+        ) : (
+          <Button variant="outline" onClick={() => onFilter(null)}>
+            Filtrar
+          </Button>
+        )}
       </div>
       <Card className="p-3 flex flex-col items-center min-h-[200px]">
         <div className="flex items-center justify-between w-full mb-2">
@@ -90,9 +106,9 @@ export const TimesheetSidebar: React.FC<TimesheetSidebarProps> = ({
           <span className="font-bold">{statusHours}</span>
         </div>
       </CardContent>
-        <Button className="flex-1 max-h-14" onClick={onAccept}>
+        {/* <Button className="flex-1 max-h-14" onClick={onAccept}>
           Aceite de Fechamento
-        </Button>
+        </Button> */}
       {/* <Button variant="link" className="mt-2 text-xs text-center" style={{padding:0}}>
         Ver Resumo Semanal
       </Button> */}

@@ -34,6 +34,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
   const [ticketHourData, setTicketHourData] = useState<TicketHourData | null>(null);
   const [statusList, setStatusList] = useState<StatusOption[]>(statusOptions);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [estimatedHours, setEstimatedHours] = useState<number | "">("");
 
   // Verificar se é usuário funcional ou cliente - ocultar status e apontamento de horas
   const isFunctionalOrClient = user?.is_client === true;// Hooks de validação
@@ -67,6 +68,12 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
       return;
     }
 
+    // Validar estimativa de horas se tipo for "Especificação"
+    if (selectedFiles.length > 0 && attachmentType === "Especificação" && (!estimatedHours || estimatedHours <= 0)) {
+      toast.error("Informe a estimativa de horas para especificações");
+      return;
+    }
+
     // Determina o status_id a ser enviado
     let statusIdToSend: number | null = null;
     const ticketStatusId = ticket.status_id !== undefined && ticket.status_id !== null ? String(ticket.status_id) : "";
@@ -82,15 +89,29 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
       const currentTicketStatusId = ticket.status_id !== undefined && ticket.status_id !== null ? Number(ticket.status_id) : null;
       const willUpdateStatus = statusIdToSend !== null && statusIdToSend !== currentTicketStatusId;
 
+      // Preparar dados da mensagem
+      const messageData: {
+        body: string;
+        is_private: boolean;
+        status_id: number | null;
+        ticket_id: string;
+        hours?: number;
+      } = {
+        body: newMessage,
+        is_private: isPrivate,
+        status_id: statusIdToSend,
+        ticket_id: ticket.id,
+      };
+
+      // Adicionar horas estimadas se for especificação
+      if (attachmentType === "Especificação" && estimatedHours && estimatedHours > 0) {
+        messageData.hours = Number(estimatedHours);
+      }
+
       const res = await fetch(`/api/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          body: newMessage,
-          is_private: isPrivate,
-          status_id: statusIdToSend,
-          ticket_id: ticket.id,
-        }),
+        body: JSON.stringify(messageData),
       });
       
       if (!res.ok) {
@@ -164,6 +185,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
       setAttachmentType("");
       setSelectedStatus("");
       setTicketHourData(null);
+      setEstimatedHours("");
       toast.success("Mensagem enviada com sucesso!");
       await onMessageSent();
     } catch (e: unknown) {
@@ -343,7 +365,13 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
               </label>
               <Select
                 value={attachmentType}
-                onValueChange={setAttachmentType}
+                onValueChange={(value) => {
+                  setAttachmentType(value);
+                  // Limpar estimativa de horas se não for especificação
+                  if (value !== "Especificação") {
+                    setEstimatedHours("");
+                  }
+                }}
                 disabled={sending || validationsLoading}
               >
                 <SelectTrigger className="w-60" id="attachment_type">
@@ -358,12 +386,40 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
               </Select>
             </div>
           )}
+          
+          {/* Campo de Estimativa de Horas - só aparece quando tipo é "Especificação" */}
+          {selectedFiles.length > 0 && attachmentType === "Especificação" && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="estimated_hours" className="text-sm font-medium whitespace-nowrap">
+                Estimativa de Horas <span className="text-destructive">*</span>
+              </label>
+              <Input
+                id="estimated_hours"
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="Ex: 2.5"
+                value={estimatedHours}
+                onChange={(e) => setEstimatedHours(e.target.value === "" ? "" : Number(e.target.value))}
+                className="w-32"
+                disabled={sending || validationsLoading}
+              />
+              <span className="text-xs text-muted-foreground">horas</span>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
           <Button 
             onClick={handleSend} 
-            disabled={!newMessage.trim() || sending || !canSend || validationsLoading}
+            disabled={
+              !newMessage.trim() || 
+              sending || 
+              !canSend || 
+              validationsLoading ||
+              (selectedFiles.length > 0 && !attachmentType) ||
+              (selectedFiles.length > 0 && attachmentType === "Especificação" && (!estimatedHours || estimatedHours <= 0))
+            }
             className={(!canSend && !validationsLoading) ? "opacity-50 cursor-not-allowed" : ""}
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}

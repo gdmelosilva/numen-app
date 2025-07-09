@@ -220,3 +220,41 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json(tickets);
 }
+
+// PUT method to update ticket
+export async function PUT(req: NextRequest) {
+  const supabase = await createClient();
+  const { searchParams } = new URL(req.url);
+  const ticketId = searchParams.get("id");
+  
+  if (!ticketId) {
+    return NextResponse.json({ error: "Ticket ID is required" }, { status: 400 });
+  }
+
+  try {
+    const body = await req.json();
+    const { planned_end_date } = body;
+
+    if (!planned_end_date) {
+      return NextResponse.json({ error: "planned_end_date is required" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("ticket")
+      .update({ 
+        planned_end_date: planned_end_date,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", ticketId)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+}

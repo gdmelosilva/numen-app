@@ -11,9 +11,20 @@ export interface TicketHour {
   appoint_end?: string;
   user_id?: string;
   user_name?: string;
+  project_id?: string;
+  ticket_title?: string;
+  user?: {
+    first_name: string;
+    last_name: string;
+  };
   project?: {
     projectName: string;
     projectDesc: string;
+  };
+  ticket?: {
+    title: string;
+    type_id: number;
+    external_id: string;
   };
 }
 
@@ -30,9 +41,13 @@ export interface TimesheetRow {
   children?: TimesheetRow[];
   // Campos adicionais para TicketHour
   ticket_id?: string;
+  project_id?: string;
   appoint_start?: string;
   appoint_end?: string;
   user_id?: string;
+  ticket_title?: string;
+  ticket_type_id?: number;
+  ticket_external_id?: string;
 }
 
 export function useTicketHoursManagement() {
@@ -40,7 +55,7 @@ export function useTicketHoursManagement() {
   const [loading, setLoading] = useState(false);
   const { user, loading: userLoading } = useCurrentUser();
 
-  const fetchTicketHours = useCallback(async (year?: number, month?: number) => {
+  const fetchTicketHours = useCallback(async (year?: number, month?: number, filterUserId?: string | null) => {
     if (userLoading || !user) return;
     setLoading(true);
     try {
@@ -67,6 +82,11 @@ export function useTicketHoursManagement() {
         }
       }
 
+      // Filtro por usuário (apenas para administradores)
+      if (filterUserId && !user.is_client && user.role === 1) {
+        params.append("user_id", filterUserId);
+      }
+
       if (year !== undefined && month !== undefined) {
         params.append("year", String(year));
         params.append("month", String(month + 1));
@@ -80,15 +100,21 @@ export function useTicketHoursManagement() {
       }
       const rows: TicketHour[] = await response.json();
       
-      console.log('Dados brutos da API:', rows);
-      console.log('URL da API:', apiUrl);
+      // Processa os dados da API para incluir user_name e ticket_title
+      const processedRows = rows.map(row => ({
+        ...row,
+        user_name: row.user ? `${row.user.first_name} ${row.user.last_name}` : undefined,
+        ticket_title: row.ticket ? row.ticket.title : undefined,
+        ticket_type_id: row.ticket ? row.ticket.type_id : undefined,
+        ticket_external_id: row.ticket ? row.ticket.external_id : undefined
+      }));
       
       // Agrupa por appoint_date e is_approved (e por usuário se necessário)
       const grouped: Record<string, TimesheetRow> = {};
-      rows.forEach((row) => {
+      processedRows.forEach((row) => {
         // Para clientes, agrupar tudo junto (unificado)
         // Para outros usuários, agrupar por data/status/usuário
-        const shouldShowUser = !user.is_client && (user.role === 1 || user.role === 2);
+        const shouldShowUser = !user.is_client && user.role === 1;
         const key = user.is_client 
           ? `${row.appoint_date}|${row.is_approved}` 
           : `${row.appoint_date}|${row.is_approved}|${row.user_id || 'unknown'}`;
@@ -113,13 +139,17 @@ export function useTicketHoursManagement() {
           appoint_date: row.appoint_date,
           total_minutes: row.minutes,
           is_approved: row.is_approved,
-          user_name: shouldShowUser ? row.user_name : undefined,
+          user_name: row.user_name, // Sempre incluir user_name nos children
           project: row.project ?? { projectName: '', projectDesc: '' },
           children: undefined,
           ticket_id: row.ticket_id,
+          project_id: row.project_id,
+          ticket_title: row.ticket_title, // Incluir ticket_title nos children
+          ticket_type_id: row.ticket_type_id, // Incluir ticket_type_id nos children
+          ticket_external_id: row.ticket_external_id, // Incluir ticket_external_id nos children
           appoint_start: row.appoint_start,
           appoint_end: row.appoint_end,
-          user_id: shouldShowUser ? row.user_id : undefined,
+          user_id: row.user_id, // Sempre incluir user_id nos children
         });
       });
       

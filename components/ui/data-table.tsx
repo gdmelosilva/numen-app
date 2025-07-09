@@ -15,6 +15,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 // import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface DataTableProps<TData extends { id?: number|string }, TValue> {
@@ -23,6 +24,11 @@ interface DataTableProps<TData extends { id?: number|string }, TValue> {
   meta?: Record<string, unknown> & {
     childTable?: (children: TData[]) => React.ReactNode
     showUserInChildren?: boolean
+    user?: {
+      id: string
+      role: number
+      is_client: boolean
+    }
   }
   onSelectionChange?: (ids: (number|string)[]) => void
   onRowClick?: (row: TData) => void
@@ -34,6 +40,9 @@ export function DataTable<
     children?: TData[]
     project?: { projectName?: string }
     ticket_id?: string | number
+    ticket_title?: string
+    ticket_type_id?: number
+    ticket_external_id?: string
     minutes?: number
     appoint_start?: string
     appoint_end?: string
@@ -131,19 +140,54 @@ export function DataTable<
                     <TableCell />
                     <TableCell colSpan={columns.length - 1} className="py-2">
                       <div className="space-y-2">
-                        {row.original.children.map((child) => (
-                          <div key={child.id} className="flex flex-col md:flex-row md:gap-8 text-xs md:text-sm border-l-2 border-muted pl-4">
-                            <span><b>Projeto:</b> {child.project?.projectName || '-'}</span>
-                            <span><b>Ticket:</b> {child.ticket_id || '-'}</span>
-                            <span><b>Horas:</b> {((child.minutes || 0) / 60).toFixed(2)}h</span>
-                            <span><b>Início:</b> {child.appoint_start || '-'}</span>
-                            <span><b>Fim:</b> {child.appoint_end || '-'}</span>
-                            {/* Mostrar usuário apenas para admin (role 1) e manager (role 2) não-clientes */}
-                            {meta?.showUserInChildren && 'user_name' in child && child.user_name ? (
-                              <span><b>Usuário:</b> {String(child.user_name)}</span>
-                            ) : null}
-                          </div>
-                        ))}
+                        {row.original.children.map((child) => {
+                          // Função para renderizar o título do ticket como link para administradores
+                          const renderTicketTitle = (ticketId: string, projectId: string, ticketTitle: string, ticketTypeId: number, ticketExternalId: string) => {
+                            // Apenas administradores (role 1) não-clientes podem ver o link
+                            if (meta?.user && !meta.user.is_client && meta.user.role === 1) {
+                              let ticketLink: string;
+                              
+                              // Tipo 1 = smartcare, Tipo 2 = smartbuild
+                              if (ticketTypeId === 1) {
+                                ticketLink = `/main/smartcare/management/${ticketExternalId}`;
+                              } else if (ticketTypeId === 2) {
+                                ticketLink = `/main/smartbuild/${projectId}/${ticketId}`;
+                              } else {
+                                // Default para smartbuild se tipo não reconhecido
+                                ticketLink = `/main/smartbuild/${projectId}/${ticketId}`;
+                              }
+                              
+                              return (
+                                <Link 
+                                  href={ticketLink}
+                                  className="text-blue-600 hover:text-blue-800 underline"
+                                >
+                                  {ticketTitle}
+                                </Link>
+                              );
+                            }
+                            return ticketTitle;
+                          };
+
+                          const childData = child as { ticket_id?: string; project_id?: string; ticket_type_id?: number; ticket_external_id?: string };
+                          return (
+                            <div key={child.id} className="flex flex-col md:flex-row md:gap-8 text-xs md:text-sm border-l-2 border-muted pl-4">
+                              <span><b>Projeto:</b> {child.project?.projectName || '-'}</span>
+                              <span><b>Ticket:</b> {
+                                childData.ticket_id && childData.project_id && child.ticket_title && childData.ticket_type_id && childData.ticket_external_id
+                                  ? renderTicketTitle(String(childData.ticket_id), String(childData.project_id), String(child.ticket_title), childData.ticket_type_id, String(childData.ticket_external_id))
+                                  : (child.ticket_title || '-')
+                              }</span>
+                              <span><b>Horas:</b> {((child.minutes || 0) / 60).toFixed(2)}h</span>
+                              <span><b>Início:</b> {child.appoint_start || '-'}</span>
+                              <span><b>Fim:</b> {child.appoint_end || '-'}</span>
+                              {/* Mostrar usuário apenas para administradores (role 1) não-clientes */}
+                              {meta?.showUserInChildren && 'user_name' in child && child.user_name ? (
+                                <span><b>Usuário:</b> {String(child.user_name)}</span>
+                              ) : null}
+                            </div>
+                          );
+                        })}
                       </div>
                     </TableCell>
                   </TableRow>

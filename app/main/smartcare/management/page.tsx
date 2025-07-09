@@ -46,6 +46,7 @@ export default function TicketManagementPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [resourceUsers, setResourceUsers] = useState<ResourceUser[]>([]);
   const [resourceUsersLoading, setResourceUsersLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
     external_id: "",
@@ -292,15 +293,23 @@ export default function TicketManagementPage() {
     fetchTickets(cleared);
   };
 
-  const handleExportToExcel = () => {
+  const handleExportToExcel = async () => {
     if (tickets.length === 0) {
       alert("Não há dados para exportar");
       return;
     }
     
-    const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `chamados_${timestamp}`;
-    exportTicketsToExcel(tickets, filename);
+    setExportLoading(true);
+    try {
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `chamados_${timestamp}`;
+      await exportTicketsToExcel(tickets, filename, user?.is_client || false);
+    } catch (error) {
+      console.error("Erro ao exportar:", error);
+      alert("Erro ao exportar dados. Tente novamente.");
+    } finally {
+      setExportLoading(false);
+    }
   };
   // Função para gerar resumo dos filtros ativos
   const getActiveFiltersSummary = () => {
@@ -343,11 +352,20 @@ export default function TicketManagementPage() {
           <Button
             variant="outline"
             onClick={handleExportToExcel}
-            disabled={loading || tickets.length === 0}
+            disabled={loading || tickets.length === 0 || exportLoading}
             aria-label="Exportar para Excel"
           >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar Excel
+            {exportLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Exportando...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Excel
+              </>
+            )}
           </Button>
           <Button variant="colored2" onClick={handleSearch} disabled={loading}>
             <Search className="mr-2 h-4 w-4" /> Buscar

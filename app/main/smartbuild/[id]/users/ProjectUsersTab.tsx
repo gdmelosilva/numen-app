@@ -12,8 +12,16 @@ import { Loader2 } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useTicketModules } from '@/hooks/useTicketModules';
 
+// Tipo estendido para usuários do projeto
+type ProjectUser = User & {
+    is_suspended?: boolean;
+    user_functional?: string;
+    project_resource_id?: number;
+    horas_consumidas?: number;
+};
+
 export default function ProjectUsersTab({ projectId, isClosed }: { projectId: string; isClosed?: boolean }) {
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<ProjectUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showDialog, setShowDialog] = useState(false);
@@ -31,11 +39,11 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     useEffect(() => {
         setLoading(true);
         setError(null);
-        fetch(`/api/smartcare/users?project_id=${projectId}`)
+        fetch(`/api/smartbuild/users?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar usuários'))
             .then((data) => {
                 // Usa diretamente os dados retornados pela API
-                const usersData: User[] = Array.isArray(data) ? data : data?.data || [];
+                const usersData: ProjectUser[] = Array.isArray(data) ? data : data?.data || [];
                 setUsers(usersData);
             })
             .catch(err => setError(typeof err === 'string' ? err : 'Erro ao buscar usuários'))
@@ -87,10 +95,10 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
         setMaxHours('');
         setUserFunctional('');
         setLoading(true);
-        fetch(`/api/smartcare/users?project_id=${projectId}`)
+        fetch(`/api/smartbuild/users?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar usuários'))
             .then((data) => {
-                const usersData: User[] = Array.isArray(data) ? data : data?.data || [];
+                const usersData: ProjectUser[] = Array.isArray(data) ? data : data?.data || [];
                 setUsers(usersData);
             })
             .catch(err => setError(typeof err === 'string' ? err : 'Erro ao buscar usuários'))
@@ -98,7 +106,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     };
 
     // Preenche horas consumidas para cada usuário
-    const [usersWithHours, setUsersWithHours] = useState<(User & { horas_consumidas: number })[]>([]);
+    const [usersWithHours, setUsersWithHours] = useState<ProjectUser[]>([]);
     useEffect(() => {
         if (!users.length) return;
         let isMounted = true;
@@ -110,7 +118,10 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                 const totalMinutes = data.reduce((sum, item) => sum + (item.minutes || 0), 0);
                 horas_consumidas = +(totalMinutes / 60).toFixed(2);
             }
-            return { ...u, horas_consumidas };
+            return { 
+                ...u, 
+                horas_consumidas
+            };
         })).then(arr => { if (isMounted) setUsersWithHours(arr); });
         return () => { isMounted = false; };
     }, [users, projectId]);

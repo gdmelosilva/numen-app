@@ -47,7 +47,7 @@ export function MessageCard({ msg }: MessageCardProps) {
               variant="outline"
               className={`w-fit text-normal ${msg.user?.is_client ? 'bg-blue-600/25 text-white' : 'bg-orange-500/80 text-white'} `}
             >
-              {msg.user?.is_client ? "Parceiro" : "Numen"}
+              {msg.user?.is_client ? "Cliente" : "Numen"}
             </Badge>
           )}
         </div>
@@ -64,7 +64,7 @@ export function MessageCard({ msg }: MessageCardProps) {
           {msg.msgHours && (
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              Apontadas {msg.msgHours} hora(s)
+              Estimadas {msg.msgHours} hora(s)
             </div>
           )}
         </div>
