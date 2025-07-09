@@ -220,18 +220,18 @@ export function AppSidebar() {
       ],
     },
     { type: "separator" },
-    {
-      title: "TimeFlow - Faturamento",
-      url: "###",
-      icon: HandCoins,
-      isActive: true,
-      newTab: false,
-      items: [  
-        { title: "Relatório de Fechamentos", url: "/main/timeflow/management", newTab: false },
-        { title: "Fechamento de Período", url: "/main/timeflow/create", newTab: false },
-      ]
-    },
-    { type: "separator" },
+    // {
+    //   title: "TimeFlow - Faturamento",
+    //   url: "###",
+    //   icon: HandCoins,
+    //   isActive: true,
+    //   newTab: false,
+    //   items: [  
+    //     { title: "Relatório de Fechamentos", url: "/main/timeflow/management", newTab: false },
+    //     { title: "Fechamento de Período", url: "/main/timeflow/create", newTab: false },
+    //   ]
+    // },
+    // { type: "separator" },
     {
       title: "Utilitários",
       url: "/main/utils",
