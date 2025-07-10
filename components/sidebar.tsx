@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, SquareTerminal, WrenchIcon, ShieldUser, Blocks, ClockFading, HandCoins } from "lucide-react";
+import { ChevronLeft, ChevronRight, SquareTerminal, WrenchIcon, ShieldUser, Blocks, ClockFading, } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useUserContext } from "@/components/user-context";
