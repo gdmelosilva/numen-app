@@ -125,7 +125,7 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
       return (
         <TooltipProvider>
           <div className="flex items-center gap-2">
-            <Tooltip>
+            {/* <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="icon"
@@ -141,7 +141,7 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Ver mensagens do usuário (abre em nova aba)</TooltipContent>
-            </Tooltip>
+            </Tooltip> */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -185,7 +185,8 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
               </TooltipTrigger>
               <TooltipContent>Desvincular usuário do projeto</TooltipContent>
             </Tooltip>
-          </div>        </TooltipProvider>
+          </div>        
+          </TooltipProvider>
       );
     },
     enableSorting: false,

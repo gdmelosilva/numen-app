@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File } from "lucide-react";
+import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File, EyeOff, Lock } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import MessageForm from "@/components/message-form";
 import { MessageCard } from "@/components/message-card";
+import { useUserContext } from "@/components/user-context";
 
 export default function TicketDetailsPage() {
   const params = useParams();
@@ -22,6 +23,8 @@ export default function TicketDetailsPage() {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user: currentUser } = useUserContext();
+  
   // Mensagens e paginação
   type Message = {
     id: string;
@@ -40,6 +43,10 @@ export default function TicketDetailsPage() {
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const messagesPerPage = 6; // Altera para 6 mensagens por página
+  
+  // Estados para filtros de mensagens
+  const [hideSystemMessages, setHideSystemMessages] = useState(false);
+  const [hidePrivateMessages, setHidePrivateMessages] = useState(false);
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = React.useCallback((msg: Record<string, unknown>): Message => ({
@@ -110,6 +117,11 @@ export default function TicketDetailsPage() {
     if (ticket_id) fetchTicketAndMessages();
   }, [ticket_id, mapMessageBackendToFrontend]);
 
+  // Resetar página atual quando filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [hideSystemMessages, hidePrivateMessages]);
+
   // Paginação
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -132,12 +144,33 @@ export default function TicketDetailsPage() {
     if (!a.createdAt || !b.createdAt) return 0;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
-  // Paginação baseada nas mensagens ordenadas
-  const totalMessages = sortedMessages.length;
+  
+  // Aplica filtros baseados nos estados
+  const filteredMessages = sortedMessages.filter((message) => {
+    // Filtro para mensagens do sistema
+    if (hideSystemMessages && message.is_system) {
+      return false;
+    }
+    
+    // Filtro para mensagens privadas
+    if (hidePrivateMessages && message.msgPrivate) {
+      return false;
+    }
+    
+    // Usuários clientes não devem ver mensagens privadas (independente do filtro)
+    if (currentUser?.is_client && message.msgPrivate) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // Paginação baseada nas mensagens filtradas
+  const totalMessages = filteredMessages.length;
   const totalPages = Math.ceil(totalMessages / messagesPerPage);
   const startIndex = (currentPage - 1) * messagesPerPage;
   const endIndex = startIndex + messagesPerPage;
-  const currentMessages = sortedMessages.slice(startIndex, endIndex);
+  const currentMessages = filteredMessages.slice(startIndex, endIndex);
 
   if (loading) {
     return (
@@ -312,6 +345,39 @@ export default function TicketDetailsPage() {
         </TabsContent>
         <TabsContent value="messages">
           <div className="space-y-4">
+            {/* Botões de filtro - discretos no topo - só para usuários não-clientes */}
+            {currentUser && !currentUser.is_client && (
+              <div className="flex items-center justify-between gap-2 mb-4">
+                {/* Mostrar total de mensagens após filtros (se diferentes do total) */}
+                {allMessages.length !== filteredMessages.length && (
+                  <div className="text-xs text-muted-foreground">
+                    Mostrando {filteredMessages.length} de {allMessages.length} mensagens
+                  </div>
+                )}
+                <div className="flex items-center gap-2 ml-auto">
+                  <Button
+                    variant={hideSystemMessages ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setHideSystemMessages(!hideSystemMessages)}
+                    className="text-xs h-7 text-muted-foreground hover:text-foreground"
+                    title={hideSystemMessages ? "Mostrar mensagens do sistema" : "Ocultar mensagens do sistema"}
+                  >
+                    <EyeOff className="w-3 h-3 mr-1" />
+                    {hideSystemMessages ? "Mostrar Sistema" : "Ocultar Sistema"}
+                  </Button>
+                  <Button
+                    variant={hidePrivateMessages ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setHidePrivateMessages(!hidePrivateMessages)}
+                    className="text-xs h-7 text-muted-foreground hover:text-foreground"
+                    title={hidePrivateMessages ? "Mostrar mensagens privadas" : "Ocultar mensagens privadas"}
+                  >
+                    <Lock className="w-3 h-3 mr-1" />
+                    {hidePrivateMessages ? "Mostrar Privadas" : "Ocultar Privadas"}
+                  </Button>
+                </div>
+              </div>
+            )}
             {/* Controles de paginação - Topo */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">

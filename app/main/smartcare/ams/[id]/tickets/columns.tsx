@@ -20,10 +20,17 @@ interface StatusOption {
   cor?: string;
 }
 
-export function getTicketColumns({ priorities, types, statuses }: {
+interface ModuleOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export function getTicketColumns({ priorities, types, statuses, modules }: {
   priorities: { id: string | number; name: string }[];
   types: { id: string | number; name: string }[];
   statuses: StatusOption[];
+  modules?: ModuleOption[];
 }): ColumnDef<Ticket>[] {
   return [
     {
@@ -65,6 +72,14 @@ export function getTicketColumns({ priorities, types, statuses }: {
       cell: ({ row }) => {
         const type = row.original.type?.name ?? types.find(t => String(t.id) === String(row.original.type_id))?.name;
         return <ColoredBadge value={type} type="ticket_type" />;
+      },
+    },
+    {
+      accessorKey: "module_id",
+      header: "Módulo - Torre",
+      cell: ({ row }) => {
+        const ticketModule = modules?.find(m => String(m.id) === String(row.original.module_id));
+        return ticketModule ? ticketModule.name : "-";
       },
     },
     {

@@ -92,7 +92,7 @@ export default function ProjectTicketsTab({ projectId, partnerId }: ProjectTicke
             ) : !filteredTickets.length ? (
                 <div className="text-muted-foreground text-center py-8">Nenhum ticket encontrado para este projeto.</div>
             ) : (
-                <DataTable columns={getTicketColumns({ priorities, types: categories, statuses: [] })} data={filteredTickets} />
+                <DataTable columns={getTicketColumns({ priorities, types: categories, statuses: [], modules })} data={filteredTickets} />
             )}
         </>
     );
