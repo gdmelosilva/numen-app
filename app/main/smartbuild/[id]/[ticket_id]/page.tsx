@@ -430,7 +430,16 @@ export default function TicketDetailsPage() {
               <div className="text-muted-foreground text-center py-8">Nenhuma mensagem encontrada para este chamado.</div>
             )}
             {currentMessages.map((msg) => (
-              <MessageCard key={msg.id} msg={msg} />
+              <MessageCard 
+                key={msg.id} 
+                msg={msg} 
+                currentUser={currentUser ? {
+                  id: currentUser.id,
+                  is_client: currentUser.is_client,
+                  role: currentUser.role
+                } : undefined} 
+                onMessageUpdated={refreshMessages} 
+              />
             ))}
             {/* Controles de paginação - Bottom */}
             {totalPages > 1 && (

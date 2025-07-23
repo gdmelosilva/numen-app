@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import React from "react";
 import MessageForm from "@/components/message-form";
 import { MessageCard } from "@/components/message-card";
+import { useUserContext } from "@/components/user-context";
 
 export default function TicketDetailsPage() {
   const params = useParams();
@@ -23,6 +24,7 @@ export default function TicketDetailsPage() {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user: currentUser } = useUserContext();
   // Mensagens e paginação
   type Message = {
     id: string;
@@ -414,7 +416,16 @@ export default function TicketDetailsPage() {
               <div className="text-muted-foreground text-center py-8">Nenhuma mensagem encontrada para este chamado.</div>
             )}
             {currentMessages.map((msg) => (
-              <MessageCard key={msg.id} msg={msg} />
+              <MessageCard 
+                key={msg.id} 
+                msg={msg} 
+                currentUser={currentUser ? {
+                  id: currentUser.id,
+                  is_client: currentUser.is_client,
+                  role: currentUser.role
+                } : undefined} 
+                onMessageUpdated={refreshMessages} 
+              />
             ))}
             {/* Controles de paginação - Bottom */}
             {totalPages > 1 && (

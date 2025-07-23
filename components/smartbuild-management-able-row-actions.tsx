@@ -23,6 +23,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { isTicketFinalized, getTicketFinalizedMessage } from "@/lib/ticket-status"
+import type { Ticket } from "@/types/tickets"
 
 interface SmartbuildTableRowActionsProps<TData> {
   row: Row<TData>
@@ -49,8 +51,14 @@ export function SmartbuildTableRowActions<TData>({
   }
 
   const handleOpenCloseDialog = () => {
-    // Para tickets, verificamos se já está fechado
     const original = row.original as Record<string, unknown>;
+    
+    // Verifica se o ticket está finalizado antes de permitir outras ações
+    if (isTicketFinalized(original as Ticket)) {
+      return toast.info(getTicketFinalizedMessage());
+    }
+    
+    // Para tickets, verificamos se já está fechado
     const isClosed = original && "is_closed" in original ? Boolean(original.is_closed) : false;
     
     if (isClosed) {

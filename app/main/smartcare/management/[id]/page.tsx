@@ -9,16 +9,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File, Edit3, EyeOff, Lock } from "lucide-react";
+import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File, Edit3, EyeOff, Lock, Edit } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import MessageForm from "@/components/message-form";
 import { MessageCard } from "@/components/message-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserContext } from "@/components/user-context";
 import type { UserWithModule } from "@/types/users";
 import { ForwardButton } from "@/components/ForwardButton";
+import { isTicketFinalized } from "@/lib/ticket-status";
+import { getCategoryOptions, getPriorityOptions } from "@/hooks/useOptions";
+import { toast } from "sonner";
 // import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 
 // Define o tipo correto para o recurso retornado pelo backend
@@ -84,6 +88,15 @@ export default function TicketDetailsPage() {
   // Estados para filtros de mensagens
   const [hideSystemMessages, setHideSystemMessages] = useState(false);
   const [hidePrivateMessages, setHidePrivateMessages] = useState(false);
+
+  // Estados para edição de categoria, tipo e prioridade
+  const [editingField, setEditingField] = useState<'category' | 'type' | 'priority' | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string; description: string }[]>([]);
+  const [types, setTypes] = useState<{ id: string; name: string }[]>([]);
+  const [priorities, setPriorities] = useState<{ id: string; name: string }[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<string>("");
+  const [updatingField, setUpdatingField] = useState(false);
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
@@ -307,6 +320,125 @@ export default function TicketDetailsPage() {
     }
   };
 
+  // Função para buscar tipos de tickets via API
+  const fetchTypeOptions = async () => {
+    try {
+      const response = await fetch('/api/options?type=ticket_types');
+      if (!response.ok) throw new Error('Erro ao buscar tipos');
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Erro ao buscar tipos:', error);
+      return [];
+    }
+  };
+
+  // Função para carregar todas as opções
+  const loadEditOptions = async (field: 'category' | 'type' | 'priority') => {
+    setOptionsLoading(true);
+    try {
+      if (field === 'category') {
+        const data = await getCategoryOptions();
+        setCategories(data);
+      } else if (field === 'type') {
+        const data = await fetchTypeOptions();
+        setTypes(data);
+      } else if (field === 'priority') {
+        const data = await getPriorityOptions();
+        setPriorities(data);
+      }
+    } catch (error) {
+      console.error(`Erro ao carregar opções de ${field}:`, error);
+      toast.error(`Erro ao carregar opções de ${field}`);
+    } finally {
+      setOptionsLoading(false);
+    }
+  };
+
+  // Função para iniciar edição
+  const startEdit = (field: 'category' | 'type' | 'priority') => {
+    if (isTicketFinalized(ticket)) {
+      toast.error("Não é possível editar um chamado finalizado");
+      return;
+    }
+
+    setEditingField(field);
+    
+    // Define o valor atual
+    if (field === 'category') {
+      setSelectedValue(ticket?.category_id ? String(ticket.category_id) : "");
+    } else if (field === 'type') {
+      setSelectedValue(ticket?.type_id ? String(ticket.type_id) : "");
+    } else if (field === 'priority') {
+      setSelectedValue(ticket?.priority_id ? String(ticket.priority_id) : "");
+    }
+    
+    loadEditOptions(field);
+  };
+
+  // Função para salvar edição
+  const saveEdit = async () => {
+    if (!editingField || !selectedValue || !ticket) return;
+
+    setUpdatingField(true);
+    try {
+      const fieldMap = {
+        category: 'category_id',
+        type: 'type_id', 
+        priority: 'priority_id'
+      };
+
+      const response = await fetch(`/api/smartcare/tickets/${ticket.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          [fieldMap[editingField]]: selectedValue
+        }),
+      });
+
+      if (!response.ok) throw new Error('Erro ao atualizar campo');
+
+      // Atualiza o ticket localmente
+      const updatedTicket = { ...ticket };
+      if (editingField === 'category') {
+        updatedTicket.category_id = Number(selectedValue);
+        const category = categories.find(c => c.id === selectedValue);
+        if (category) {
+          updatedTicket.category = { id: Number(selectedValue), name: category.name };
+        }
+      } else if (editingField === 'type') {
+        updatedTicket.type_id = Number(selectedValue);
+        const type = types.find(t => t.id === selectedValue);
+        if (type) {
+          updatedTicket.type = { id: Number(selectedValue), name: type.name };
+        }
+      } else if (editingField === 'priority') {
+        updatedTicket.priority_id = Number(selectedValue);
+        const priority = priorities.find(p => p.id === selectedValue);
+        if (priority) {
+          updatedTicket.priority = { id: Number(selectedValue), name: priority.name };
+        }
+      }
+
+      setTicket(updatedTicket);
+      setEditingField(null);
+      toast.success(`${editingField === 'category' ? 'Categoria' : editingField === 'type' ? 'Tipo' : 'Prioridade'} atualizada com sucesso`);
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+      toast.error('Erro ao atualizar campo');
+    } finally {
+      setUpdatingField(false);
+    }
+  };
+
+  // Função para cancelar edição
+  const cancelEdit = () => {
+    setEditingField(null);
+    setSelectedValue("");
+  };
+
   // Ordena mensagens da mais nova para a mais antiga
   const sortedMessages = [...allMessages].sort((a, b) => {
     if (!a.createdAt || !b.createdAt) return 0;
@@ -486,11 +618,35 @@ export default function TicketDetailsPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="flex flex-col">
-                <span className="text-muted-foreground text-xs font-medium">Tipo</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-xs font-medium">Tipo</span>
+                  {currentUser && !currentUser.is_client && !isTicketFinalized(ticket) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => startEdit('type')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
                 <span>{(typeof ticket.type === 'object' && ticket.type && 'name' in ticket.type) ? ticket.type.name : (typeof ticket.type_id === 'string' || typeof ticket.type_id === 'number' ? ticket.type_id : '-')}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-muted-foreground text-xs font-medium">Categoria</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-xs font-medium">Categoria</span>
+                  {currentUser && !currentUser.is_client && !isTicketFinalized(ticket) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => startEdit('category')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
                 <span>{(typeof ticket.category === 'object' && ticket.category && 'name' in ticket.category) ? ticket.category.name : (typeof ticket.category_id === 'string' || typeof ticket.category_id === 'number' ? ticket.category_id : '-')}</span>
               </div>
               <div className="flex flex-col">
@@ -498,7 +654,19 @@ export default function TicketDetailsPage() {
                 <span>{(typeof ticket.module === 'object' && ticket.module && 'name' in ticket.module) ? ticket.module.name : (typeof ticket.module_id === 'string' || typeof ticket.module_id === 'number' ? ticket.module_id : '-')}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-muted-foreground text-xs font-medium">Prioridade</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-xs font-medium">Prioridade</span>
+                  {currentUser && !currentUser.is_client && !isTicketFinalized(ticket) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => startEdit('priority')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
                 <span>{(typeof ticket.priority === 'object' && ticket.priority && 'name' in ticket.priority) ? ticket.priority.name : (typeof ticket.priority_id === 'string' || typeof ticket.priority_id === 'number' ? ticket.priority_id : '-')}</span>
               </div>
               <div className="flex flex-col">
@@ -541,6 +709,7 @@ export default function TicketDetailsPage() {
                       variant="outline"
                       onClick={() => setShowDateDialog(true)}
                       className="h-6 px-2 text-xs"
+                      disabled={isTicketFinalized(ticket)}
                     >
                       <Edit3 className="w-3 h-3 mr-1" />
                       Alterar
@@ -882,7 +1051,19 @@ export default function TicketDetailsPage() {
                   <div className="text-muted-foreground text-center py-8">Nenhuma mensagem encontrada para este chamado.</div>
                 )}
                 {currentMessages.map((msg) => (
-                  <MessageCard key={msg.id} msg={msg} />
+                  <MessageCard 
+                    key={msg.id} 
+                    msg={msg} 
+                    currentUser={currentUser ? {
+                      id: currentUser.id,
+                      is_client: currentUser.is_client,
+                      role: currentUser.role
+                    } : undefined} 
+                    onMessageUpdated={async () => { 
+                      setMessagesLoaded(false); 
+                      await refreshMessages(); 
+                    }} 
+                  />
                 ))}
                 {/* Controles de paginação - Bottom */}
                 {totalPages > 1 && (
@@ -906,6 +1087,75 @@ export default function TicketDetailsPage() {
           </div>
         </TabsContent>
       </Card>
+
+      {/* Dialog de edição */}
+      <Dialog open={editingField !== null} onOpenChange={(open) => !open && cancelEdit()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Editar {editingField === 'category' ? 'Categoria' : editingField === 'type' ? 'Tipo' : 'Prioridade'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {optionsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-2">Carregando opções...</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Selecione {editingField === 'category' ? 'a categoria' : editingField === 'type' ? 'o tipo' : 'a prioridade'}
+                </label>
+                <Select value={selectedValue} onValueChange={setSelectedValue}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={`Selecione ${editingField === 'category' ? 'uma categoria' : editingField === 'type' ? 'um tipo' : 'uma prioridade'}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editingField === 'category' && categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                    {editingField === 'type' && types.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                    {editingField === 'priority' && priorities.map((priority) => (
+                      <SelectItem key={priority.id} value={priority.id}>
+                        {priority.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" onClick={cancelEdit}>
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button 
+              onClick={saveEdit} 
+              disabled={!selectedValue || updatingField || optionsLoading}
+            >
+              {updatingField ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 }

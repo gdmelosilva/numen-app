@@ -11,6 +11,7 @@ import type { Ticket } from "@/types/tickets";
 import TicketHourDialogButton, { TicketHourData } from "./ticket-hour-dialog-button";
 import { useCanUserLogHours, useCanUserSendMessage, useUserInContract } from "@/hooks/useCanUserLog";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { isTicketFinalized, getTicketFinalizedMessage } from "@/lib/ticket-status";
 
 interface StatusOption {
   value: string;
@@ -23,7 +24,12 @@ interface MessageFormProps {
   statusOptions?: StatusOption[];
 }
 
-const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, statusOptions = [] }) => {  const { user } = useCurrentUser();  const [newMessage, setNewMessage] = useState("");
+const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, statusOptions = [] }) => {  const { user } = useCurrentUser();
+  
+  // Verificar se o ticket está finalizado
+  const isFinalized = isTicketFinalized(ticket);
+
+  const [newMessage, setNewMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [attachmentType, setAttachmentType] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
@@ -46,6 +52,12 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
 
   async function handleSend() {
     if (!newMessage.trim()) return;
+
+    // Verificar se o ticket está finalizado
+    if (isFinalized) {
+      toast.error(getTicketFinalizedMessage());
+      return;
+    }
 
     // Validações de negócio antes de enviar
     if (!canSend) {
@@ -297,7 +309,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
                 value={selectedStatus}
                 onValueChange={setSelectedStatus}
                 onOpenChange={(open) => { if (open) fetchStatusOptions(); }}
-                disabled={validationsLoading}
+                disabled={validationsLoading || isFinalized}
               >
                 <SelectTrigger className="min-w-60">
                   <SelectValue placeholder="Selecionar status" />
@@ -323,13 +335,19 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
               <TicketHourDialogButton 
                 onSave={setTicketHourData} 
                 initialData={ticketHourData}
+                disabled={isFinalized}
               />
               {!canLog && (
                 <span className="text-xs text-red-600 bg-red-100 rounded px-2 py-1">
                   Apontamento bloqueado
                 </span>
               )}
-              {ticketHourData && canLog && (
+              {isFinalized && (
+                <span className="text-xs text-orange-600 bg-orange-100 rounded px-2 py-1">
+                  Chamado finalizado
+                </span>
+              )}
+              {ticketHourData && canLog && !isFinalized && (
                 <span className="text-xs text-green-700 bg-green-100 rounded px-2 py-1 ml-2">
                   Horas registradas: {Math.floor(ticketHourData.minutes / 60)}h{ticketHourData.minutes % 60 > 0 ? ` ${ticketHourData.minutes % 60}min` : ''}
                 </span>
@@ -417,14 +435,16 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
               sending || 
               !canSend || 
               validationsLoading ||
+              isFinalized ||
               (selectedFiles.length > 0 && !attachmentType) ||
               (selectedFiles.length > 0 && attachmentType === "Especificação" && (!estimatedHours || estimatedHours <= 0))
             }
-            className={(!canSend && !validationsLoading) ? "opacity-50 cursor-not-allowed" : ""}
+            className={(!canSend && !validationsLoading) || isFinalized ? "opacity-50 cursor-not-allowed" : ""}
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             {(() => {
               if (validationsLoading) return "Verificando...";
+              if (isFinalized) return "Chamado Finalizado";
               if (!canSend) return "Envio Bloqueado";
               return "Enviar Mensagem";
             })()}

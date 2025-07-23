@@ -13,9 +13,10 @@ interface TicketHourData {
 interface TicketHourDialogButtonProps {
   onSave: (data: TicketHourData) => void;
   initialData?: TicketHourData | null;
+  disabled?: boolean;
 }
 
-const TicketHourDialogButton: React.FC<TicketHourDialogButtonProps> = ({ onSave, initialData }) => {
+const TicketHourDialogButton: React.FC<TicketHourDialogButtonProps> = ({ onSave, initialData, disabled = false }) => {
   const [open, setOpen] = useState(false);
   const [appointDate, setAppointDate] = useState(initialData?.appointDate || "");
   const [appointStart, setAppointStart] = useState(initialData?.appointStart || "");
@@ -53,7 +54,7 @@ const TicketHourDialogButton: React.FC<TicketHourDialogButtonProps> = ({ onSave,
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" onClick={() => setOpen(true)} disabled={disabled}>
         Apontar Horas
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

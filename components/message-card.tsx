@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, UserCircle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, UserCircle, Clock, Eye, EyeOff } from "lucide-react";
 import { useTicketStatuses } from "@/hooks/useTicketStatuses";
+import { toast } from "sonner";
 
 export type MessageCardProps = {
   msg: {
@@ -19,10 +21,17 @@ export type MessageCardProps = {
     ref_msg_id?: string; // Garante compatibilidade com backend
     system_hours?: number | null; // Campo opcional para horas sistêmicas
   };
+  currentUser?: {
+    id: string;
+    is_client: boolean;
+    role: number;
+  };
+  onMessageUpdated?: () => void;
 };
 
-export function MessageCard({ msg }: MessageCardProps) {
+export function MessageCard({ msg, currentUser, onMessageUpdated }: MessageCardProps) {
   const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   function getStatusName(statusId: string | number | undefined) {
     if (statusesLoading) return "Carregando...";
@@ -31,24 +40,79 @@ export function MessageCard({ msg }: MessageCardProps) {
     return found ? String(found.name).trim() : "Sem status";
   }
 
+  const canTogglePrivacy = currentUser && !currentUser.is_client && !msg.is_system;
+
+  const handleTogglePrivacy = async () => {
+    if (!canTogglePrivacy) return;
+    
+    setIsUpdating(true);
+    try {
+      const response = await fetch(`/api/messages/${msg.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_private: !msg.msgPrivate })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao atualizar mensagem');
+      }
+
+      toast.success(msg.msgPrivate ? 'Mensagem tornada pública' : 'Mensagem tornada privada');
+      
+      if (onMessageUpdated) {
+        onMessageUpdated();
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar privacidade da mensagem:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar mensagem');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div
       key={msg.id}
       className={`p-4 rounded border space-y-2 border-l-4 min-h-[160px] ${msg.is_system ? 'bg-red-500/10 border-l-red-600' : (msg.user?.is_client ? 'border-l-blue-600' : 'border-l-orange-500')}`}
     >
       <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-        <div className="flex gap-2 flex-wrap">
-          <Badge variant="outline" className="w-fit">{getStatusName(msg.msgStatus)}</Badge>
-          {msg.msgPrivate && <Badge variant="destructive" className="w-fit">Privado</Badge>}
-          {msg.is_system ? (
-            <Badge variant="outline" className="w-fit bg-red-500/20 text-red-700">Sistema</Badge>
-          ) : (
-            <Badge
+        <div className="flex gap-2 flex-wrap items-center justify-between">
+          <div className="flex gap-2 flex-wrap">
+            <Badge variant="outline" className="w-fit">{getStatusName(msg.msgStatus)}</Badge>
+            {msg.msgPrivate && <Badge variant="destructive" className="w-fit">Privado</Badge>}
+            {msg.is_system ? (
+              <Badge variant="outline" className="w-fit bg-red-500/20 text-red-700">Sistema</Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className={`w-fit text-normal ${msg.user?.is_client ? 'bg-blue-600/25 text-white' : 'bg-orange-500/80 text-white'} `}
+              >
+                {msg.user?.is_client ? "Cliente" : "Numen"}
+              </Badge>
+            )}
+          </div>
+          {canTogglePrivacy && (
+            <Button
+              size="sm"
               variant="outline"
-              className={`w-fit text-normal ${msg.user?.is_client ? 'bg-blue-600/25 text-white' : 'bg-orange-500/80 text-white'} `}
+              onClick={handleTogglePrivacy}
+              disabled={isUpdating}
+              className="h-6 px-2 text-xs"
+              title={msg.msgPrivate ? "Tornar mensagem pública" : "Tornar mensagem privada"}
             >
-              {msg.user?.is_client ? "Cliente" : "Numen"}
-            </Badge>
+              {msg.msgPrivate ? (
+                <>
+                  <Eye className="w-3 h-3 mr-1" />
+                  Público
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-3 h-3 mr-1" />
+                  Privado
+                </>
+              )}
+            </Button>
           )}
         </div>
         <div className="flex flex-wrap gap-4">
