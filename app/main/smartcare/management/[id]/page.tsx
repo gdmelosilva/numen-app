@@ -717,6 +717,16 @@ export default function TicketDetailsPage() {
                   </div>
                 </div>
               )}
+              {/* Ticket Referência */}
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Ticket Referência</span>
+                <span>{ticket.ref_ticket_id ? String(ticket.ref_ticket_id) : '-'}</span>
+              </div>
+              {/* Identificação Externa */}
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">Identificação Externa</span>
+                <span>{ticket.ref_external_id ? String(ticket.ref_external_id) : '-'}</span>
+              </div>
             </div>
             <Separator className="my-4 mb-4" />
             <div className="inline-flex items-center gap-1 text-muted-foreground text-xs font-medium mb-4">

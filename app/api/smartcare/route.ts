@@ -22,6 +22,8 @@ interface TicketRow {
   partner_id: string;
   project_id: string;
   created_by: string;
+  ref_ticket_id?: string | number | null;
+  ref_external_id?: string | null;
   category?: { id: number; name: string };
   type?: { id: number; name: string };
   module?: { id: number; name: string };
@@ -82,6 +84,8 @@ function mapTicketRow(row: unknown) {
     partner_id: r.partner_id,
     project_id: r.project_id,
     created_by: r.created_by,
+    ref_ticket_id: r.ref_ticket_id,
+    ref_external_id: r.ref_external_id,
     category: r.category,
     type: r.type,
     module: r.module,

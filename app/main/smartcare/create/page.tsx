@@ -70,7 +70,24 @@ export default function CreateTicketPage() {
   };
 
   const handleSelect = (name: string, value: string) => {
-    setForm((prev) => ({ ...prev, [name]: String(value) }));
+    setForm((prev) => {
+      const newForm = { ...prev, [name]: String(value) };
+      
+      // Se mudou a categoria, verificar se precisa ajustar a prioridade
+      if (name === "category_id") {
+        const selectedCategory = categories.find(c => String(c.id) === value);
+        
+        // Se não for "Incidente", definir prioridade como "Baixa" automaticamente
+        if (selectedCategory && selectedCategory.name !== "Incidente") {
+          const baixaPriority = priorities.find(p => p.name === "Baixa");
+          if (baixaPriority) {
+            newForm.priority_id = String(baixaPriority.id);
+          }
+        }
+      }
+      
+      return newForm;
+    });
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,18 +199,34 @@ export default function CreateTicketPage() {
         setLoading(false);
         return;
       }
+
+      // Garantir que a prioridade esteja definida
+      const finalForm = { ...form };
+      if (!finalForm.priority_id) {
+        const baixaPriority = priorities.find(p => p.name === "Baixa");
+        if (baixaPriority) {
+          finalForm.priority_id = String(baixaPriority.id);
+        } else {
+          setError("Erro interno: prioridade 'Baixa' não encontrada.");
+          setLoading(false);
+          return;
+        }
+      }
       
-      if (form.attachment && !attachmentType) {
+      if (finalForm.attachment && !attachmentType) {
         setError("Selecione o tipo do anexo quando um arquivo for adicionado.");
         setLoading(false);
         return;
       }
-      const ticketId = await createTicket(form);
-      if (form.attachment && ticketId) {
-        await uploadAttachment(form, ticketId, attachmentType);
+      
+      const ticketId = await createTicket(finalForm);
+      if (finalForm.attachment && ticketId) {
+        await uploadAttachment(finalForm, ticketId, attachmentType);
       }
       toast.success("Chamado criado com sucesso.");
-      setForm({
+      
+      // Reset do formulário
+      const resetForm = {
         project_id: isClientUser && filteredProjects.length === 1 ? String(filteredProjects[0].id) : "",
         partner_id: isClientUser && user?.partner_id ? String(user.partner_id) : "",
         title: "",
@@ -204,7 +237,8 @@ export default function CreateTicketPage() {
         attachment: null,
         ref_ticket_id: "",
         ref_external_id: "",
-      });
+      };
+      setForm(resetForm);
       setAttachmentType("");
       setSelectedTicketTitle("");
     } catch (err) {
@@ -420,26 +454,37 @@ export default function CreateTicketPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>              <div>
-                <label htmlFor="priority_id" className="block text-sm font-medium mb-1">
-                  Prioridade <span className="text-destructive">*</span>
-                </label>
-                <Select
-                  value={form.priority_id}
-                  onValueChange={(v) => handleSelect("priority_id", v)}
-                  disabled={loading}
-                >
-                  <SelectTrigger className="w-full" id="priority_id">
-                    <SelectValue placeholder="Selecione a prioridade" />
-                  </SelectTrigger>                  <SelectContent>
-                    {(priorities ?? []).map((p) => (
-                      <SelectItem key={String(p.id)} value={String(p.id)}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
+              
+              {/* Campo Prioridade - só aparece para Incidentes */}
+              {(() => {
+                const selectedCategory = categories.find(c => String(c.id) === form.category_id);
+                const isIncidente = selectedCategory?.name === "Incidente";
+                
+                return isIncidente ? (
+                  <div>
+                    <label htmlFor="priority_id" className="block text-sm font-medium mb-1">
+                      Prioridade <span className="text-destructive">*</span>
+                    </label>
+                    <Select
+                      value={form.priority_id}
+                      onValueChange={(v) => handleSelect("priority_id", v)}
+                      disabled={loading}
+                    >
+                      <SelectTrigger className="w-full" id="priority_id">
+                        <SelectValue placeholder="Selecione a prioridade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(priorities ?? []).map((p) => (
+                          <SelectItem key={String(p.id)} value={String(p.id)}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null;
+              })()}
             </div>            <div>
               <label htmlFor="description" className="block text-sm font-medium mb-1">
                 Descrição do Chamado <span className="text-destructive">*</span>
@@ -562,7 +607,7 @@ export default function CreateTicketPage() {
                 variant="outline"
                 disabled={loading}
                 onClick={() => {
-                  setForm({
+                  const resetForm = {
                     project_id: isClientUser && filteredProjects.length === 1 ? String(filteredProjects[0].id) : "",
                     partner_id: isClientUser && user?.partner_id ? String(user.partner_id) : "",
                     title: "",
@@ -573,7 +618,8 @@ export default function CreateTicketPage() {
                     attachment: null,
                     ref_ticket_id: "",
                     ref_external_id: "",
-                  });
+                  };
+                  setForm(resetForm);
                   setSelectedTicketTitle("");
                   setAttachmentType("");
                 }}

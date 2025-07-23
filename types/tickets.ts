@@ -39,6 +39,8 @@ export type Ticket = {
   partner_id: string;
   project_id: string;
   created_by: string;
+  ref_ticket_id?: string | number | null;
+  ref_external_id?: string | null;
   // Optionally, you can add expanded fields for joins (category, type, etc.)
   category?: { id: number; name: string };
   type?: { id: number; name: string };
