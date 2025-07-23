@@ -29,6 +29,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [maxHours, setMaxHours] = useState<number | ''>('');
     const [userFunctional, setUserFunctional] = useState<string>('');
+    const [horaFaturavel, setHoraFaturavel] = useState<number | ''>('');
     const { user: currentUser } = useCurrentUser();
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(0);
@@ -88,12 +89,14 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                 user_id: selectedUserId,
                 max_hours: Number(maxHours),
                 user_functional: userFunctional,
+                hora_faturavel: horaFaturavel !== '' ? Number(horaFaturavel) : null,
             })
         });
         setShowDialog(false);
         setSelectedUserId(null);
         setMaxHours('');
         setUserFunctional('');
+        setHoraFaturavel('');
         setLoading(true);
         fetch(`/api/smartbuild/users?project_id=${projectId}`)
             .then(res => res.ok ? res.json() : Promise.reject('Erro ao buscar usuários'))
@@ -291,6 +294,22 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                                         ))}
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div>
+                                <label htmlFor="hora_faturavel" className="block text-sm font-medium mb-1">Hora Faturável (%)</label>
+                                <Input
+                                    id="hora_faturavel"
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={0.1}
+                                    value={horaFaturavel}
+                                    onChange={e => setHoraFaturavel(e.target.value === '' ? '' : Number(e.target.value))}
+                                    placeholder="Ex: 85.5"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Percentual adicional de horas faturáveis (0-100%). Deixe em branco se não aplicável.
+                                </p>
                             </div>
                         </div>
                         <DialogFooter className="mt-4">

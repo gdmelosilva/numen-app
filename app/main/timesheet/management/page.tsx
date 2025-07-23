@@ -154,6 +154,7 @@ const TimeSheetManagementPage = () => {
                         statusHours={statusHours}
                         selectedUserId={selectedUserId}
                         showUserFilter={Boolean(user && !user.is_client && user.role === 1)}
+                        isClient={Boolean(user?.is_client)}
                     />
                 </div>
                 <div className="w-full max-w-full">

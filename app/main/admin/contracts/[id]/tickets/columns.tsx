@@ -26,7 +26,7 @@ export const columns: ColumnDef<Ticket>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <ColoredBadge value={row.original.status?.name} type="status" />
+      <ColoredBadge value={row.original.status?.name} type="ticket_status" />
     ),
   },
   {

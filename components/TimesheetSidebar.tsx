@@ -20,6 +20,7 @@ interface TimesheetSidebarProps {
   statusHours: string;
   selectedUserId?: string | null;
   showUserFilter?: boolean;
+  isClient?: boolean;
 }
 
 const months = [
@@ -41,6 +42,7 @@ export const TimesheetSidebar: React.FC<TimesheetSidebarProps> = ({
   statusHours,
   selectedUserId,
   showUserFilter = false,
+  isClient = false,
 }) => {
   return (
     <aside className="w-80 p-4 flex flex-col gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-xl shadow border-0">
@@ -86,23 +88,31 @@ export const TimesheetSidebar: React.FC<TimesheetSidebarProps> = ({
         Última atualização: {lastUpdate}
       </div>
       <CardContent className="flex flex-col gap-2 p-0">
-        <div className="flex justify-between text-sm py-2">
-          <span>Horas Estimadas do mês</span>
-          <span className="font-bold">{estimatedHours}</span>
-        </div>
-        <Separator />
+        {!isClient && (
+          <>
+            <div className="flex justify-between text-sm py-2">
+              <span>Horas Estimadas do mês</span>
+              <span className="font-bold">{estimatedHours}</span>
+            </div>
+            <Separator />
+          </>
+        )}
         <div className="flex justify-between text-sm py-2">
           <span>Dias Lançados</span>
           <span className="font-bold">{launchedDays}</span>
         </div>
         <Separator />
+        {!isClient && (
+          <>
+            <div className="flex justify-between text-sm py-2">
+              <span>Horas Trabalhadas</span>
+              <span className="font-bold">{workedHours}</span>
+            </div>
+            <Separator />
+          </>
+        )}
         <div className="flex justify-between text-sm py-2">
-          <span>Horas Trabalhadas</span>
-          <span className="font-bold">{workedHours}</span>
-        </div>
-        <Separator />
-        <div className="flex justify-between text-sm py-2">
-          <span>Horas Aprovadas</span>
+          <span>{isClient ? 'Estimativa de horas mensal' : 'Horas Aprovadas'}</span>
           <span className="font-bold">{statusHours}</span>
         </div>
       </CardContent>

@@ -13,6 +13,9 @@ export interface TicketHour {
   user_name?: string;
   project_id?: string;
   ticket_title?: string;
+  hora_faturavel?: number | null;
+  billable_minutes?: number;
+  original_minutes?: number;
   user?: {
     first_name: string;
     last_name: string;
@@ -131,13 +134,19 @@ export function useTicketHoursManagement() {
             user_id: shouldShowUser ? row.user_id : undefined,
           };
         }        
-        grouped[key].total_minutes += row.minutes || 0;
+        
+        // Para clientes, usar billable_minutes se disponível, senão usar minutes
+        const minutesToAdd = user.is_client && row.billable_minutes 
+          ? row.billable_minutes 
+          : (row.minutes || 0);
+        
+        grouped[key].total_minutes += minutesToAdd;
         grouped[key].children!.push({
           id: row.id,
           appoint_date: row.appoint_date,
-          total_minutes: row.minutes,
+          total_minutes: user.is_client && row.billable_minutes ? row.billable_minutes : row.minutes,
           is_approved: row.is_approved,
-          user_name: row.user_name, // Sempre incluir user_name nos children
+          user_name: user.is_client ? undefined : row.user_name, // Não incluir user_name para clientes
           project: row.project ?? { projectName: '', projectDesc: '' },
           children: undefined,
           ticket_id: row.ticket_id,
@@ -145,9 +154,9 @@ export function useTicketHoursManagement() {
           ticket_title: row.ticket_title, // Incluir ticket_title nos children
           ticket_type_id: row.ticket_type_id, // Incluir ticket_type_id nos children
           ticket_external_id: row.ticket_external_id, // Incluir ticket_external_id nos children
-          appoint_start: row.appoint_start,
-          appoint_end: row.appoint_end,
-          user_id: row.user_id, // Sempre incluir user_id nos children
+          appoint_start: user.is_client ? undefined : row.appoint_start, // Não incluir para clientes
+          appoint_end: user.is_client ? undefined : row.appoint_end, // Não incluir para clientes
+          user_id: user.is_client ? undefined : row.user_id, // Não incluir user_id para clientes
         });
       });
       

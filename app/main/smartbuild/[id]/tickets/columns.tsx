@@ -32,7 +32,7 @@ export function getTicketColumns({ priorities, types, statuses }: {
       header: "Status",
       cell: ({ row }) => {
         const status = row.original.status?.name ?? statuses.find(s => String(s.id) === String(row.original.status_id))?.name;
-        return <ColoredBadge value={status} type="status" />;
+        return <ColoredBadge value={status} type="ticket_status" />;
       },
     },
     {

@@ -14,6 +14,7 @@ type User = BaseUser & {
   is_suspended?: boolean;
   user_functional?: string;
   project_resource_id?: number;
+  hora_faturavel?: number;
 };
 
 // Cache global para os módulos - agora com Map para acesso O(1)
@@ -91,6 +92,16 @@ export const columns = (projectId: string, isClosed?: boolean): ColumnDef<User>[
     accessorKey: "hours_max",
     header: "Horas Alocadas",
     cell: ({ row }) => row.original.hours_max ?? "-",
+  },
+  {
+    accessorKey: "hora_faturavel", 
+    header: "Hora Faturável (%)",
+    cell: ({ row }) => {
+      const horaFaturavel = row.original.hora_faturavel;
+      return horaFaturavel !== null && horaFaturavel !== undefined 
+        ? `${horaFaturavel}%` 
+        : <span className="text-muted-foreground">-</span>;
+    },
   },
   {
     id: "horas_consumidas",

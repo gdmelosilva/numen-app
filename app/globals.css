@@ -106,3 +106,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Cores customizadas para badges de ticket status */
+:root {
+  --ticket-yellow: 51 100% 50%;
+  --ticket-yellow-foreground: 0 0% 0%;
+  --ticket-orange: 33 93% 55%;
+  --ticket-orange-foreground: 0 0% 100%;
+  --ticket-purple: 272 81% 56%;
+  --ticket-purple-foreground: 0 0% 100%;
+  --ticket-gray: 60 4.8% 45%;
+  --ticket-gray-foreground: 0 0% 100%;
+  --ticket-cyan: 180 100% 50%;
+  --ticket-cyan-foreground: 0 0% 0%;
+  --ticket-green: 142 71% 45%;
+  --ticket-green-foreground: 0 0% 100%;
+}

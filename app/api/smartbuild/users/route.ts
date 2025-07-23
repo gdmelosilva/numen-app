@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   if (project_id) {
     const { data, error } = await supabase
       .from("project_resources")
-      .select(`id, user:id, max_hours, user_functional, ticket_modules:user_functional(id, name), user!inner(id, first_name, last_name, email, tel_contact, is_active, role, is_client)`)
+      .select(`id, user:id, max_hours, user_functional, hora_faturavel, ticket_modules:user_functional(id, name), user!inner(id, first_name, last_name, email, tel_contact, is_active, role, is_client)`)
       .eq("project_id", project_id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -32,6 +32,7 @@ export async function GET(request: Request) {
       };
       max_hours: number | null;
       user_functional?: number;
+      hora_faturavel?: number;
       ticket_modules?: { id: number; name: string } | { id: number; name: string }[] | null;
     }
     const users = (data || []).map((row: ProjectResourceRow) => ({
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
         return null;
       })(),
       project_resource_id: row.id,
+      hora_faturavel: row.hora_faturavel,
     }));
     return NextResponse.json(users);
   }

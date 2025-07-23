@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
         max_hours,
         user_functional,
         is_suspended,
+        hora_faturavel,
         user:user_id (
           id,
           first_name,
@@ -49,7 +50,8 @@ export async function GET(req: NextRequest) {
       is_suspended: row.is_suspended,
       hours_max: row.max_hours,
       user_functional: row.user_functional,
-      project_resource_id: row.id
+      project_resource_id: row.id,
+      hora_faturavel: row.hora_faturavel
     }));
     return NextResponse.json(users);
   } catch {

@@ -99,8 +99,10 @@ export const getColumns = (user: AuthenticatedUser | null): ColumnDef<TimesheetR
         ),
         cell: ({ getValue }) => {
             const minutes = getValue() as number;
-            const hours = (minutes / 60).toFixed(2);
-            return <span>{hours} h</span>;
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            const formattedTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')} h`;
+            return <span>{formattedTime}</span>;
         },
     },
     {

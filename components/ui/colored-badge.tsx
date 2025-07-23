@@ -12,7 +12,13 @@ export type BadgeVariant =
   | "outline"
   | "primary-2"
   | "default"
-  | "ghost";
+  | "ghost"
+  | "ticket-yellow"
+  | "ticket-orange"
+  | "ticket-purple"
+  | "ticket-gray"
+  | "ticket-cyan"
+  | "ticket-green";
 
 // Centralized color/label maps
 const typeColorMap: Record<string, BadgeVariant> = {
@@ -27,13 +33,42 @@ const typeLabelMap: Record<string, string> = {
 };
 // Mapeamento para status de projeto conforme tabela
 const statusColorMap: Record<string, BadgeVariant> = {
-  cyan: 'approved',        // Ativo
-  orange: 'primary',      // Em Analise
-  purple: 'accent',       // Em Mobilização
-  red: 'destructive',     // Encerrado
-  colorless: 'outline',   // Suspenso
+  cyan: 'approved',      // Ativo
+  orange: 'primary',  // Em Analise
+  purple: 'accent',  // Em Mobilização
+  red: 'destructive',       // Encerrado
+  colorless: 'outline',     // Suspenso
   gray: 'secondary',      // Ticket - Ag.Atendimento
+  yellow: 'ticket-yellow',  // Amarelo
+  green: 'ticket-green',    // Verde
 };
+
+// Mapeamento específico para status de tickets baseado na tabela ticket_status
+const ticketStatusColorMap: Record<string, BadgeVariant> = {
+  "Aguardando Atendimento": "ticket-gray",            // gray
+  "Em Analise": "ticket-yellow",                      // yellow  
+  "Encaminhado para Atendente": "ticket-gray",        // gray
+  "Finalizado": "ticket-green",                       // green
+  "Encaminhado para o Solicitante": "ticket-orange",  // orange
+  "Em Configuração / Desenvolvimento": "ticket-purple", // purple
+  "Em Estimativa": "ticket-orange",                   // orange
+  "Aguardando Aprovação do Solicitante": "ticket-yellow", // yellow
+  "Encaminhado para Encerramento": "ticket-green",    // green
+  "Aguardando Validação / Testes do Solicitante": "ticket-cyan", // cyan
+};
+
+// Função para determinar a cor baseada no status name e color da tabela
+function getTicketStatusVariant(status: { name: string; color?: string } | string): BadgeVariant {
+  if (typeof status === 'string') {
+    return ticketStatusColorMap[status] ?? 'outline';
+  }
+  
+  if (status.color) {
+    return statusColorMap[status.color] ?? 'outline';
+  }
+  
+  return ticketStatusColorMap[status.name] ?? 'outline';
+}
 
 // Mapeamento para status de projeto
 const projectStatusColorMap: Record<string, BadgeVariant> = {
@@ -83,7 +118,7 @@ const ticketPriorityLabelMap: Record<string, string> = {
   Baixa: "Baixa",
   Urgente: "Urgente",
 };
-function renderTicketPriorityBadge(value: string | boolean | { name: string; color: string } | null | undefined, className?: string) {
+function renderTicketPriorityBadge(value: ValueType, className?: string) {
   const label = ticketPriorityLabelMap[String(value)] ?? String(value);
   const variant = ticketPriorityColorMap[label] ?? "outline";
   return <Badge variant={variant} className={className}>{label}</Badge>;
@@ -102,42 +137,63 @@ const ticketTypeLabelMap: Record<string, string> = {
   Problema: "Problema",
   Mudança: "Mudança",
 };
-function renderTicketTypeBadge(value: string | boolean | { name: string; color: string } | null | undefined, className?: string) {
+function renderTicketTypeBadge(value: ValueType, className?: string) {
   const label = ticketTypeLabelMap[String(value)] ?? String(value);
   const variant = ticketTypeColorMap[label] ?? "outline";
   return <Badge variant={variant} className={className}>{label}</Badge>;
 }
 
+function renderTicketStatusBadge(
+  value: ValueType, 
+  className?: string
+) {
+  if (isNameColorObject(value)) {
+    const label = value.name;
+    const variant = getTicketStatusVariant(value);
+    return <Badge variant={variant} className={className}>{label}</Badge>;
+  }
+  
+  if (typeof value === 'string') {
+    const label = value;
+    const variant = getTicketStatusVariant(value);
+    return <Badge variant={variant} className={className}>{label}</Badge>;
+  }
+  
+  return <span>{String(value)}</span>;
+}
+
+// Tipos mais flexíveis para objetos de status/valor
+type ValueType = string | boolean | { name: string; color?: string; id?: number } | null | undefined;
+
 export interface ColoredBadgeProps {
-  value: string | boolean | { name: string; color: string } | null | undefined;
-  type: "project_type" | "status" | "boolean" | "project_status" | "user_role" | "is_client" | "priority" | "ticket_type" | "suspended" | "comp_adm";
+  value: ValueType;
+  type: "project_type" | "status" | "boolean" | "project_status" | "user_role" | "is_client" | "priority" | "ticket_type" | "ticket_status" | "suspended" | "comp_adm";
   statusColor?: string; // para status que vem com cor
   className?: string;
 }
 
 
-function renderProjectTypeBadge(value: string | boolean | { name: string; color: string } | null | undefined, className?: string) {
+function renderProjectTypeBadge(value: ValueType, className?: string) {
   const variant = typeColorMap[String(value)] ?? "default";
   const label = typeLabelMap[String(value)] ?? String(value);
   return <Badge variant={variant} className={className}>{label}</Badge>;
 }
 
-function isNameColorObject(val: unknown): val is { name: string; color: string } {
+function isNameColorObject(val: unknown): val is { name: string; color?: string; id?: number } {
   return (
     typeof val === 'object' &&
     val !== null &&
-    typeof (val as { name?: unknown }).name === 'string' &&
-    typeof (val as { color?: unknown }).color === 'string'
+    typeof (val as { name?: unknown }).name === 'string'
   );
 }
 
 function renderProjectStatusBadge(
-  value: string | boolean | { name: string; color: string } | null | undefined,
+  value: ValueType,
   className?: string
 ) {
   if (isNameColorObject(value)) {
     const label = value.name;
-    const variant = statusColorMap[value.color] ?? 'outline';
+    const variant = value.color ? statusColorMap[value.color] ?? 'outline' : 'outline';
     return <Badge variant={variant} className={className}>{label}</Badge>;
   }
   if (typeof value === 'string') {
@@ -149,7 +205,7 @@ function renderProjectStatusBadge(
 }
 
 function renderStatusBadge(
-  value: string | boolean | { name: string; color: string } | null | undefined,
+  value: ValueType,
   _statusColor?: string,
   className?: string
 ) {
@@ -178,9 +234,8 @@ function renderStatusBadge(
   return <Badge variant={variant} className={className}>{label}</Badge>;
 }
 
-// Mapeamento para booleano simples (Sim/Não)
 function renderBooleanBadge(
-  value: string | boolean | { name: string; color: string } | null | undefined
+  value: ValueType
 ) {
   let label = "-";
   if (typeof value === "boolean") label = value ? "Sim" : "Não";
@@ -206,14 +261,14 @@ function renderBooleanBadge(
   return <span>{label}</span>;
 }
 
-function renderUserRoleBadge(value: string | boolean | { name: string; color: string } | null | undefined, className?: string) {
+function renderUserRoleBadge(value: ValueType, className?: string) {
   const label = userRoleLabelMap[String(value)] ?? String(value);
   const variant = userRoleColorMap[label] ?? "outline";
   return <Badge variant={variant} className={className}>{label}</Badge>;
 }
 
 function renderIsClientBadge(
-  value: string | boolean | { name: string; color: string } | null | undefined,
+  value: ValueType,
   className?: string
 ) {
   let label = "-";
@@ -229,7 +284,7 @@ function renderIsClientBadge(
 }
 
 function renderIsCompAdmBadge(
-  value: string | boolean | { name: string; color: string } | null | undefined,
+  value: ValueType,
   className?: string
 ) {
   let label = "-";
@@ -245,7 +300,7 @@ function renderIsCompAdmBadge(
 }
 
 function renderSuspendedBadge(
-  value: string | boolean | { name: string; color: string } | null | undefined
+  value: ValueType
 ) {
   let label = "-";
   if (typeof value === "boolean") label = value ? "Suspenso" : "Mobilizado";
@@ -283,6 +338,8 @@ export function ColoredBadge({ value, type, statusColor, className }: Readonly<C
       return renderProjectStatusBadge(value, className);
     case "status":
       return renderStatusBadge(value, statusColor, className);
+    case "ticket_status":
+      return renderTicketStatusBadge(value, className);
     case "boolean":
       return renderBooleanBadge(value);
     case "user_role":

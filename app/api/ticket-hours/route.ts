@@ -131,13 +131,15 @@ export async function GET(req: NextRequest) {
     const project_id = searchParams.get("project_id");
     const year = searchParams.get("year");
     const month = searchParams.get("month");
+    const client_view = searchParams.get("client_view");
+    
     // Permite busca flexível: por message_id, user_id, project_id, ou todos
     let query = supabase.from("ticket_hours")
       .select(`
         *, 
         project:project_id(projectName, projectDesc),
         user:user_id(first_name, last_name),
-        ticket:ticket_id(title, type_id, external_id)
+        ticket:ticket_id(title, type_id, external_id, project_id)
       `);
     if (message_id) query = query.eq("message_id", message_id);
     if (user_id) query = query.eq("user_id", user_id);
@@ -156,7 +158,52 @@ export async function GET(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json(data || []);
+
+    // Buscar informações de hora_faturavel para os registros retornados
+    const ticketHoursWithBillable = await Promise.all(
+      (data || []).map(async (ticketHour) => {
+        // Buscar hora_faturavel do usuário no projeto do ticket
+        const { data: projectResource } = await supabase
+          .from('project_resources')
+          .select('hora_faturavel')
+          .eq('user_id', ticketHour.user_id)
+          .eq('project_id', ticketHour.project_id)
+          .single();
+
+        const horaFaturavel = projectResource?.hora_faturavel || null;
+        const originalMinutes = ticketHour.minutes || 0;
+        
+        // Calcular minutos faturáveis se hora_faturavel existir
+        let billableMinutes = originalMinutes;
+        if (horaFaturavel && horaFaturavel > 0) {
+          const percentage = horaFaturavel / 100;
+          billableMinutes = originalMinutes + (originalMinutes * percentage);
+        }
+
+        // Para clientes, remover dados do usuário e horários específicos
+        const responseData = {
+          ...ticketHour,
+          hora_faturavel: horaFaturavel,
+          billable_minutes: billableMinutes,
+          original_minutes: originalMinutes
+        };
+
+        if (client_view === "true") {
+          // Remover informações do usuário e horários para clientes
+          delete responseData.user;
+          delete responseData.user_id;
+          delete responseData.appoint_start;
+          delete responseData.appoint_end;
+          delete responseData.message_id;
+          delete responseData.original_minutes; // Cliente não deve ver os minutos originais
+          delete responseData.hora_faturavel; // Cliente não deve ver a porcentagem
+        }
+
+        return responseData;
+      })
+    );
+
+    return NextResponse.json(ticketHoursWithBillable || []);
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : "Erro desconhecido.";
     return NextResponse.json({ error: errorMsg }, { status: 500 });

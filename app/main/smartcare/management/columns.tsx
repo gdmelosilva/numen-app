@@ -2,6 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,32 +66,7 @@ export const columns: ColumnDef<Ticket>[] = [
     cell: ({ row }) => {
       const status = row.original.status;
       const name = status?.name || row.original.status_id || "-";
-      // Suporte para cor customizada vinda do backend (ex: status.color)
-      let variant: "default" | "secondary" | "destructive" | "outline" | "ghost" | "approved" | "accent" | "primary" | "primary-2" = "outline";
-      if (status && status.color) {
-        // Mapeamento customizado de cor para variant
-        const colorMap = {
-          cyan: "approved",
-          orange: "primary",
-          red: "destructive",
-          green: "accent",
-          gray: "secondary",
-          none: "outline",
-          // Adicione outros mapeamentos conforme necessário
-        } as const;
-        const allowedVariants = [
-          "default", "secondary", "destructive", "outline", "ghost", "approved", "accent", "primary", "primary-2"
-        ] as const;
-        const mapped = colorMap[status.color.toLowerCase() as keyof typeof colorMap];
-        if (mapped && allowedVariants.includes(mapped)) {
-          variant = mapped;
-        } else if (allowedVariants.includes(status.color as typeof allowedVariants[number])) {
-          variant = status.color as typeof variant;
-        } else {
-          variant = "outline";
-        }
-      }
-      return name !== "-" ? <Badge variant={variant}>{name}</Badge> : "-";
+      return name !== "-" ? <ColoredBadge value={status} type="ticket_status" /> : "-";
     },
   },
   {

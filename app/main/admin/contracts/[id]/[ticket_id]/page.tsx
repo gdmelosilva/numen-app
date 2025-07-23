@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import type { Ticket } from "@/types/tickets";
 import { Badge } from "@/components/ui/badge";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -203,7 +204,12 @@ export default function TicketDetailsPage() {
                     ? ticket.created_by_user.name
                     : (typeof ticket.created_by === 'string' ? ticket.created_by : '-')}
                 </div>
-                <Badge variant="default" className="text-md">{(typeof ticket.status === 'object' && ticket.status && 'name' in ticket.status) ? ticket.status.name : (typeof ticket.status_id === 'string' || typeof ticket.status_id === 'number' ? ticket.status_id : '-')}</Badge>
+                <ColoredBadge 
+                  type="ticket_status" 
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  value={ticket.status as any}
+                  className="text-md"
+                />
               </div>
               <div className="flex flex-col items-end align-middle justify-center">
                 <span className="text-muted-foreground text-xs font-medium mb-1"></span>

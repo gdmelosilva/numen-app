@@ -21,6 +21,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useProjectOptions } from "@/hooks/useProjectOptions";
 import DeniedAccessPage from "@/components/DeniedAccessPage";
 import { getPriorityOptions, getCategoryOptions, getModuleOptions } from "@/hooks/useOptions";
+import { TicketSelectionDialog } from "@/components/TicketSelectionDialog";
 
 export default function CreateTicketPage() {
   const { profile, loading: loadingProfile, user } = useUserProfile();
@@ -53,10 +54,13 @@ export default function CreateTicketPage() {
     priority_id: "",
     description: "",
     attachment: null as File | null,
+    ref_ticket_id: "",
+    ref_external_id: "",
   });
   const [attachmentType, setAttachmentType] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTicketTitle, setSelectedTicketTitle] = useState("");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -88,6 +92,12 @@ export default function CreateTicketPage() {
       fd.append("priority_id", formData.priority_id);
       fd.append("description", formData.description);
       fd.append("type_id", "1"); // SmartCare é sempre AMS
+      if (formData.ref_ticket_id) {
+        fd.append("ref_ticket_id", formData.ref_ticket_id);
+      }
+      if (formData.ref_external_id) {
+        fd.append("ref_external_id", formData.ref_external_id);
+      }
       const ticketRes = await fetch("/api/tickets/create", {
         method: "POST",
         body: fd,
@@ -110,6 +120,8 @@ export default function CreateTicketPage() {
           priority_id: formData.priority_id,
           description: formData.description,
           type_id: "1", // SmartCare é sempre AMS
+          ...(formData.ref_ticket_id && { ref_ticket_id: formData.ref_ticket_id }),
+          ...(formData.ref_external_id && { ref_external_id: formData.ref_external_id }),
         }),
       });
       if (!ticketRes.ok) {
@@ -190,8 +202,11 @@ export default function CreateTicketPage() {
         priority_id: "",
         description: "",
         attachment: null,
+        ref_ticket_id: "",
+        ref_external_id: "",
       });
       setAttachmentType("");
+      setSelectedTicketTitle("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     } finally {
@@ -295,6 +310,7 @@ export default function CreateTicketPage() {
           <h2 className="text-xl font-semibold">Abrir Chamado</h2>
           <p className="text-sm text-muted-foreground">Cria um novo chamado dentro do seu contrato AMS</p>
         </div>
+        
       <Card className="w-full">
         <CardContent>
           <form className="space-y-6 mt-6" onSubmit={handleSubmit}>              <div>
@@ -437,6 +453,47 @@ export default function CreateTicketPage() {
                 disabled={loading}
                 className="w-full h-48 border-2 bg-secondary text-foreground rounded p-2 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] outline-none"
               />
+            </div>
+
+            {/* Campos de Referência */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="ref_ticket" className="block text-sm font-medium mb-1">
+                  Ticket Relacionado
+                </label>
+                <TicketSelectionDialog
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                      disabled={loading}
+                    >
+                      {selectedTicketTitle || "Selecionar ticket relacionado..."}
+                    </Button>
+                  }
+                  onSelect={(ticketId, ticketTitle) => {
+                    setForm(prev => ({ ...prev, ref_ticket_id: ticketId }));
+                    setSelectedTicketTitle(ticketTitle);
+                  }}
+                  selectedTicketId={form.ref_ticket_id}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="ref_external_id" className="block text-sm font-medium mb-1">
+                  Cód. Referência Externa
+                </label>
+                <Input
+                  id="ref_external_id"
+                  name="ref_external_id"
+                  value={form.ref_external_id}
+                  onChange={handleChange}
+                  disabled={loading}
+                  maxLength={40}
+                  placeholder="Código de referência externa"
+                />
+              </div>
             </div>            {error && (
               <div className="text-destructive text-sm">{error}</div>
             )}
@@ -504,7 +561,7 @@ export default function CreateTicketPage() {
                 type="reset"
                 variant="outline"
                 disabled={loading}
-                onClick={() =>
+                onClick={() => {
                   setForm({
                     project_id: isClientUser && filteredProjects.length === 1 ? String(filteredProjects[0].id) : "",
                     partner_id: isClientUser && user?.partner_id ? String(user.partner_id) : "",
@@ -514,8 +571,12 @@ export default function CreateTicketPage() {
                     priority_id: "",
                     description: "",
                     attachment: null,
-                  })
-                }
+                    ref_ticket_id: "",
+                    ref_external_id: "",
+                  });
+                  setSelectedTicketTitle("");
+                  setAttachmentType("");
+                }}
               >
                 Limpar
               </Button>

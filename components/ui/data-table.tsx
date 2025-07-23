@@ -170,17 +170,26 @@ export function DataTable<
                           };
 
                           const childData = child as { ticket_id?: string; project_id?: string; ticket_type_id?: number; ticket_external_id?: string };
+                          const isClient = meta?.user?.is_client;
+                          
+                          // Função para converter minutos para formato hh:mm h
+                          const formatMinutesToHours = (minutes: number) => {
+                            const hours = Math.floor(minutes / 60);
+                            const mins = minutes % 60;
+                            return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')} h`;
+                          };
+                          
                           return (
                             <div key={child.id} className="flex flex-col md:flex-row md:gap-8 text-xs md:text-sm border-l-2 border-muted pl-4">
                               <span><b>Projeto:</b> {child.project?.projectName || '-'}</span>
-                              <span><b>Ticket:</b> {
+                              <span className="max-w-xs"><b>Ticket:</b> <span className="truncate inline-block max-w-[200px]" title={child.ticket_title || '-'}>{
                                 childData.ticket_id && childData.project_id && child.ticket_title && childData.ticket_type_id && childData.ticket_external_id
                                   ? renderTicketTitle(String(childData.ticket_id), String(childData.project_id), String(child.ticket_title), childData.ticket_type_id, String(childData.ticket_external_id))
                                   : (child.ticket_title || '-')
-                              }</span>
-                              <span><b>Horas:</b> {((child.minutes || 0) / 60).toFixed(2)}h</span>
-                              <span><b>Início:</b> {child.appoint_start || '-'}</span>
-                              <span><b>Fim:</b> {child.appoint_end || '-'}</span>
+                              }</span></span>
+                              <span><b>Horas:</b> {formatMinutesToHours(child.minutes || 0)}</span>
+                              {!isClient && <span><b>Início:</b> {child.appoint_start || '-'}</span>}
+                              {!isClient && <span><b>Fim:</b> {child.appoint_end || '-'}</span>}
                               {/* Mostrar usuário apenas para administradores (role 1) não-clientes */}
                               {meta?.showUserInChildren && 'user_name' in child && child.user_name ? (
                                 <span><b>Usuário:</b> {String(child.user_name)}</span>

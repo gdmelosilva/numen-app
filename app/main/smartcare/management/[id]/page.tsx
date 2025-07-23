@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import type { Ticket } from "@/types/tickets";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
+import { ColoredBadge } from "@/components/ui/colored-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -18,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { useUserContext } from "@/components/user-context";
 import type { UserWithModule } from "@/types/users";
 import { ForwardButton } from "@/components/ForwardButton";
-import { useTicketStatuses } from "@/hooks/useTicketStatuses";
+// import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 
 // Define o tipo correto para o recurso retornado pelo backend
 interface TicketResource {
@@ -69,7 +70,7 @@ export default function TicketDetailsPage() {
   const [availableLoading, setAvailableLoading] = useState(false);
   const [resourceError, setResourceError] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState("");
-  const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
+  // const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
   
   // Estados para gerenciar a data de encerramento estimada
   const [showDateDialog, setShowDateDialog] = useState(false);
@@ -420,13 +421,13 @@ export default function TicketDetailsPage() {
   };
 
   // Função para obter o nome do status pelo id
-  function getStatusName(statusObj: unknown, statusId: string | number | undefined) {
-    if (statusesLoading) return "Carregando...";
-    if (statusObj && typeof statusObj === 'object' && 'name' in statusObj) return String((statusObj as { name: string }).name).trim();
-    if (!statusId) return "Sem status";
-    const found = ticketStatuses.find(s => String(s.id) === String(statusId));
-    return found ? String(found.name).trim() : "Sem status";
-  }
+  // function getStatusName(statusObj: unknown, statusId: string | number | undefined) {
+  //   if (statusesLoading) return "Carregando...";
+  //   if (statusObj && typeof statusObj === 'object' && 'name' in statusObj) return String((statusObj as { name: string }).name).trim();
+  //   if (!statusId) return "Sem status";
+  //   const found = ticketStatuses.find(s => String(s.id) === String(statusId));
+  //   return found ? String(found.name).trim() : "Sem status";
+  // }
 
   return (
     <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
@@ -452,9 +453,12 @@ export default function TicketDetailsPage() {
                   <UserCircle className="w-4 h-4" />
                   {getTicketCreatorName(ticket)}
                 </div>
-                <Badge variant="default" className="text-md">
-                  {getStatusName(ticket.status, ticket.status_id)}
-                </Badge>
+                <ColoredBadge 
+                  type="ticket_status" 
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  value={ticket.status as any}
+                  className="text-md"
+                />
               </div>
               {/* <div className="flex flex-col items-end align-middle justify-center">
                 <span className="text-muted-foreground text-xs font-medium mb-1"></span>

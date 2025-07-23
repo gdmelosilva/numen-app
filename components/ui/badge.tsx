@@ -24,6 +24,18 @@ const badgeVariants = cva(
           "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
         "primary-2":
           "border-transparent bg-primary-2 text-primary-2-foreground hover:bg-primary-2/80",
+        "ticket-yellow":
+          "border-transparent bg-[hsl(var(--ticket-yellow))] text-[hsl(var(--ticket-yellow-foreground))] hover:bg-[hsl(var(--ticket-yellow))]/80",
+        "ticket-orange":
+          "border-transparent bg-[hsl(var(--ticket-orange))] text-[hsl(var(--ticket-orange-foreground))] hover:bg-[hsl(var(--ticket-orange))]/80",
+        "ticket-purple":
+          "border-transparent bg-[hsl(var(--ticket-purple))] text-[hsl(var(--ticket-purple-foreground))] hover:bg-[hsl(var(--ticket-purple))]/80",
+        "ticket-gray":
+          "border-transparent bg-[hsl(var(--ticket-gray))] text-[hsl(var(--ticket-gray-foreground))] hover:bg-[hsl(var(--ticket-gray))]/80",
+        "ticket-cyan":
+          "border-transparent bg-[hsl(var(--ticket-cyan))] text-[hsl(var(--ticket-cyan-foreground))] hover:bg-[hsl(var(--ticket-cyan))]/80",
+        "ticket-green":
+          "border-transparent bg-[hsl(var(--ticket-green))] text-[hsl(var(--ticket-green-foreground))] hover:bg-[hsl(var(--ticket-green))]/80",
       },
     },
     defaultVariants: {

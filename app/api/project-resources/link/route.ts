@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   try {
     const body = await req.json();
-    const { project_id, user_id, max_hours, user_functional } = body;
+    const { project_id, user_id, max_hours, user_functional, hora_faturavel } = body;
     if (!project_id || !user_id || !max_hours || !user_functional) {
       return NextResponse.json({ error: 'Dados obrigatórios ausentes.' }, { status: 400 });
     }
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
         user_id,
         max_hours,
         user_functional, // id do módulo
+        hora_faturavel: hora_faturavel !== null && hora_faturavel !== undefined ? hora_faturavel : null,
       });
     if (error) throw error;
     return NextResponse.json({ success: true });
