@@ -8,6 +8,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface ProjectDetailsTabProps {
   project: Contract;
@@ -17,6 +18,8 @@ interface ProjectDetailsTabProps {
 
 export default function ProjectDetailsTab({ project, editMode, setEditMode }: ProjectDetailsTabProps) {
   console.log('[ProjectDetailsTab] project recebido:', project);
+  const { user: currentUser } = useCurrentUser();
+  
   // Determine if the project is closed (status 'Encerrado')
   const isClosed = (() => {
     let status = '';
@@ -33,6 +36,9 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     }
     return status.trim().toLowerCase() === 'encerrado';
   })();
+  
+  // Check if user is client - clients cannot edit contracts
+  const isClientUser = currentUser?.is_client === true;
   const [form, setForm] = useState({
     projectName: project.projectName || "",
     projectDesc: project.projectDesc || "",
@@ -227,9 +233,12 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             </Button>
           </div>
         ) : (
-          <Button size="sm" variant="outline" type="button" onClick={() => { if (!isClosed) setEditMode((v) => !v); }} disabled={isClosed}>
-            <Pencil className="w-4 h-4 mr-1" /> Editar
-          </Button>
+          // Hide edit button for client users, regardless of their role
+          !isClientUser && (
+            <Button size="sm" variant="outline" type="button" onClick={() => { if (!isClosed) setEditMode((v) => !v); }} disabled={isClosed}>
+              <Pencil className="w-4 h-4 mr-1" /> Editar
+            </Button>
+          )
         )}
       </div>
       {error && <div className="text-destructive px-1 pt-2">{error}</div>}
