@@ -37,6 +37,8 @@ interface Filters {
   actual_end_date: string;
   user_tickets?: string; // Campo especial para filtrar tickets do usuário
   resource_user_id: string; // Novo campo para filtrar por usuário recurso
+  ref_ticket_id: string; // Ticket Referência
+  ref_external_id: string; // Identificação Externa
 }
 
 interface ResourceUser {
@@ -86,6 +88,8 @@ export default function TicketManagementPage() {
     actual_end_date: "",
     user_tickets: "",
     resource_user_id: "",
+    ref_ticket_id: "",
+    ref_external_id: "",
   });
   const [pendingFilters, setPendingFilters] = useState<Filters>({
     ...filters,
@@ -144,6 +148,8 @@ export default function TicketManagementPage() {
       "actual_end_date",
       "user_tickets",
       "resource_user_id",
+      "ref_ticket_id",
+      "ref_external_id",
     ] as const;
 
     filterKeys.forEach((key) => {
@@ -315,6 +321,8 @@ export default function TicketManagementPage() {
       actual_end_date: "",
       user_tickets: "",
       resource_user_id: "",
+      ref_ticket_id: "",
+      ref_external_id: "",
     };
     setPendingFilters(cleared);
     setFilters(cleared);
@@ -784,6 +792,26 @@ export default function TicketManagementPage() {
                     disabled={loading}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ref_ticket_id">Ticket Referência</Label>
+                  <Input
+                    id="ref_ticket_id"
+                    placeholder="Filtrar por ticket referência"
+                    value={pendingFilters.ref_ticket_id}
+                    onChange={(e) => handleFilterChange("ref_ticket_id", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ref_external_id">Identificação Externa</Label>
+                  <Input
+                    id="ref_external_id"
+                    placeholder="Filtrar por identificação externa"
+                    value={pendingFilters.ref_external_id}
+                    onChange={(e) => handleFilterChange("ref_external_id", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
                 {/* Novo filtro: Recurso (Usuário vinculado) */}
                 {!user?.is_client && (user?.role === 1 || user?.role === 2) && (
                   <div className="space-y-2 w-full max-w-full">
@@ -841,7 +869,11 @@ export default function TicketManagementPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <DataTable columns={columns} data={tickets} />
+        <DataTable 
+          columns={columns} 
+          data={tickets} 
+          showColumnVisibility={!user?.is_client}
+        />
       )}
     </div>
   );

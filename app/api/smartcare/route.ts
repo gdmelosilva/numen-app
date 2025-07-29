@@ -172,6 +172,12 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("actual_end_date")) {
     query = query.gte("actual_end_date", searchParams.get("actual_end_date"));
   }
+  if (searchParams.get("ref_ticket_id")) {
+    query = query.eq("ref_ticket_id", searchParams.get("ref_ticket_id"));
+  }
+  if (searchParams.get("ref_external_id")) {
+    query = query.ilike("ref_external_id", `%${searchParams.get("ref_external_id")}%`);
+  }
 
   // Filter by user_tickets (for functional-adm users)
   if (searchParams.get("user_tickets")) {

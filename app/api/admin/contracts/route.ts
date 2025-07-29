@@ -65,6 +65,13 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("id")) {
     query = query.eq("id", searchParams.get("id"));
   }
+  if (searchParams.get("ids")) {
+    // Suporte para múltiplos IDs separados por vírgula
+    const ids = searchParams.get("ids")?.split(',').filter(Boolean);
+    if (ids && ids.length > 0) {
+      query = query.in("id", ids);
+    }
+  }
   if (searchParams.get("projectExtId")) {
     query = query.eq("projectExtId", searchParams.get("projectExtId"));
   }

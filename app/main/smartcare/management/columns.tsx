@@ -129,6 +129,7 @@ export const columns: ColumnDef<Ticket>[] = [
   },
   {
     id: "actions",
+    enableHiding: false,
     cell: function ActionsCell({ row }) {
       const ticketId = row.original.external_id || row.original.id;
       const router = useRouter();

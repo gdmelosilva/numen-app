@@ -338,7 +338,8 @@ export default function TicketDetailsPage() {
     setOptionsLoading(true);
     try {
       if (field === 'category') {
-        const data = await getCategoryOptions();
+        // Para smartcare, buscar categorias AMS (is_ams = true)
+        const data = await getCategoryOptions(true);
         setCategories(data);
       } else if (field === 'module') {
         const data = await fetchModuleOptions();

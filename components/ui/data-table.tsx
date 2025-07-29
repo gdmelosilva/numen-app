@@ -11,11 +11,13 @@ import {
   getSortedRowModel,
   ColumnFiltersState,
   getFilteredRowModel,
+  VisibilityState,
 } from "@tanstack/react-table"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { ColumnVisibilityToggle } from "@/components/ui/column-visibility-toggle"
 // import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface DataTableProps<TData extends { id?: number|string }, TValue> {
@@ -32,6 +34,8 @@ interface DataTableProps<TData extends { id?: number|string }, TValue> {
   }
   onSelectionChange?: (ids: (number|string)[]) => void
   onRowClick?: (row: TData) => void
+  showColumnVisibility?: boolean
+  columnLabels?: Record<string, string>
 }
 
 export function DataTable<
@@ -54,11 +58,14 @@ export function DataTable<
   meta,
   onSelectionChange,
   onRowClick,
+  showColumnVisibility = false,
+  columnLabels = {},
 }: Readonly<DataTableProps<TData, TValue>>) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "projectExtId", desc: true },
   ])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
 
   // Só ativa seleção se receber onSelectionChange e se as colunas incluírem a coluna 'select'
@@ -73,9 +80,11 @@ export function DataTable<
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,
       columnFilters,
+      columnVisibility,
       rowSelection,
     },
     enableRowSelection,
@@ -96,6 +105,11 @@ export function DataTable<
 
   return (
     <div>
+      {showColumnVisibility && (
+        <div className="flex items-center pb-4">
+          <ColumnVisibilityToggle table={table} columnLabels={columnLabels} />
+        </div>
+      )}
       <div className="rounded-md border bg-card shadow-md">
         <Table>
           <TableHeader>
