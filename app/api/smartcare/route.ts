@@ -187,7 +187,8 @@ export async function GET(req: NextRequest) {
       query = query.in("id", ticketIds);
     } else {
       // No tickets for this user, return empty result
-      return NextResponse.json([]);
+      // Usar uma condição que nunca será verdadeira para garantir lista vazia
+      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
     }
   }
 
@@ -205,7 +206,8 @@ export async function GET(req: NextRequest) {
       query = query.in("id", ticketIds);
     } else {
       // No tickets for this user, return empty result
-      return NextResponse.json([]);
+      // Usar uma condição que nunca será verdadeira para garantir lista vazia
+      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
     }
   }
 

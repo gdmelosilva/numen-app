@@ -89,10 +89,10 @@ export default function TicketDetailsPage() {
   const [hideSystemMessages, setHideSystemMessages] = useState(false);
   const [hidePrivateMessages, setHidePrivateMessages] = useState(false);
 
-  // Estados para edição de categoria, tipo e prioridade
-  const [editingField, setEditingField] = useState<'category' | 'type' | 'priority' | null>(null);
+  // Estados para edição de categoria, módulo e prioridade
+  const [editingField, setEditingField] = useState<'category' | 'module' | 'priority' | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string; description: string }[]>([]);
-  const [types, setTypes] = useState<{ id: string; name: string }[]>([]);
+  const [modules, setModules] = useState<{ id: string; name: string }[]>([]);
   const [priorities, setPriorities] = useState<{ id: string; name: string }[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string>("");
@@ -320,29 +320,29 @@ export default function TicketDetailsPage() {
     }
   };
 
-  // Função para buscar tipos de tickets via API
-  const fetchTypeOptions = async () => {
+  // Função para buscar módulos de tickets via API
+  const fetchModuleOptions = async () => {
     try {
-      const response = await fetch('/api/options?type=ticket_types');
-      if (!response.ok) throw new Error('Erro ao buscar tipos');
+      const response = await fetch('/api/options?type=ticket_modules');
+      if (!response.ok) throw new Error('Erro ao buscar módulos');
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('Erro ao buscar tipos:', error);
+      console.error('Erro ao buscar módulos:', error);
       return [];
     }
   };
 
   // Função para carregar todas as opções
-  const loadEditOptions = async (field: 'category' | 'type' | 'priority') => {
+  const loadEditOptions = async (field: 'category' | 'module' | 'priority') => {
     setOptionsLoading(true);
     try {
       if (field === 'category') {
         const data = await getCategoryOptions();
         setCategories(data);
-      } else if (field === 'type') {
-        const data = await fetchTypeOptions();
-        setTypes(data);
+      } else if (field === 'module') {
+        const data = await fetchModuleOptions();
+        setModules(data);
       } else if (field === 'priority') {
         const data = await getPriorityOptions();
         setPriorities(data);
@@ -356,7 +356,7 @@ export default function TicketDetailsPage() {
   };
 
   // Função para iniciar edição
-  const startEdit = (field: 'category' | 'type' | 'priority') => {
+  const startEdit = (field: 'category' | 'module' | 'priority') => {
     if (isTicketFinalized(ticket)) {
       toast.error("Não é possível editar um chamado finalizado");
       return;
@@ -367,8 +367,8 @@ export default function TicketDetailsPage() {
     // Define o valor atual
     if (field === 'category') {
       setSelectedValue(ticket?.category_id ? String(ticket.category_id) : "");
-    } else if (field === 'type') {
-      setSelectedValue(ticket?.type_id ? String(ticket.type_id) : "");
+    } else if (field === 'module') {
+      setSelectedValue(ticket?.module_id ? String(ticket.module_id) : "");
     } else if (field === 'priority') {
       setSelectedValue(ticket?.priority_id ? String(ticket.priority_id) : "");
     }
@@ -384,7 +384,7 @@ export default function TicketDetailsPage() {
     try {
       const fieldMap = {
         category: 'category_id',
-        type: 'type_id', 
+        module: 'module_id', 
         priority: 'priority_id'
       };
 
@@ -408,11 +408,11 @@ export default function TicketDetailsPage() {
         if (category) {
           updatedTicket.category = { id: Number(selectedValue), name: category.name };
         }
-      } else if (editingField === 'type') {
-        updatedTicket.type_id = Number(selectedValue);
-        const type = types.find(t => t.id === selectedValue);
-        if (type) {
-          updatedTicket.type = { id: Number(selectedValue), name: type.name };
+      } else if (editingField === 'module') {
+        updatedTicket.module_id = Number(selectedValue);
+        const selectedModule = modules.find(m => m.id === selectedValue);
+        if (selectedModule) {
+          updatedTicket.module = { id: Number(selectedValue), name: selectedModule.name };
         }
       } else if (editingField === 'priority') {
         updatedTicket.priority_id = Number(selectedValue);
@@ -424,7 +424,7 @@ export default function TicketDetailsPage() {
 
       setTicket(updatedTicket);
       setEditingField(null);
-      toast.success(`${editingField === 'category' ? 'Categoria' : editingField === 'type' ? 'Tipo' : 'Prioridade'} atualizada com sucesso`);
+      toast.success(`${editingField === 'category' ? 'Categoria' : editingField === 'module' ? 'Módulo' : 'Prioridade'} atualizada com sucesso`);
     } catch (error) {
       console.error('Erro ao atualizar:', error);
       toast.error('Erro ao atualizar campo');
@@ -620,16 +620,6 @@ export default function TicketDetailsPage() {
               <div className="flex flex-col">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground text-xs font-medium">Tipo</span>
-                  {currentUser && !currentUser.is_client && !isTicketFinalized(ticket) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => startEdit('type')}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                  )}
                 </div>
                 <span>{(typeof ticket.type === 'object' && ticket.type && 'name' in ticket.type) ? ticket.type.name : (typeof ticket.type_id === 'string' || typeof ticket.type_id === 'number' ? ticket.type_id : '-')}</span>
               </div>
@@ -650,7 +640,19 @@ export default function TicketDetailsPage() {
                 <span>{(typeof ticket.category === 'object' && ticket.category && 'name' in ticket.category) ? ticket.category.name : (typeof ticket.category_id === 'string' || typeof ticket.category_id === 'number' ? ticket.category_id : '-')}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-muted-foreground text-xs font-medium">Módulo</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-xs font-medium">Módulo</span>
+                  {currentUser && !currentUser.is_client && !isTicketFinalized(ticket) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => startEdit('module')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
                 <span>{(typeof ticket.module === 'object' && ticket.module && 'name' in ticket.module) ? ticket.module.name : (typeof ticket.module_id === 'string' || typeof ticket.module_id === 'number' ? ticket.module_id : '-')}</span>
               </div>
               <div className="flex flex-col">
@@ -1103,7 +1105,7 @@ export default function TicketDetailsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              Editar {editingField === 'category' ? 'Categoria' : editingField === 'type' ? 'Tipo' : 'Prioridade'}
+              Editar {editingField === 'category' ? 'Categoria' : editingField === 'module' ? 'Módulo' : 'Prioridade'}
             </DialogTitle>
           </DialogHeader>
           
@@ -1116,11 +1118,11 @@ export default function TicketDetailsPage() {
             ) : (
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Selecione {editingField === 'category' ? 'a categoria' : editingField === 'type' ? 'o tipo' : 'a prioridade'}
+                  Selecione {editingField === 'category' ? 'a categoria' : editingField === 'module' ? 'o módulo' : 'a prioridade'}
                 </label>
                 <Select value={selectedValue} onValueChange={setSelectedValue}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={`Selecione ${editingField === 'category' ? 'uma categoria' : editingField === 'type' ? 'um tipo' : 'uma prioridade'}`} />
+                    <SelectValue placeholder={`Selecione ${editingField === 'category' ? 'uma categoria' : editingField === 'module' ? 'um módulo' : 'uma prioridade'}`} />
                   </SelectTrigger>
                   <SelectContent>
                     {editingField === 'category' && categories.map((category) => (
@@ -1128,9 +1130,9 @@ export default function TicketDetailsPage() {
                         {category.name}
                       </SelectItem>
                     ))}
-                    {editingField === 'type' && types.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
+                    {editingField === 'module' && modules.map((moduleItem) => (
+                      <SelectItem key={moduleItem.id} value={moduleItem.id}>
+                        {moduleItem.name}
                       </SelectItem>
                     ))}
                     {editingField === 'priority' && priorities.map((priority) => (

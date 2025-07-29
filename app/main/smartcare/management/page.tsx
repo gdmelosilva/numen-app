@@ -174,25 +174,6 @@ export default function TicketManagementPage() {
     []
   );
 
-  // Função para buscar tickets vinculados ao usuário
-  const fetchUserTickets = useCallback(
-    async (userId: string): Promise<string[]> => {
-      try {
-        const response = await fetch(`/api/ticket-resources?user_id=${userId}`);
-        if (!response.ok) return [];
-        const data = await response.json();
-        // Retorna os IDs dos tickets (não external_id, mas o ID interno)
-        return Array.isArray(data)
-          ? data.map((resource: { ticket_id: string }) => resource.ticket_id)
-          : [];
-      } catch (error) {
-        console.error("Erro ao buscar tickets do usuário:", error);
-        return [];
-      }
-    },
-    []
-  );
-
   // Função para aplicar filtros baseados no perfil do usuário
   const handleUserProfile = useCallback(
     async (customFilters: Filters): Promise<Filters> => {
@@ -224,11 +205,8 @@ export default function TicketManagementPage() {
         }
         case "functional-adm": {
           // Functional-adm: tickets onde está alocado como recurso (ticket-resource)
-          const userTicketIds = await fetchUserTickets(user.id);
-          if (userTicketIds.length > 0) {
-            // Usa parâmetro especial para filtrar por tickets do usuário
-            filteredQuery.user_tickets = user.id;
-          }
+          // Sempre aplicar o filtro, mesmo se não tiver tickets alocados
+          filteredQuery.user_tickets = user.id;
           break;
         }
         default:
@@ -237,7 +215,7 @@ export default function TicketManagementPage() {
       }
       return filteredQuery;
     },
-    [user, profile, fetchUserTickets, fetchManagedProjects]
+    [user, profile, fetchManagedProjects]
   );
 
   const fetchTickets = useCallback(
