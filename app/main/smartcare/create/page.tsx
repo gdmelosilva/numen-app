@@ -223,7 +223,13 @@ export default function CreateTicketPage() {
       if (finalForm.attachment && ticketId) {
         await uploadAttachment(finalForm, ticketId, attachmentType);
       }
-      toast.success("Chamado criado com sucesso.");
+      
+      // Mensagem personalizada para usuários functional-adm
+      if (profile === "functional-adm") {
+        toast.success("Chamado criado com sucesso. Você foi automaticamente vinculado como responsável principal do chamado.");
+      } else {
+        toast.success("Chamado criado com sucesso.");
+      }
       
       // Reset do formulário
       const resetForm = {
@@ -385,7 +391,14 @@ export default function CreateTicketPage() {
     <div className="w-full max-w-full mx-auto flex flex-col gap-4">
         <div>
           <h2 className="text-xl font-semibold">Abrir Chamado</h2>
-          <p className="text-sm text-muted-foreground">Cria um novo chamado dentro do seu contrato AMS</p>
+          <p className="text-sm text-muted-foreground">
+            Cria um novo chamado dentro do seu contrato AMS
+            {profile === "functional-adm" && (
+              <span className="block mt-1 text-blue-600 font-medium">
+                ℹ️ Você será automaticamente vinculado como responsável principal do chamado
+              </span>
+            )}
+          </p>
         </div>
         
       <Card className="w-full">

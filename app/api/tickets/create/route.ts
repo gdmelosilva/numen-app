@@ -235,6 +235,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Se o usuário que criou o ticket for functional-adm, vinculá-lo automaticamente como responsável principal
+    if (ticket?.id && user.role === 3) { // role 3 = functional
+      console.log('DEBUG: Vinculando usuário functional como recurso principal:', {
+        user_id: user.id,
+        ticket_id: ticket.id,
+        user_role: user.role,
+        is_client: user.is_client
+      });
+      
+      try {
+        const { error: resourceError } = await supabase
+          .from("ticket_resource")
+          .insert({
+            user_id: user.id,
+            ticket_id: ticket.id,
+            is_main: true,
+            created_at: new Date().toISOString()
+          });
+
+        if (resourceError) {
+          console.error('Erro ao vincular usuário functional como recurso:', resourceError);
+          // Não falha a criação do ticket por causa disso, apenas loga o erro
+        } else {
+          console.log('DEBUG: Usuário functional vinculado com sucesso como recurso principal');
+        }
+      } catch (err) {
+        console.error('Erro ao vincular usuário functional como recurso:', err);
+      }
+    }
+
     // Se houver anexo, faz upload e cria registro na tabela attachment
     if (attachment && ticket?.id) {
       const fileExt = attachment.name.split(".").pop();
@@ -333,6 +363,36 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Se o usuário que criou o ticket for functional-adm, vinculá-lo automaticamente como responsável principal
+  if (data?.id && user.role === 3) { // role 3 = functional
+    console.log('DEBUG JSON: Vinculando usuário functional como recurso principal:', {
+      user_id: user.id,
+      ticket_id: data.id,
+      user_role: user.role,
+      is_client: user.is_client
+    });
+    
+    try {
+      const { error: resourceError } = await supabase
+        .from("ticket_resource")
+        .insert({
+          user_id: user.id,
+          ticket_id: data.id,
+          is_main: true,
+          created_at: new Date().toISOString()
+        });
+
+      if (resourceError) {
+        console.error('Erro ao vincular usuário functional como recurso:', resourceError);
+        // Não falha a criação do ticket por causa disso, apenas loga o erro
+      } else {
+        console.log('DEBUG JSON: Usuário functional vinculado com sucesso como recurso principal');
+      }
+    } catch (err) {
+      console.error('Erro ao vincular usuário functional como recurso:', err);
+    }
   }
 
   // Após criar o ticket com sucesso, verificar se deve enviar notificação por email
