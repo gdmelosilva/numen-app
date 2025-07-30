@@ -394,7 +394,7 @@ export default function CreateTicketPage() {
           <p className="text-sm text-muted-foreground">
             Cria um novo chamado dentro do seu contrato AMS
             {profile === "functional-adm" && (
-              <span className="block mt-1 text-blue-600 font-medium flex items-center gap-1">
+              <span className="mt-1 text-blue-600 font-medium flex items-center gap-1">
                 <Info className="w-4 h-4" />
                 Você será automaticamente vinculado como responsável principal do chamado
               </span>
@@ -415,9 +415,10 @@ export default function CreateTicketPage() {
                   onChange={handleChange}
                   required
                   disabled={loading}
+                  className="truncate"
                 />
               </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Campo Parceiro - apenas para admin-adm e clientes */}
               {(profile === "admin-adm" || isClientUser) && (
                 <div>
@@ -430,12 +431,12 @@ export default function CreateTicketPage() {
                     disabled={loading || isClientUser || (profile !== "admin-adm")}
                   >
                     <SelectTrigger className="w-full" id="partner_id">
-                      <SelectValue placeholder="Selecione o parceiro" />
+                      <SelectValue placeholder="Selecione o parceiro" className="truncate" />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredPartners.map((p) => (
                         <SelectItem key={String(p.id)} value={String(p.id)}>
-                          {p.name}
+                          <span className="truncate">{p.name}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -459,12 +460,12 @@ export default function CreateTicketPage() {
                   }
                 >
                   <SelectTrigger className="w-full" id="project_id">
-                    <SelectValue placeholder="Selecione o projeto" />
+                    <SelectValue placeholder="Selecione o projeto" className="truncate" />
                   </SelectTrigger>
                   <SelectContent>
                     {(filteredProjects ?? []).map((p) => (
                       <SelectItem key={String(p.id)} value={String(p.id)}>
-                        {p.name || p.projectName || p.projectDesc}
+                        <span className="truncate">{p.name || p.projectName || p.projectDesc}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -478,7 +479,7 @@ export default function CreateTicketPage() {
                   onValueChange={(v) => handleSelect("category_id", v)}
                   disabled={loading}
                 >                  <SelectTrigger className="w-full" id="category_id">
-                    <SelectValue placeholder="Selecione o tipo">
+                    <SelectValue placeholder="Selecione o tipo" className="truncate">
                       {form.category_id && categories.find(c => String(c.id) === form.category_id)?.name}
                     </SelectValue>
                   </SelectTrigger><SelectContent>
@@ -501,15 +502,15 @@ export default function CreateTicketPage() {
                   onValueChange={(v) => handleSelect("module_id", v)}
                   disabled={loading}
                 >                  <SelectTrigger className="w-full" id="module_id">
-                    <SelectValue placeholder="Selecione o módulo">
+                    <SelectValue placeholder="Selecione o módulo" className="truncate">
                       {form.module_id && modules.find(m => String(m.id) === form.module_id)?.name}
                     </SelectValue>
                   </SelectTrigger>                  <SelectContent>
                     {(modules ?? []).map((m) => (
                       <SelectItem key={String(m.id)} value={String(m.id)}>
                         <div className="flex flex-col">
-                          <span>{m.name}</span>
-                          <span className="text-xs italic text-muted-foreground lowercase">{m.description}</span>
+                          <span className="truncate">{m.name}</span>
+                          <span className="text-xs italic text-muted-foreground lowercase truncate">{m.description}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -533,12 +534,12 @@ export default function CreateTicketPage() {
                       disabled={loading}
                     >
                       <SelectTrigger className="w-full" id="priority_id">
-                        <SelectValue placeholder="Selecione a prioridade" />
+                        <SelectValue placeholder="Selecione a prioridade" className="truncate" />
                       </SelectTrigger>
                       <SelectContent>
                         {(priorities ?? []).map((p) => (
                           <SelectItem key={String(p.id)} value={String(p.id)}>
-                            {p.name}
+                            <span className="truncate">{p.name}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -557,12 +558,12 @@ export default function CreateTicketPage() {
                 onChange={handleChange}
                 required
                 disabled={loading}
-                className="w-full h-48 border-2 bg-secondary text-foreground rounded p-2 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] outline-none"
+                className="w-full h-48 border-2 bg-secondary text-foreground rounded p-2 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] outline-none resize-none overflow-auto"
               />
             </div>
 
             {/* Campos de Referência */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="ref_ticket" className="block text-sm font-medium mb-1">
                   Ticket Relacionado
@@ -572,10 +573,10 @@ export default function CreateTicketPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full justify-start text-left font-normal"
+                      className="w-full justify-start text-left font-normal truncate"
                       disabled={loading}
                     >
-                      {selectedTicketTitle || "Selecionar ticket relacionado..."}
+                      <span className="truncate">{selectedTicketTitle || "Selecionar ticket relacionado..."}</span>
                     </Button>
                   }
                   onSelect={(ticketId, ticketTitle) => {
@@ -598,13 +599,14 @@ export default function CreateTicketPage() {
                   disabled={loading}
                   maxLength={40}
                   placeholder="Código de referência externa"
+                  className="truncate"
                 />
               </div>
             </div>            {error && (
               <div className="text-destructive text-sm">{error}</div>
             )}
               {/* Seção de Anexo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">              <div>
                 <label htmlFor="attachment" className="block text-sm font-medium mb-1">Anexo</label>
                 <Input
                   id="attachment"
@@ -641,13 +643,21 @@ export default function CreateTicketPage() {
                       disabled={loading}
                     >
                       <SelectTrigger className="w-full" id="attachment_type">
-                        <SelectValue placeholder="Selecione o tipo do anexo" />
+                        <SelectValue placeholder="Selecione o tipo do anexo" className="truncate" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Evidencia de Erro">Evidência de Erro</SelectItem>
-                        <SelectItem value="Evidencia de Teste">Evidência de Teste</SelectItem>
-                        <SelectItem value="Especificação">Especificação</SelectItem>
-                        <SelectItem value="Detalhamento de Chamado">Detalhamento de Chamado</SelectItem>
+                        <SelectItem value="Evidencia de Erro">
+                          <span className="truncate">Evidência de Erro</span>
+                        </SelectItem>
+                        <SelectItem value="Evidencia de Teste">
+                          <span className="truncate">Evidência de Teste</span>
+                        </SelectItem>
+                        <SelectItem value="Especificação">
+                          <span className="truncate">Especificação</span>
+                        </SelectItem>
+                        <SelectItem value="Detalhamento de Chamado">
+                          <span className="truncate">Detalhamento de Chamado</span>
+                        </SelectItem>
                         {/* <SelectItem value="Arquivo Contratual">Arquivo Contratual</SelectItem> */}
                       </SelectContent>
                     </Select>
