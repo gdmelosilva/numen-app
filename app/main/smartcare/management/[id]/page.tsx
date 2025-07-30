@@ -23,6 +23,7 @@ import { ForwardButton } from "@/components/ForwardButton";
 import { isTicketFinalized } from "@/lib/ticket-status";
 import { getCategoryOptions, getPriorityOptions } from "@/hooks/useOptions";
 import { toast } from "sonner";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 // import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 
 // Define o tipo correto para o recurso retornado pelo backend
@@ -914,7 +915,7 @@ export default function TicketDetailsPage() {
           
           {/* Dialog para vincular recurso */}
           <Dialog open={showResourceDialog} onOpenChange={setShowResourceDialog}>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-4xl">
               <DialogHeader>
                 <DialogTitle>Vincular Recurso ao Chamado</DialogTitle>
               </DialogHeader>
@@ -935,35 +936,57 @@ export default function TicketDetailsPage() {
                   ) : availableUsers.length === 0 ? (
                     <div className="text-muted-foreground text-sm italic">Nenhum usuário disponível para vínculo.</div>
                   ) : (
-                    <ul className="divide-y divide-muted-foreground/10">
-                      {availableUsers.filter(u =>
-                        `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(searchUser.toLowerCase())
-                      ).map(u => (
-                        <li key={u.id} className="py-2 flex items-center justify-between">
-                          <span>
-                            {u.first_name} {u.last_name} ({u.email})
-                            {u.user_functional_name || u.ticket_module ? (
-                              <span className="ml-2 text-xs text-muted-foreground italic">
-                                - Módulo: {u.user_functional_name || u.ticket_module}
-                              </span>
-                            ) : null}
-                          </span>
-                          <Button size="sm" onClick={async () => {
-                            try {
-                              await fetch("/api/ticket-resources/link", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ ticket_id: ticket?.id, user_id: u.id })
-                              });
-                              setShowResourceDialog(false);
-                              fetchResources();
-                            } catch {
-                              setResourceError("Erro ao vincular recurso");
-                            }
-                          }}>Vincular</Button>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nome</TableHead>
+                            <TableHead>Módulo</TableHead>
+                            <TableHead className="w-[100px]">Ação</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {availableUsers.filter(u =>
+                            `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(searchUser.toLowerCase())
+                          ).map(u => (
+                            <TableRow key={u.id}>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{u.first_name} {u.last_name}</span>
+                                  <span className="text-xs text-muted-foreground">{u.email}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {u.user_functional_name || u.ticket_module ? (
+                                  <span className="text-sm">
+                                    {u.user_functional_name || u.ticket_module}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground italic">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Button size="sm" onClick={async () => {
+                                  try {
+                                    await fetch("/api/ticket-resources/link", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ ticket_id: ticket?.id, user_id: u.id })
+                                    });
+                                    setShowResourceDialog(false);
+                                    fetchResources();
+                                  } catch {
+                                    setResourceError("Erro ao vincular recurso");
+                                  }
+                                }}>
+                                  Vincular
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </>
               )}

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Paperclip, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -24,7 +24,9 @@ interface MessageFormProps {
   statusOptions?: StatusOption[];
 }
 
-const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, statusOptions = [] }) => {  const { user } = useCurrentUser();
+const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, statusOptions = [] }) => {
+  const { user } = useCurrentUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Verificar se o ticket está finalizado
   const isFinalized = isTicketFinalized(ticket);
@@ -362,7 +364,9 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
         disabled={sending || validationsLoading}
       /><div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <Input
+          {/* Input de arquivo oculto */}
+          <input
+            ref={fileInputRef}
             type="file"
             multiple
             onChange={(e) => {
@@ -372,9 +376,41 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
                 setAttachmentType("");
               }
             }}
-            className="text-sm flex-1"
+            className="hidden"
             disabled={sending || validationsLoading}
           />
+          
+          {/* Botão personalizado para selecionar arquivos */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || validationsLoading}
+            className="flex items-center gap-2"
+          >
+            <Paperclip className="w-4 h-4" />
+            Anexar Arquivos
+          </Button>
+          
+          {/* Mostrar arquivos selecionados */}
+          {selectedFiles.length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{selectedFiles.length} arquivo{selectedFiles.length > 1 ? 's' : ''} selecionado{selectedFiles.length > 1 ? 's' : ''}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedFiles([]);
+                  setAttachmentType("");
+                  setEstimatedHours("");
+                }}
+                className="h-auto p-1 text-red-500 hover:text-red-700"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
           
           {selectedFiles.length > 0 && (
             <div className="flex items-center gap-2">
