@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       project_id, 
       is_suspended, 
       user_functional,
-      users!inner(
+      user!inner(
         id,
         email,
         first_name,
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   // Filtrar por função do usuário (ex: manager)
   if (user_functional === 'manager') {
     // Assumindo que gerentes têm user_functional específico ou role = 2
-    query = query.or('user_functional.eq.2,users.role.eq.2');
+    query = query.or('user_functional.eq.2,user.role.eq.2');
   }
   
   const { data, error } = await query;
