@@ -380,7 +380,6 @@ export async function POST(req: NextRequest) {
           user_id: user.id,
           ticket_id: data.id,
           is_main: true,
-          created_at: new Date().toISOString()
         });
 
       if (resourceError) {
