@@ -250,8 +250,7 @@ export async function POST(req: NextRequest) {
           .insert({
             user_id: user.id,
             ticket_id: ticket.id,
-            is_main: true,
-            created_at: new Date().toISOString()
+            is_main: true
           });
 
         if (resourceError) {
