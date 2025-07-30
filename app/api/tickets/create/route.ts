@@ -393,7 +393,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Após criar o ticket com sucesso, verificar se deve enviar notificação por email
+  // Após criar o ticket com sucesso, verificar se deve enviar notificação por email s
   if (data?.id && user.is_client) {
     // Disparar notificação para os gerentes do projeto
     const notificationData = {
