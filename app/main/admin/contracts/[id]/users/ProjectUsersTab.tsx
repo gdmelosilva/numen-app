@@ -5,7 +5,7 @@ import type { User } from '@/types/users';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { Users } from 'lucide-react';
+import { Users, Download, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -36,6 +36,11 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     const USERS_PER_PAGE = 5;
     const [fetchingUsers, setFetchingUsers] = useState(false);
     const { modules: ticketModules, loading: loadingModules } = useTicketModules();
+
+    // Novos estados para filtros e controles da tabela principal
+    const [mainTableFilter, setMainTableFilter] = useState('');
+    const itemsPerPage = 10; // Fixo em 10 itens por página
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         setLoading(true);
@@ -167,6 +172,97 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
         return 'Usuário';
     }
 
+    // Função para obter prioridade de ordenação do cargo
+    function getRolePriority(role: number | null, isClient: boolean) {
+        if (isClient) return 4; // Key-User vem por último
+        if (role === 1) return 1; // Administrador primeiro
+        if (role === 2) return 2; // Gerente segundo
+        if (role === 3) return 3; // Funcional terceiro
+        return 5; // Usuário por último
+    }
+
+    // Função para filtrar e ordenar usuários da tabela principal
+    const getFilteredAndSortedUsers = () => {
+        const dataToUse = usersWithHours.length ? usersWithHours : users;
+        
+        // Aplicar filtro
+        const filtered = dataToUse.filter((user) => {
+            if (!mainTableFilter) return true;
+            const searchTerm = mainTableFilter.toLowerCase();
+            const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+            const email = user.email?.toLowerCase() || '';
+            const functional = user.user_functional?.toLowerCase() || '';
+            
+            return fullName.includes(searchTerm) || 
+                   email.includes(searchTerm) || 
+                   functional.includes(searchTerm);
+        });
+
+        // Aplicar ordenação
+        return filtered.sort((a, b) => {
+            // Primeiro por prioridade do cargo
+            const rolePriorityA = getRolePriority(a.role, a.is_client);
+            const rolePriorityB = getRolePriority(b.role, b.is_client);
+            
+            if (rolePriorityA !== rolePriorityB) {
+                return rolePriorityA - rolePriorityB;
+            }
+            
+            // Depois por ordem alfabética do nome
+            const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+            const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+    };
+
+    // Função para exportar para Excel
+    const exportToExcel = () => {
+        const data = getFilteredAndSortedUsers();
+        
+        // Criar dados para exportação
+        const exportData = data.map(user => ({
+            'Nome': `${user.first_name} ${user.last_name}`,
+            'Email': user.email || '',
+            'Cargo': getRoleLabel(user.role, user.is_client),
+            'Tipo': user.is_client ? 'Cliente' : 'Numen',
+            'Torre/Módulo': user.user_functional || '',
+            'Horas Consumidas': user.horas_consumidas || 0,
+            'Status': user.is_suspended ? 'Suspenso' : 'Ativo'
+        }));
+
+        // Converter para CSV (simples implementação)
+        const headers = Object.keys(exportData[0] || {});
+        const csvContent = [
+            headers.join(','),
+            ...exportData.map(row => 
+                headers.map(header => {
+                    const value = row[header as keyof typeof row];
+                    return typeof value === 'string' && value.includes(',') 
+                        ? `"${value}"` 
+                        : value;
+                }).join(',')
+            )
+        ].join('\n');
+
+        // Download do arquivo
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `usuarios_projeto_${projectId}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Dados filtrados e paginados para a tabela principal
+    const filteredSortedUsers = getFilteredAndSortedUsers();
+    const totalMainUsers = filteredSortedUsers.length;
+    const totalMainPages = Math.ceil(totalMainUsers / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedMainUsers = filteredSortedUsers.slice(startIndex, startIndex + itemsPerPage);
+
     // Funções para seleção múltipla
     const handleUserSelect = (userId: string) => {
         setSelectedUserIds(prev => 
@@ -192,6 +288,11 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     const isAllPageSelected = paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUserIds.includes(u.id));
 
     useEffect(() => { setPage(0); }, [search, partnerUsers]);
+
+    // Resetar página da tabela principal quando filtros mudarem
+    useEffect(() => { 
+        setCurrentPage(1); 
+    }, [mainTableFilter]);
 
     // Limpar seleções quando o diálogo fechar
     useEffect(() => {
@@ -223,7 +324,63 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                 </div>
                 <Button onClick={handleOpenDialog} className="whitespace-nowrap mt-4" disabled={isClosed}>Vincular Usuário</Button>
             </div>
-            <DataTable columns={columnsWithProjectId(projectId, isClosed)} data={usersWithHours.length ? usersWithHours : users} />
+
+            {/* Controles da tabela principal */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
+                <div className="flex-1">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                            placeholder="Filtrar por nome, email ou torre..."
+                            value={mainTableFilter}
+                            onChange={(e) => setMainTableFilter(e.target.value)}
+                            className="pl-9"
+                        />
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <Button 
+                        variant="outline" 
+                        onClick={exportToExcel}
+                        className="whitespace-nowrap"
+                        disabled={filteredSortedUsers.length === 0}
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        Exportar CSV
+                    </Button>
+                </div>
+            </div>
+
+            {/* Informações de paginação */}
+            {totalMainUsers > 0 && (
+                <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
+                    <span>
+                        Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalMainUsers)} a {Math.min(currentPage * itemsPerPage, totalMainUsers)} de {totalMainUsers} usuários
+                        {mainTableFilter && ` (filtrados)`}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Anterior
+                        </Button>
+                        <span>Página {currentPage} de {totalMainPages}</span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalMainPages, prev + 1))}
+                            disabled={currentPage === totalMainPages}
+                        >
+                            Próxima
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            <DataTable columns={columnsWithProjectId(projectId, isClosed)} data={paginatedMainUsers} />
             <Dialog open={showDialog} onOpenChange={setShowDialog}>
                 <DialogContent className="w-[750px] max-w-[750px] mx-auto">
                     <DialogHeader>

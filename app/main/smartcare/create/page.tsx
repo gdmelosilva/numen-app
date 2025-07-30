@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { X } from "lucide-react";
+import { X,Info } from "lucide-react";
 import { toast } from "sonner";
 import { usePartnerOptions } from "@/hooks/usePartnerOptions";
 import {
@@ -394,8 +394,9 @@ export default function CreateTicketPage() {
           <p className="text-sm text-muted-foreground">
             Cria um novo chamado dentro do seu contrato AMS
             {profile === "functional-adm" && (
-              <span className="block mt-1 text-blue-600 font-medium">
-                ℹ️ Você será automaticamente vinculado como responsável principal do chamado
+              <span className="block mt-1 text-blue-600 font-medium flex items-center gap-1">
+                <Info className="w-4 h-4" />
+                Você será automaticamente vinculado como responsável principal do chamado
               </span>
             )}
           </p>
