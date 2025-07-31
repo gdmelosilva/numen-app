@@ -24,17 +24,26 @@ export async function PATCH(
 
     // Buscar perfil do usuário para verificar se não é cliente
     const { data: profile, error: profileError } = await serverSupabase
-      .from('user_profiles')
+      .from('user')
       .select('is_client')
       .eq('id', user.id)
       .single();
 
-    if (profileError || profile?.is_client) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    console.log('Profile check:', { profile, profileError, userId: user.id });
+
+    if (profileError) {
+      console.error('Erro ao buscar perfil:', profileError);
+      return NextResponse.json({ error: 'Erro ao verificar perfil do usuário' }, { status: 500 });
+    }
+
+    if (profile?.is_client) {
+      return NextResponse.json({ error: 'Acesso negado - usuários clientes não podem editar tickets' }, { status: 403 });
     }
 
     const body = await request.json();
-    const { category_id, type_id, priority_id } = body;
+    const { category_id, module_id, priority_id } = body;
+
+    console.log('Request body:', { category_id, module_id, priority_id });
 
     // Preparar dados para atualização
     const updateData: Record<string, number> = {};
@@ -42,12 +51,14 @@ export async function PATCH(
     if (category_id !== undefined) {
       updateData.category_id = Number(category_id);
     }
-    if (type_id !== undefined) {
-      updateData.type_id = Number(type_id);
+    if (module_id !== undefined) {
+      updateData.module_id = Number(module_id);
     }
     if (priority_id !== undefined) {
       updateData.priority_id = Number(priority_id);
     }
+
+    console.log('Update data:', updateData);
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'Nenhum campo válido para atualizar' }, { status: 400 });

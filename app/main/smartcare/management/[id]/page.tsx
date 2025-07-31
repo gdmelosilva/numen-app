@@ -623,7 +623,7 @@ export default function TicketDetailsPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground text-xs font-medium">Tipo</span>
                 </div>
-                <span>{(typeof ticket.type === 'object' && ticket.type && 'name' in ticket.type) ? ticket.type.name : (typeof ticket.type_id === 'string' || typeof ticket.type_id === 'number' ? ticket.type_id : '-')}</span>
+                <span>{(typeof ticket.type === 'object' && ticket.type && 'name' in ticket.type) ? ticket.type.name : (typeof ticket.module_id === 'string' || typeof ticket.module_id === 'number' ? ticket.module_id : '-')}</span>
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center justify-between">
