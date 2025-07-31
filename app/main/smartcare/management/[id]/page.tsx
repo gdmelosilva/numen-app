@@ -178,6 +178,9 @@ export default function TicketDetailsPage() {
       // Atualiza as horas estimadas quando as mensagens são atualizadas
       // A função fetchEstimatedHours já considera a filtragem de mensagens privadas
       await fetchEstimatedHours();
+      
+      // Força um refresh completo do ticket para pegar mudanças de status
+      await refreshTicketData();
     } catch {
       setAllMessages([]);
     } finally {
@@ -209,6 +212,25 @@ export default function TicketDetailsPage() {
     }
     if (id) fetchTicket();
   }, [id]);
+
+  // Função para atualizar os dados do ticket sem loading
+  const refreshTicketData = async () => {
+    if (!id) return;
+    try {
+      const response = await fetch(`/api/smartcare?external_id=${id}`);
+      if (!response.ok) throw new Error("Erro ao buscar detalhes do chamado");
+      const data = await response.json();
+      const ticketData = Array.isArray(data) ? data[0] : data;
+      setTicket(ticketData);
+      
+      // Atualiza a data de encerramento estimada se mudou
+      if (ticketData.planned_end_date) {
+        setPlannedEndDate(ticketData.planned_end_date.split('T')[0]);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar dados do ticket:", error);
+    }
+  };
 
   // Busca mensagens apenas ao ativar a aba 'messages' e se ainda não carregou
   useEffect(() => {
@@ -1097,7 +1119,9 @@ export default function TicketDetailsPage() {
                     } : undefined} 
                     onMessageUpdated={async () => { 
                       setMessagesLoaded(false); 
-                      await refreshMessages(); 
+                      await refreshMessages();
+                      // Atualiza recursos também em caso de mudanças
+                      await fetchResources();
                     }} 
                   />
                 ))}
@@ -1117,7 +1141,16 @@ export default function TicketDetailsPage() {
                 )}
                 <Separator className="my-4" />
                 {/* Área de nova mensagem */}
-                <MessageForm ticket={ticket} onMessageSent={async () => { setMessagesLoaded(false); await refreshMessages(); }} statusOptions={statusOptions} />
+                <MessageForm 
+                  ticket={ticket} 
+                  onMessageSent={async () => { 
+                    setMessagesLoaded(false); 
+                    await refreshMessages();
+                    // Força uma nova busca dos recursos para atualizar possíveis vinculações
+                    await fetchResources();
+                  }} 
+                  statusOptions={statusOptions} 
+                />
               </>
             )}
           </div>
