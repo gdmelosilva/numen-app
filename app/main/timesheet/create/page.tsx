@@ -71,11 +71,9 @@ const TimeSheetCreatePage = () => {
 
   const calculateTotalDays = () => {
     if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate)
-      const end = new Date(formData.endDate)
-      const diffTime = end.getTime() - start.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
-      return diffDays > 0 ? diffDays : 1
+      // Usar a mesma lógica do generateDateRange para consistência
+      const datesToProcess = generateDateRange()
+      return datesToProcess.length
     }
     return 1
   }
@@ -97,13 +95,24 @@ const TimeSheetCreatePage = () => {
 
   const generateDateRange = () => {
     const dates = []
-    const start = new Date(formData.startDate)
-    const end = new Date(formData.endDate)
     
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      if (shouldIncludeDate(d)) {
-        dates.push(new Date(d))
+    // Criar datas em horário local para evitar problemas de timezone
+    const [startYear, startMonth, startDay] = formData.startDate.split('-').map(Number)
+    const [endYear, endMonth, endDay] = formData.endDate.split('-').map(Number)
+    
+    const start = new Date(startYear, startMonth - 1, startDay) // mês é 0-indexed
+    const end = new Date(endYear, endMonth - 1, endDay)
+    
+    // Criar uma nova data para cada iteração para evitar modificar a referência
+    const current = new Date(start)
+    
+    while (current <= end) {
+      if (shouldIncludeDate(current)) {
+        dates.push(new Date(current)) // Criar uma nova instância para o array
       }
+      
+      // Avançar para o próximo dia de forma segura
+      current.setDate(current.getDate() + 1)
     }
     
     return dates

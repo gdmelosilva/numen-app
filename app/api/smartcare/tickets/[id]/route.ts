@@ -46,7 +46,7 @@ export async function PATCH(
     console.log('Request body:', { category_id, module_id, priority_id });
 
     // Preparar dados para atualização
-    const updateData: Record<string, number> = {};
+    const updateData: Record<string, string | number> = {};
     
     if (category_id !== undefined) {
       updateData.category_id = Number(category_id);
@@ -57,6 +57,9 @@ export async function PATCH(
     if (priority_id !== undefined) {
       updateData.priority_id = Number(priority_id);
     }
+
+    // Sempre incluir updated_by com o ID do usuário autenticado
+    updateData.updated_by = user.id;
 
     console.log('Update data:', updateData);
 

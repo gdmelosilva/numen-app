@@ -224,6 +224,7 @@ export async function POST(req: NextRequest) {
           is_closed: false,
           is_private: false,
           created_by: user.id,
+          updated_by: user.id, // Incluir updated_by na criação
           ref_ticket_id: ref_ticket_id || null,
           ref_external_id: ref_external_id || null,
         },
@@ -353,6 +354,7 @@ export async function POST(req: NextRequest) {
         is_closed: false,
         is_private: false,
         created_by: user.id,
+        updated_by: user.id, // Incluir updated_by na criação
         ref_ticket_id: ref_ticket_id || null,
         ref_external_id: ref_external_id || null,
       },

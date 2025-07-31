@@ -244,6 +244,13 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
+    // Verificar autenticação
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { planned_end_date } = body;
 
@@ -255,7 +262,8 @@ export async function PUT(req: NextRequest) {
       .from("ticket")
       .update({ 
         planned_end_date: planned_end_date,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        updated_by: user.id // Incluir updated_by na atualização
       })
       .eq("id", ticketId)
       .select()

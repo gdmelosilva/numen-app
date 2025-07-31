@@ -6,9 +6,19 @@ export async function PUT(req: NextRequest) {
     const { ticket_id, status_id } = await req.json();
     const supabase = await createClient();
 
+    // Verificar autenticação
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     const { data, error } = await supabase
       .from("ticket")
-      .update({ status_id })
+      .update({ 
+        status_id,
+        updated_by: user.id // Incluir updated_by na atualização
+      })
       .eq("id", ticket_id)
       .select()
       .single();
