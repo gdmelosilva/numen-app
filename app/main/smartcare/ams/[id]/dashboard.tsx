@@ -25,9 +25,31 @@ interface TicketHour {
 export default function ProjectDashboardTab({ project }: ProjectDashboardTabProps) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketHours, setTicketHours] = useState<TicketHour[]>([]);
+  const [estimatedTotalHours, setEstimatedTotalHours] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user: currentUser } = useCurrentUser();
+
+  // Função para buscar horas estimadas totais dos tickets do projeto (otimizada)
+  const fetchEstimatedHours = useCallback(async (): Promise<number> => {
+    if (!currentUser?.is_client || !project.id) return 0;
+    
+    try {
+      const url = `/api/tickets/estimated-hours?project_id=${project.id}&client_view=true`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.error('Erro ao buscar horas estimadas:', response.statusText);
+        return 0;
+      }
+      
+      const data = await response.json();
+      return data.totalHours || 0;
+    } catch (error) {
+      console.error('Erro ao buscar horas estimadas:', error);
+      return 0;
+    }
+  }, [currentUser?.is_client, project.id]);
 
   // Função para buscar horas do projeto considerando visibilidade do cliente  
   const fetchProjectHours = useCallback(async (): Promise<TicketHour[]> => {
@@ -101,8 +123,15 @@ export default function ProjectDashboardTab({ project }: ProjectDashboardTabProp
           projectId: project.id
         });
         
-        setTickets(Array.isArray(ticketsResponse) ? ticketsResponse : ticketsResponse?.data || []);
+        const ticketList = Array.isArray(ticketsResponse) ? ticketsResponse : ticketsResponse?.data || [];
+        setTickets(ticketList);
         setTicketHours(hoursData);
+        
+        // Para clientes, buscar horas estimadas totais do projeto
+        if (currentUser?.is_client && ticketList.length > 0) {
+          const estimatedTotal = await fetchEstimatedHours();
+          setEstimatedTotalHours(estimatedTotal);
+        }
       } catch (err) {
         setError(typeof err === 'string' ? err : 'Erro ao buscar dados');
       } finally {
@@ -111,17 +140,19 @@ export default function ProjectDashboardTab({ project }: ProjectDashboardTabProp
     };
 
     loadData();
-  }, [project.id, currentUser, fetchProjectHours]);
+  }, [project.id, currentUser, fetchProjectHours, fetchEstimatedHours]);
 
   // Calculate enhanced stats
-  // Para clientes, usar billable_minutes, para outros usar minutes normais
+  // Para clientes, usar horas estimadas totais, para outros usar minutes normais das horas apontadas
   const totalHours = currentUser?.is_client 
-    ? ticketHours.reduce((sum, hour) => sum + ((hour.billable_minutes || 0) / 60), 0)
-    : ticketHours.reduce((sum, hour) => sum + ((hour.minutes || 0) / 60), 0);
+    ? estimatedTotalHours // Usar horas estimadas totais para clientes
+    : ticketHours.reduce((sum, hour) => sum + ((hour.minutes || 0) / 60), 0); // Usar horas apontadas para usuários internos
   
-  // Se não há dados de horas (ticketHours), usar os dados dos tickets como fallback
+  // Se não há dados de horas (ticketHours) para usuários internos, usar os dados dos tickets como fallback
   const fallbackTotalHours = tickets.reduce((sum, t) => sum + (t.hours || 0), 0);
-  const displayTotalHours = ticketHours.length > 0 ? totalHours : fallbackTotalHours;
+  const displayTotalHours = currentUser?.is_client 
+    ? totalHours // Para clientes, sempre usar horas estimadas
+    : (ticketHours.length > 0 ? totalHours : fallbackTotalHours); // Para usuários internos, usar horas apontadas ou fallback
   const totalTickets = tickets.length;
   const closedTickets = tickets.filter(t => t.is_closed).length;
   const openTickets = tickets.filter(t => !t.is_closed).length;
@@ -268,13 +299,18 @@ export default function ProjectDashboardTab({ project }: ProjectDashboardTabProp
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Horas Totais</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {currentUser?.is_client ? 'Horas Estimadas' : 'Horas Totais'}
+                </CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{displayTotalHours.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">
-                  Média: {totalTickets > 0 ? (displayTotalHours / totalTickets).toFixed(1) : 0}h por ticket
+                  {currentUser?.is_client 
+                    ? `Estimativa total: ${totalTickets > 0 ? (displayTotalHours / totalTickets).toFixed(1) : 0}h por ticket`
+                    : `Média: ${totalTickets > 0 ? (displayTotalHours / totalTickets).toFixed(1) : 0}h por ticket`
+                  }
                 </p>
               </CardContent>
             </Card>

@@ -37,8 +37,10 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     return status.trim().toLowerCase() === 'encerrado';
   })();
   
-  // Check if user is client - clients cannot edit contracts
+  // Check if user is client or manager - both cannot edit contracts
   const isClientUser = currentUser?.is_client === true;
+  const isManagerUser = currentUser?.role === 2; // manager-adm
+  const canEditContract = !isClientUser && !isManagerUser;
   const [form, setForm] = useState({
     projectName: project.projectName || "",
     projectDesc: project.projectDesc || "",
@@ -274,8 +276,8 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             </Button>
           </div>
         ) : (
-          // Hide edit button for client users, regardless of their role
-          !isClientUser && (
+          // Hide edit button for client users and manager users
+          canEditContract && (
             <Button size="sm" variant="outline" type="button" onClick={() => { if (!isClosed) setEditMode((v) => !v); }} disabled={isClosed}>
               <Pencil className="w-4 h-4 mr-1" /> Editar
             </Button>

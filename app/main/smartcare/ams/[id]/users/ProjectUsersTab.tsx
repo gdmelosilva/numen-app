@@ -7,10 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useTicketModules } from '@/hooks/useTicketModules';
+import { ColoredBadge } from '@/components/ui/colored-badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // Tipo estendido para usuários do projeto
 type ProjectUser = User & {
@@ -26,7 +27,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     const [error, setError] = useState<string | null>(null);
     const [showDialog, setShowDialog] = useState(false);
     const [partnerUsers, setPartnerUsers] = useState<User[]>([]);
-    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [maxHours, setMaxHours] = useState<number | ''>('');
     const [userFunctional, setUserFunctional] = useState<string>('');
     const [horaFaturavel, setHoraFaturavel] = useState<number | ''>('');
@@ -36,6 +37,11 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
     const USERS_PER_PAGE = 5;
     const [fetchingUsers, setFetchingUsers] = useState(false);
     const { modules: ticketModules, loading: loadingModules } = useTicketModules();
+
+    // Debug: Log módulos carregados
+    useEffect(() => {
+        console.log('Módulos carregados:', ticketModules);
+    }, [ticketModules]);
 
     useEffect(() => {
         setLoading(true);
@@ -74,26 +80,37 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
 
     const handleOpenDialog = async () => {
         setFetchingUsers(true);
+        setSelectedUserIds([]);
+        setMaxHours('');
+        setUserFunctional('');
+        setHoraFaturavel('');
+        setSearch('');
+        setPage(0);
         await fetchPartnerUsers();
         setShowDialog(true);
         setFetchingUsers(false);
     };
 
     const handleLinkUser = async () => {
-        if (!selectedUserId || !maxHours || userFunctional === '') return;
-        await fetch('/api/project-resources/link', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                project_id: projectId,
-                user_id: selectedUserId,
-                max_hours: Number(maxHours),
-                user_functional: userFunctional,
-                hora_faturavel: horaFaturavel !== '' ? Number(horaFaturavel) : null,
+        if (!selectedUserIds.length || !maxHours || userFunctional === '') return;
+        
+        // Vincular todos os usuários selecionados em paralelo
+        await Promise.all(selectedUserIds.map(userId => 
+            fetch('/api/project-resources/link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    project_id: projectId,
+                    user_id: userId,
+                    max_hours: Number(maxHours),
+                    user_functional: userFunctional,
+                    hora_faturavel: horaFaturavel !== '' ? Number(horaFaturavel) : null,
+                })
             })
-        });
+        ));
+        
         setShowDialog(false);
-        setSelectedUserId(null);
+        setSelectedUserIds([]);
         setMaxHours('');
         setUserFunctional('');
         setHoraFaturavel('');
@@ -143,6 +160,36 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
         (page + 1) * USERS_PER_PAGE
     );
 
+    // Funções para seleção múltipla
+    const handleUserSelect = (userId: string) => {
+        setSelectedUserIds(prev => 
+            prev.includes(userId) 
+                ? prev.filter(id => id !== userId)
+                : [...prev, userId]
+        );
+    };
+
+    const handleSelectAll = () => {
+        const currentPageUserIds = paginatedUsers.map(u => u.id);
+        const allPageSelected = currentPageUserIds.every(id => selectedUserIds.includes(id));
+        
+        if (allPageSelected) {
+            // Desselecionar todos da página atual
+            setSelectedUserIds(prev => prev.filter(id => !currentPageUserIds.includes(id)));
+        } else {
+            // Selecionar todos da página atual
+            const newSelected = [...selectedUserIds];
+            currentPageUserIds.forEach(id => {
+                if (!newSelected.includes(id)) {
+                    newSelected.push(id);
+                }
+            });
+            setSelectedUserIds(newSelected);
+        }
+    };
+
+    const isAllPageSelected = paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUserIds.includes(u.id));
+
     function getRoleLabel(role: number | null, isClient: boolean) {
         if (isClient) return 'Key-User';
         if (role === 1) return 'Administrador';
@@ -180,7 +227,18 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                 <Button onClick={handleOpenDialog} className="whitespace-nowrap mt-4" disabled={isClosed}>Vincular Usuário</Button>
             </div>
             <DataTable columns={columnsWithProjectId(projectId, isClosed)} data={usersWithHours.length ? usersWithHours : users} />
-            <Dialog open={showDialog} onOpenChange={setShowDialog}>
+            <Dialog open={showDialog} onOpenChange={(open) => {
+                setShowDialog(open);
+                if (!open) {
+                    // Reset form quando o dialog fecha
+                    setSelectedUserIds([]);
+                    setMaxHours('');
+                    setUserFunctional('');
+                    setHoraFaturavel('');
+                    setSearch('');
+                    setPage(0);
+                }
+            }}>
                 <DialogContent className="w-[750px] max-w-[750px] mx-auto">
                     <DialogHeader>
                         <DialogTitle>Vincular Usuário ao Projeto</DialogTitle>
@@ -213,35 +271,42 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                                         <div className="text-muted-foreground text-center py-4">Nenhum usuário disponível para vincular.</div>
                                     ) : (
                                         <>
-                                            <div className="grid grid-cols-12 gap-2 px-3 pb-1 text-xs font-semibold text-muted-foreground">
-                                                <span className="col-span-4">Nome</span>
+                                            <div className="grid grid-cols-12 gap-2 px-3 pb-1 text-xs font-semibold text-muted-foreground border-b">
+                                                <div className="col-span-1 flex items-center">
+                                                    <Checkbox
+                                                        checked={isAllPageSelected}
+                                                        onCheckedChange={handleSelectAll}
+                                                        disabled={fetchingUsers}
+                                                    />
+                                                </div>
+                                                <span className="col-span-3">Nome</span>
                                                 <span className="col-span-2">Tipo</span>
                                                 <span className="col-span-2">Cargo</span>
                                                 <span className="col-span-4">Email</span>
                                             </div>
                                             {paginatedUsers.map(u => (
-                                                <button
+                                                <div
                                                     key={u.id}
-                                                    type="button"
-                                                    className={`w-full text-left px-3 py-2 rounded hover:bg-secondary ${selectedUserId === u.id ? 'border-2 border-primary' : ''}`}
-                                                    onClick={() => setSelectedUserId(u.id)}
-                                                    disabled={fetchingUsers}
+                                                    className={`px-3 py-2 rounded hover:bg-secondary ${selectedUserIds.includes(u.id) ? 'bg-secondary' : ''}`}
                                                 >
                                                     <div className="grid grid-cols-12 items-center gap-2">
-                                                        <span className="col-span-4 font-medium truncate">{u.first_name} {u.last_name}</span>
+                                                        <div className="col-span-1 flex items-center">
+                                                            <Checkbox
+                                                                checked={selectedUserIds.includes(u.id)}
+                                                                onCheckedChange={() => handleUserSelect(u.id)}
+                                                                disabled={fetchingUsers}
+                                                            />
+                                                        </div>
+                                                        <span className="col-span-3 font-medium truncate">{u.first_name} {u.last_name}</span>
                                                         <span className="col-span-2">
-                                                            <Badge variant={u.is_client ? 'accent' : 'secondary'}>
-                                                                {u.is_client ? 'Cliente' : 'Administrativo'}
-                                                            </Badge>
+                                                            <ColoredBadge value={u.is_client} type="is_client" />
                                                         </span>
                                                         <span className="col-span-2">
-                                                            <Badge variant={u.is_client ? 'outline' : 'default'}>
-                                                                {getRoleLabel(u.role, u.is_client)}
-                                                            </Badge>
+                                                            <ColoredBadge value={getRoleLabel(u.role, u.is_client)} type="user_role" />
                                                         </span>
                                                         <span className="col-span-4 block text-xs text-muted-foreground truncate">{u.email}</span>
                                                     </div>
-                                                </button>
+                                                </div>
                                             ))}
                                         </>
                                     )}
@@ -285,7 +350,10 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                                 <label htmlFor="user_functional" className="block text-sm font-medium mb-1">Módulo do Recurso</label>
                                 <Select
                                     value={userFunctional}
-                                    onValueChange={setUserFunctional}
+                                    onValueChange={(value) => {
+                                        console.log('Módulo selecionado:', value);
+                                        setUserFunctional(value);
+                                    }}
                                     disabled={loadingModules}
                                 >
                                     <SelectTrigger id="user_functional" className="w-full">
@@ -295,7 +363,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                                     </SelectTrigger>
                                     <SelectContent>
                                         {ticketModules.map((mod) => (
-                                            <SelectItem key={mod.id} value={mod.id}>{mod.name}</SelectItem>
+                                            <SelectItem key={mod.id} value={String(mod.id)}>{mod.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -318,7 +386,14 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                             </div>
                         </div>
                         <DialogFooter className="mt-4">
-                            <Button type="submit" disabled={!selectedUserId || !maxHours || userFunctional === '' || isClosed}>Vincular</Button>
+                            <div className="flex items-center justify-between w-full">
+                                <span className="text-sm text-muted-foreground">
+                                    {selectedUserIds.length > 0 && `${selectedUserIds.length} usuário${selectedUserIds.length > 1 ? 's' : ''} selecionado${selectedUserIds.length > 1 ? 's' : ''}`}
+                                </span>
+                                <Button type="submit" disabled={!selectedUserIds.length || !maxHours || userFunctional === '' || isClosed}>
+                                    Vincular {selectedUserIds.length > 0 && `(${selectedUserIds.length})`}
+                                </Button>
+                            </div>
                         </DialogFooter>
                     </form>
                 </DialogContent>
