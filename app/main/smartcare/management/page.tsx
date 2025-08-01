@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import type { Ticket } from "@/types/tickets";
-import { columns } from "./columns";
+import { getColumns } from "./columns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,8 +57,8 @@ export default function TicketManagementPage() {
 
   // Estados para opções dos dropdowns
   const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
-  const { partners, loading: partnersLoading } = usePartnerOptions();
-  const { projects, loading: projectsLoading } = useProjectOptions();
+  const { partners, loading: partnersLoading } = usePartnerOptions(user);
+  const { projects, loading: projectsLoading } = useProjectOptions({ user });
   const [categories, setCategories] = useState<{ id: string; name: string; description: string }[]>([]);
   const [priorities, setPriorities] = useState<{ id: string; name: string }[]>([]);
   const [modules, setModules] = useState<{ id: string; name: string; description: string }[]>([]);
@@ -361,7 +361,7 @@ export default function TicketManagementPage() {
       { key: "partner_id", label: "Parceiro" },
       { key: "project_id", label: "Projeto" },
       { key: "created_by", label: "Criado por" },
-      { key: "is_closed", label: "Encerrado" },
+      // { key: "is_closed", label: "Encerrado" },
       { key: "is_private", label: "Privado" },
       { key: "created_at", label: "Criado em" },
       { key: "planned_end_date", label: "Prev. Fim" },
@@ -742,7 +742,7 @@ export default function TicketManagementPage() {
                     </Dialog>
                   </div>
                 </div>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="is_closed">Encerrado?</Label>
                   <Input
                     id="is_closed"
@@ -751,17 +751,19 @@ export default function TicketManagementPage() {
                     onChange={(e) => handleFilterChange("is_closed", e.target.value)}
                     disabled={loading}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="is_private">Privado?</Label>
-                  <Input
-                    id="is_private"
-                    placeholder="true/false"
-                    value={pendingFilters.is_private}
-                    onChange={(e) => handleFilterChange("is_private", e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
+                </div> */}
+                {!user?.is_client && (
+                  <div className="space-y-2">
+                    <Label htmlFor="is_private">Privado?</Label>
+                    <Input
+                      id="is_private"
+                      placeholder="true/false"
+                      value={pendingFilters.is_private}
+                      onChange={(e) => handleFilterChange("is_private", e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="created_at">Criado em</Label>
                   <Input
@@ -870,9 +872,9 @@ export default function TicketManagementPage() {
         </div>
       ) : (
         <DataTable 
-          columns={columns} 
+          columns={getColumns(user)} 
           data={tickets} 
-          showColumnVisibility={!user?.is_client}
+          showColumnVisibility={true}
         />
       )}
     </div>

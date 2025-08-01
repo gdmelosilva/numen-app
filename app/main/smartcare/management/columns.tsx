@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Ticket } from "@/types/tickets";
 import { useRouter } from "next/navigation";
+import { AuthenticatedUser } from "@/lib/api-auth";
 
-export const columns: ColumnDef<Ticket>[] = [
+export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[] => {
+  const allColumns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "is_private",
     header: ({ column }) => (
@@ -154,3 +156,15 @@ export const columns: ColumnDef<Ticket>[] = [
     },
   },
 ];
+
+  // Filtrar colunas baseado no tipo de usuário
+  if (user?.is_client) {
+    // Para clientes, remover a coluna "is_private" (índice 0)
+    return allColumns.filter((_, index) => index !== 0);
+  }
+
+  return allColumns;
+};
+
+// Manter compatibilidade com importações existentes
+export const columns = getColumns();

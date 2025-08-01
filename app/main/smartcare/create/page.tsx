@@ -25,7 +25,7 @@ import { TicketSelectionDialog } from "@/components/TicketSelectionDialog";
 
 export default function CreateTicketPage() {
   const { profile, loading: loadingProfile, user } = useUserProfile();
-  const { partners } = usePartnerOptions();
+  const { partners } = usePartnerOptions(user);
   // Estados para categorias, prioridades e módulos AMS
   const [categories, setCategories] = React.useState<{ id: string; name: string; description: string }[]>([]);
   const [priorities, setPriorities] = React.useState<{ id: string; name: string }[]>([]);
@@ -328,7 +328,7 @@ export default function CreateTicketPage() {
     projectOptionsParams = { partnerId, projectType: "AMS" };
   }
   
-  const { projects: clientProjects } = useProjectOptions(isClientUser ? projectOptionsParams : {});
+  const { projects: clientProjects } = useProjectOptions(isClientUser ? { ...projectOptionsParams, user } : { user });
   
   // Determinar quais projetos usar com useMemo para evitar re-renders desnecessários
   const filteredProjects = useMemo(() => {

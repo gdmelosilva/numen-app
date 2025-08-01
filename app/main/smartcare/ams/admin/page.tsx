@@ -281,6 +281,7 @@ export default function AMSAdminPage() {
                 <DataTable
                     columns={columns}
                     data={contracts}
+                    showColumnVisibility={true}
                 />
             )}
         </div>

@@ -34,10 +34,10 @@ interface FormData {
 const TimeSheetCreatePage = () => {
   const { user } = useCurrentUser()
   const router = useRouter()
-  const { partners, loading: partnersLoading } = usePartnerOptions()
+  const { partners, loading: partnersLoading } = usePartnerOptions(user)
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>('')
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
-  const { projects, loading: projectsLoading } = useProjectOptions({ partnerId: selectedPartnerId })
+  const { projects, loading: projectsLoading } = useProjectOptions({ partnerId: selectedPartnerId, user })
   const { tickets, loading: ticketsLoading } = useTicketOptions({ 
     projectId: selectedProjectId, 
     partnerId: selectedPartnerId,

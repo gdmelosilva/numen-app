@@ -226,7 +226,7 @@ export default function ProjectUsersTab({ projectId, isClosed }: { projectId: st
                 </div>
                 <Button onClick={handleOpenDialog} className="whitespace-nowrap mt-4" disabled={isClosed}>Vincular Usuário</Button>
             </div>
-            <DataTable columns={columnsWithProjectId(projectId, isClosed)} data={usersWithHours.length ? usersWithHours : users} />
+            <DataTable columns={columnsWithProjectId(projectId, isClosed)} data={usersWithHours.length ? usersWithHours : users} showColumnVisibility={true} />
             <Dialog open={showDialog} onOpenChange={(open) => {
                 setShowDialog(open);
                 if (!open) {
