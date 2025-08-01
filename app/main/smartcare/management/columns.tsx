@@ -27,6 +27,12 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     ),
   },
   {
+    accessorKey: "ref_external_id",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Id. Externo" />
+    ),
+  },
+  {
     accessorKey: "project.projectName",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Contrato" />
