@@ -42,18 +42,40 @@ export function ColumnVisibilityToggle<TData>({
 
     // Direct mappings based on the exact titles from columns.tsx
     const columnTitles: Record<string, string> = {
+      // Smartcare Management columns with simplified IDs
       'is_private': 'Privado?',
       'external_id': 'ID',
+      'ref_external_id': 'ID Externo Ref.',
+      'project': 'Contrato',
+      'partner': 'Parceiro',
+      'category': 'Categoria',
+      'title': 'Título',
+      'module': 'Módulo',
+      'status': 'Status',
+      'created_at': 'Criado em',
+      'priority': 'Prioridade',
+      'planned_end_date': 'Prev. Fim',
+      'resources': 'Recursos',
+      
+      // Legacy support for dot notation (fallback)
       'project.projectName': 'Contrato',
       'partner.partner_desc': 'Parceiro',
       'category.name': 'Categoria',
-      'title': 'Título',
       'module.name': 'Módulo',
       'status.name': 'Status',
-      'created_at': 'Criado em',
       'priority.name': 'Prioridade',
-      'planned_end_date': 'Prev. Fim',
-      'resources': 'Recursos',
+      
+      // Common columns across different tables
+      'projectName': 'Nome do Projeto',
+      'projectDesc': 'Descrição do Projeto',
+      'is_active': 'Ativo',
+      'first_name': 'Nome',
+      'last_name': 'Sobrenome',
+      'email': 'E-mail',
+      'role': 'Perfil',
+      'name': 'Nome',
+      'description': 'Descrição',
+      'updated_at': 'Atualizado em',
     };
 
     // Return the mapped title or fallback to formatted columnId

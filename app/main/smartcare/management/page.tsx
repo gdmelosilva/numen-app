@@ -875,6 +875,21 @@ export default function TicketManagementPage() {
           columns={getColumns(user)} 
           data={tickets} 
           showColumnVisibility={true}
+          columnLabels={{
+            'is_private': 'Privado?',
+            'external_id': 'Id Chamado',
+            'ref_external_id': 'Ref. Externa',
+            'project': 'Projeto',
+            'partner': 'Parceiro',
+            'category': 'Categoria',
+            'title': 'Título',
+            'module': 'Módulo Func.',
+            'status': 'Status',
+            'created_at': 'Criado em',
+            'priority': 'Prioridade',
+            'planned_end_date': 'Prev. Fim',
+            'resources': 'Recursos Aloc.',
+          }}
         />
       )}
     </div>

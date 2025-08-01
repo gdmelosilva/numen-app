@@ -23,23 +23,25 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
   {
     accessorKey: "external_id",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="ID" />
+      <DataTableColumnHeader column={column} title="Id. Chamado" />
     ),
   },
   {
     accessorKey: "ref_external_id",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Id. Externo" />
+      <DataTableColumnHeader column={column} title="Ref. Externa" />
     ),
   },
   {
+    id: "project",
     accessorKey: "project.projectName",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Contrato" />
+      <DataTableColumnHeader column={column} title="Projeto" />
     ),
     cell: ({ row }) => row.original.project?.projectName || row.original.project_id || "-",
   },
   {
+    id: "partner",
     accessorKey: "partner.partner_desc",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Parceiro" />
@@ -47,6 +49,7 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     cell: ({ row }) => row.original.partner?.partner_desc || row.original.partner_id || "-",
   },
     {
+    id: "category",
     accessorKey: "category.name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Categoria" />
@@ -60,13 +63,15 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     ),
   },
   {
+    id: "module",
     accessorKey: "module.name",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Módulo" />
+      <DataTableColumnHeader column={column} title="Módulo Func." />
     ),
     cell: ({ row }) => row.original.module?.name || row.original.module_id || "-",
   },
   {
+    id: "status",
     accessorKey: "status.name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
@@ -85,6 +90,7 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     cell: ({ row }) => row.original.created_at ? format(new Date(row.original.created_at), "dd/MM/yyyy", { locale: ptBR }) : "-",
   },
   {
+    id: "priority",
     accessorKey: "priority.name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Prioridade" />
@@ -110,7 +116,7 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
   {
     accessorKey: "resources",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Recursos" />
+      <DataTableColumnHeader column={column} title="Recursos Aloc." />
     ),
     cell: ({ row }) => {
       const resources = row.original.resources || [];

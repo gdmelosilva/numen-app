@@ -282,6 +282,13 @@ export default function AMSAdminPage() {
                     columns={columns}
                     data={contracts}
                     showColumnVisibility={true}
+                    columnLabels={{
+                        'projectName': 'Nome do Projeto',
+                        'projectDesc': 'Descrição',
+                        'partner.partner_desc': 'Parceiro',
+                        'created_at': 'Criado em',
+                        'is_active': 'Ativo',
+                    }}
                 />
             )}
         </div>
