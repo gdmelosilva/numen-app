@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface FormData {
   partnerId: string
@@ -32,6 +33,7 @@ interface FormData {
 
 const TimeSheetCreatePage = () => {
   const { user } = useCurrentUser()
+  const router = useRouter()
   const { partners, loading: partnersLoading } = usePartnerOptions()
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>('')
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
@@ -57,6 +59,18 @@ const TimeSheetCreatePage = () => {
   })
   
   const [loading, setLoading] = useState(false)
+
+  // Proteção: Redirecionar usuários clientes
+  useEffect(() => {
+    if (user && user.is_client) {
+      router.push('/denied')
+    }
+  }, [user, router])
+
+  // Se for cliente, não renderizar nada enquanto redireciona
+  if (user?.is_client) {
+    return null
+  }
 
   const calculateHours = () => {
     if (formData.startTime && formData.endTime) {

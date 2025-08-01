@@ -96,7 +96,7 @@ const menuVisibilityRules: MenuVisibilityRule[] = [
       "Utilitários",
       "TimeFlow - Faturamento",
       "Administrativo",
-      { parent: "TimeSheet", items: ["Apontamento de Horas"] },
+      "TimeSheet", // Bloqueia toda a aba TimeSheet para gerentes clientes
     ],
   },
   {

@@ -8,10 +8,12 @@ import { useTicketHoursManagement } from '@/hooks/useTicketHoursManagement'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getColumns } from './columns'
 import { exportTimesheetReport } from '@/lib/export-file'
+import { useRouter } from 'next/navigation'
 
 const TimeSheetManagementPage = () => {
 	const { data, loading, fetchTicketHours } = useTicketHoursManagement()
 	const { user } = useCurrentUser()
+	const router = useRouter()
 
 	const today = new Date()
 	const [year, setYear] = useState(today.getFullYear())
@@ -19,10 +21,22 @@ const TimeSheetManagementPage = () => {
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 	const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
+	// Proteção: Redirecionar usuários clientes
+	useEffect(() => {
+		if (user && user.is_client) {
+			router.push('/denied')
+		}
+	}, [user, router])
+
 	// Busca automática ao trocar mês/ano
 	useEffect(() => {
 		fetchTicketHours(year, month, selectedUserId)
 	}, [year, month, selectedUserId, fetchTicketHours])
+
+	// Se for cliente, não renderizar nada enquanto redireciona
+	if (user?.is_client) {
+		return null
+	}
 
 	const handleYearChange = (y: number) => setYear(y)
 	const handleMonthChange = (m: number) => setMonth(m)
