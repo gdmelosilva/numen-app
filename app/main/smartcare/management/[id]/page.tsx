@@ -77,6 +77,10 @@ export default function TicketDetailsPage() {
   const [searchUser, setSearchUser] = useState("");
   // const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
   
+  // Estados para paginação da tabela de recursos
+  const [currentResourcePage, setCurrentResourcePage] = useState(1);
+  const resourcesPerPage = 8; // 8 usuários por página
+  
   // Estados para gerenciar a data de encerramento estimada
   const [showDateDialog, setShowDateDialog] = useState(false);
   const [plannedEndDate, setPlannedEndDate] = useState<string>("");
@@ -326,7 +330,12 @@ export default function TicketDetailsPage() {
     setCurrentPage(1);
   }, [hideSystemMessages, hidePrivateMessages]);
 
-  // Paginação
+  // Resetar página de recursos quando a busca mudar ou dialog abrir
+  useEffect(() => {
+    setCurrentResourcePage(1);
+  }, [searchUser, showResourceDialog]);
+
+  // Paginação para mensagens
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -340,6 +349,23 @@ export default function TicketDetailsPage() {
   const goToNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Paginação para recursos
+  const goToResourcePage = (page: number) => {
+    if (page >= 1 && page <= totalResourcePages) {
+      setCurrentResourcePage(page);
+    }
+  };
+  const goToPreviousResourcePage = () => {
+    if (currentResourcePage > 1) {
+      setCurrentResourcePage(currentResourcePage - 1);
+    }
+  };
+  const goToNextResourcePage = () => {
+    if (currentResourcePage < totalResourcePages) {
+      setCurrentResourcePage(currentResourcePage + 1);
     }
   };
 
@@ -495,6 +521,16 @@ export default function TicketDetailsPage() {
   const startIndex = (currentPage - 1) * messagesPerPage;
   const endIndex = startIndex + messagesPerPage;
   const currentMessages = filteredMessages.slice(startIndex, endIndex);
+
+  // Paginação para recursos do dialog
+  const filteredUsers = availableUsers.filter(u =>
+    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(searchUser.toLowerCase())
+  );
+  const totalResources = filteredUsers.length;
+  const totalResourcePages = Math.ceil(totalResources / resourcesPerPage);
+  const resourceStartIndex = (currentResourcePage - 1) * resourcesPerPage;
+  const resourceEndIndex = resourceStartIndex + resourcesPerPage;
+  const currentResources = filteredUsers.slice(resourceStartIndex, resourceEndIndex);
 
   if (loading) {
     return (
@@ -955,59 +991,127 @@ export default function TicketDetailsPage() {
                     <div className="text-muted-foreground text-sm">Carregando usuários...</div>
                   ) : resourceError ? (
                     <div className="text-destructive text-sm">{resourceError}</div>
-                  ) : availableUsers.length === 0 ? (
+                  ) : filteredUsers.length === 0 ? (
                     <div className="text-muted-foreground text-sm italic">Nenhum usuário disponível para vínculo.</div>
                   ) : (
-                    <div className="border rounded-md">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>Módulo</TableHead>
-                            <TableHead className="w-[100px]">Ação</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {availableUsers.filter(u =>
-                            `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(searchUser.toLowerCase())
-                          ).map(u => (
-                            <TableRow key={u.id}>
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{u.first_name} {u.last_name}</span>
-                                  <span className="text-xs text-muted-foreground">{u.email}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {u.user_functional_name || u.ticket_module ? (
-                                  <span className="text-sm">
-                                    {u.user_functional_name || u.ticket_module}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground italic">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Button size="sm" onClick={async () => {
-                                  try {
-                                    await fetch("/api/ticket-resources/link", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ ticket_id: ticket?.id, user_id: u.id })
-                                    });
-                                    setShowResourceDialog(false);
-                                    fetchResources();
-                                  } catch {
-                                    setResourceError("Erro ao vincular recurso");
-                                  }
-                                }}>
-                                  Vincular
-                                </Button>
-                              </TableCell>
+                    <div className="space-y-4">
+                      {/* Informações da paginação */}
+                      {totalResourcePages > 1 && (
+                        <div className="text-xs text-muted-foreground">
+                          Mostrando {currentResources.length} de {totalResources} usuários
+                        </div>
+                      )}
+                      
+                      {/* Tabela */}
+                      <div className="border rounded-md">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nome</TableHead>
+                              <TableHead>Módulo</TableHead>
+                              <TableHead className="w-[100px]">Ação</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody style={{ minHeight: `${resourcesPerPage * 60}px` }}>
+                            {currentResources.map(u => (
+                              <TableRow key={u.id} className="h-[60px]">
+                                <TableCell>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{u.first_name} {u.last_name}</span>
+                                    <span className="text-xs text-muted-foreground">{u.email}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {u.user_functional_name || u.ticket_module ? (
+                                    <span className="text-sm">
+                                      {u.user_functional_name || u.ticket_module}
+                                    </span>
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground italic">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Button size="sm" onClick={async () => {
+                                    try {
+                                      await fetch("/api/ticket-resources/link", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ ticket_id: ticket?.id, user_id: u.id })
+                                      });
+                                      setShowResourceDialog(false);
+                                      fetchResources();
+                                    } catch {
+                                      setResourceError("Erro ao vincular recurso");
+                                    }
+                                  }}>
+                                    Vincular
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {/* Linhas vazias para manter altura fixa */}
+                            {Array.from({ length: resourcesPerPage - currentResources.length }, (_, index) => (
+                              <TableRow key={`empty-${index}`} className="h-[60px]">
+                                <TableCell className="text-transparent">.</TableCell>
+                                <TableCell className="text-transparent">.</TableCell>
+                                <TableCell className="text-transparent">.</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      
+                      {/* Controles de paginação */}
+                      {totalResourcePages > 1 && (
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            Página {currentResourcePage} de {totalResourcePages}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={goToPreviousResourcePage} 
+                              disabled={currentResourcePage === 1}
+                            >
+                              <ChevronLeft className="w-4 h-4" /> Anterior
+                            </Button>
+                            <div className="flex gap-1">
+                              {Array.from({ length: Math.min(5, totalResourcePages) }, (_, i) => {
+                                let pageNumber;
+                                if (totalResourcePages <= 5) {
+                                  pageNumber = i + 1;
+                                } else if (currentResourcePage <= 3) {
+                                  pageNumber = i + 1;
+                                } else if (currentResourcePage >= totalResourcePages - 2) {
+                                  pageNumber = totalResourcePages - 4 + i;
+                                } else {
+                                  pageNumber = currentResourcePage - 2 + i;
+                                }
+                                return (
+                                  <Button
+                                    key={pageNumber}
+                                    variant={currentResourcePage === pageNumber ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => goToResourcePage(pageNumber)}
+                                    className="w-8 h-8 p-0"
+                                  >
+                                    {pageNumber}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={goToNextResourcePage} 
+                              disabled={currentResourcePage === totalResourcePages}
+                            >
+                              Próxima <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
