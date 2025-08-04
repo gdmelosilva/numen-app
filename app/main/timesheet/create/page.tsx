@@ -8,18 +8,19 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { usePartnerOptions } from '@/hooks/usePartnerOptions'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
+import { useUserProjects } from '@/hooks/useUserProjects'
 import { useTicketOptions } from '@/hooks/useTicketOptions'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface FormData {
-  partnerId: string
   projectId: string
+  partnerId: string
   ticketId: string
   startDate: string
   endDate: string
@@ -31,22 +32,57 @@ interface FormData {
   includeHoliday: boolean
 }
 
+interface ExtendedProject {
+  id: number | string;
+  name: string;
+  projectName?: string;
+  projectDesc?: string;
+  project_type?: string;
+  partner_id?: string;
+  partner_name?: string;
+  partner_desc?: string | { name?: string };
+  partner?: {
+    id: string;
+    name: string;
+  };
+}
+
 const TimeSheetCreatePage = () => {
   const { user } = useCurrentUser()
+  const { profile } = useUserProfile()
   const router = useRouter()
-  const { partners, loading: partnersLoading } = usePartnerOptions(user)
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string>('')
+  
+  // Estados para seleção
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
-  const { projects, loading: projectsLoading } = useProjectOptions({ partnerId: selectedPartnerId, user })
+  
+  // Hooks para buscar dados baseados no perfil do usuário
+  const shouldUseUserProjects = profile === "functional-adm" || profile === "manager-adm"
+  
+  // Para functional/manager: usar projetos do usuário
+  const { projects: userProjects, loading: userProjectsLoading } = useUserProjects({
+    userId: user?.id,
+    profile: profile || undefined,
+    enabled: shouldUseUserProjects && !!user?.id
+  })
+  
+  // Para admin: usar hook tradicional (mas sem parceiro pré-selecionado)
+  const { projects: adminProjects, loading: adminProjectsLoading } = useProjectOptions({ 
+    user
+  })
+  
+  // Determinar quais projetos usar
+  const projects = shouldUseUserProjects ? userProjects : adminProjects
+  const projectsLoading = shouldUseUserProjects ? userProjectsLoading : adminProjectsLoading
+  
   const { tickets, loading: ticketsLoading } = useTicketOptions({ 
     projectId: selectedProjectId, 
-    partnerId: selectedPartnerId,
+    partnerId: '', // Será determinado automaticamente pelo projeto
     userId: user?.id
   })
   
   const [formData, setFormData] = useState<FormData>({
-    partnerId: '',
     projectId: '',
+    partnerId: '',
     ticketId: '',
     startDate: format(new Date(), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
@@ -59,6 +95,51 @@ const TimeSheetCreatePage = () => {
   })
   
   const [loading, setLoading] = useState(false)
+
+  // Função para encontrar o parceiro do projeto selecionado
+  const getSelectedProject = (): ExtendedProject | undefined => {
+    return projects.find(p => String(p.id) === formData.projectId) as ExtendedProject | undefined
+  }
+
+  // Função para obter o nome do parceiro
+  const getPartnerName = (): string => {
+    const selectedProject = getSelectedProject()
+    
+    if (!selectedProject) {
+      return 'Projeto não encontrado'
+    }
+    
+    try {
+      // Verificar se tem partner com nome
+      if (selectedProject.partner?.name && typeof selectedProject.partner.name === 'string') {
+        return String(selectedProject.partner.name)
+      }
+      
+      // Verificar se existe partner_name diretamente (para useUserProjects)
+      if (selectedProject.partner_name && typeof selectedProject.partner_name === 'string') {
+        return String(selectedProject.partner_name)
+      }
+      
+      // Verificar se tem algum campo partner_desc que está causando o problema
+      if (selectedProject.partner_desc) {
+        if (typeof selectedProject.partner_desc === 'string') {
+          return String(selectedProject.partner_desc)
+        } else if (typeof selectedProject.partner_desc === 'object' && selectedProject.partner_desc?.name) {
+          return String(selectedProject.partner_desc.name)
+        }
+      }
+      
+      // Retornar informação sobre partner_id se existir
+      if (selectedProject.partner_id && typeof selectedProject.partner_id === 'string') {
+        return `Parceiro ID: ${String(selectedProject.partner_id)}`
+      }
+    } catch (error) {
+      console.error('Erro ao obter nome do parceiro:', error)
+      return 'Erro ao carregar parceiro'
+    }
+    
+    return 'Parceiro não encontrado'
+  }
 
   // Proteção: Redirecionar usuários clientes
   useEffect(() => {
@@ -140,8 +221,21 @@ const TimeSheetCreatePage = () => {
       return
     }
 
-    if (!formData.partnerId || !formData.projectId || !formData.ticketId || !formData.description) {
+    if (!formData.projectId || !formData.ticketId || !formData.description) {
       toast.error('Por favor, preencha todos os campos obrigatórios')
+      return
+    }
+
+    // Definir partnerId automaticamente baseado no projeto selecionado
+    const selectedProject = getSelectedProject()
+    let partnerId = ''
+    
+    if (selectedProject) {
+      partnerId = selectedProject.partner_id || selectedProject.partner?.id || ''
+    }
+    
+    if (!partnerId) {
+      toast.error('Não foi possível determinar o parceiro do projeto selecionado')
       return
     }
 
@@ -216,6 +310,7 @@ const TimeSheetCreatePage = () => {
       if (errorCount === 0) {
         setFormData({
           ...formData,
+          ticketId: '',
           description: '',
           startTime: '08:00',
           endTime: '17:00'
@@ -238,27 +333,39 @@ const TimeSheetCreatePage = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Parceiro */}
+          {/* Projeto */}
           <div className="space-y-2 w-full w-max-full">
-            <Label htmlFor="partnerId">Parceiro *</Label>
+            <Label htmlFor="projectId">Projeto *</Label>
             <Select
-              value={formData.partnerId}
+              value={formData.projectId}
               onValueChange={(value) => {
-                setFormData({ ...formData, partnerId: value, projectId: '', ticketId: '' })
-                setSelectedPartnerId(value)
-                setSelectedProjectId('')
+                const selectedProject = projects.find(p => String(p.id) === value) as ExtendedProject | undefined
+                let partnerId = ''
+                
+                if (selectedProject) {
+                  // Tentar obter partner_id de diferentes formas
+                  partnerId = selectedProject.partner_id || selectedProject.partner?.id || ''
+                }
+                
+                setFormData({ 
+                  ...formData, 
+                  projectId: value, 
+                  partnerId: partnerId,
+                  ticketId: '' 
+                })
+                setSelectedProjectId(value)
               }}
             >
               <SelectTrigger className="space-y-2 w-full w-max-full">
-                <SelectValue placeholder="Escolha o seu parceiro..." />
+                <SelectValue placeholder="Selecione o projeto..." />
               </SelectTrigger>
               <SelectContent className="space-y-2 w-full w-max-full">
-                {partnersLoading ? (
+                {projectsLoading ? (
                   <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : (
-                  partners.map((partner) => (
-                    <SelectItem key={partner.id} value={partner.id}>
-                      {partner.name}
+                  projects.map((project) => (
+                    <SelectItem key={String(project.id)} value={String(project.id)}>
+                      {String(project.name || project.id)}
                     </SelectItem>
                   ))
                 )}
@@ -266,33 +373,13 @@ const TimeSheetCreatePage = () => {
             </Select>
           </div>
 
-          {/* Projeto */}
-          <div className="space-y-2 w-full w-max-full">
-            <Label htmlFor="projectId">Projeto *</Label>
-            <Select
-              value={formData.projectId}
-              onValueChange={(value) => {
-                setFormData({ ...formData, projectId: value, ticketId: '' })
-                setSelectedProjectId(value)
-              }}
-              disabled={!formData.partnerId}
-            >
-              <SelectTrigger className="space-y-2 w-full w-max-full">
-                <SelectValue placeholder="Selecione a atividade..." />
-              </SelectTrigger>
-              <SelectContent>
-                {projectsLoading ? (
-                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                ) : (
-                  projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Parceiro (somente leitura) */}
+            {/* <Label htmlFor="partnerId">Parceiro</Label> */}
+            <div className="px-3 py-2 border rounded-md bg-muted/50 text-muted-foreground" hidden>
+              {formData.projectId ? String(getPartnerName()) : 'Selecione um projeto primeiro'}
+            </div>
+          {/* <div className="space-y-2 w-full w-max-full">
+          </div> */}
 
           {/* Ticket */}
           <div className="space-y-2 w-full w-max-full">
@@ -310,8 +397,8 @@ const TimeSheetCreatePage = () => {
                   <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : tickets.length > 0 ? (
                   tickets.map((ticket) => (
-                    <SelectItem key={ticket.id} value={ticket.id}>
-                      #{ticket.id.slice(-6)} - {ticket.title}
+                    <SelectItem key={String(ticket.id)} value={String(ticket.id)}>
+                      #{String(ticket.id).slice(-6)} - {String(ticket.title || 'Ticket sem título')}
                     </SelectItem>
                   ))
                 ) : (
