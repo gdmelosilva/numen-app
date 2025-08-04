@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { X,Info } from "lucide-react";
+import { X,Info, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { usePartnerOptions } from "@/hooks/usePartnerOptions";
 import {
@@ -53,11 +53,11 @@ export default function CreateTicketPage() {
     module_id: "",
     priority_id: "",
     description: "",
-    attachment: null as File | null,
+    attachments: [] as File[],
     ref_ticket_id: "",
     ref_external_id: "",
   });
-  const [attachmentType, setAttachmentType] = useState("");
+  const [attachmentTypes, setAttachmentTypes] = useState<{ [fileName: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicketTitle, setSelectedTicketTitle] = useState("");
@@ -91,84 +91,95 @@ export default function CreateTicketPage() {
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, attachment: e.target.files?.[0] ?? null }));
+    const newFiles = Array.from(e.target.files || []);
+    setForm((prev) => ({ 
+      ...prev, 
+      attachments: [...prev.attachments, ...newFiles] 
+    }));
+    // Resetar o input para permitir selecionar o mesmo arquivo novamente se necessário
+    e.target.value = '';
   };
 
-  const handleAttachmentType = (value: string) => {
-    setAttachmentType(value);
+  const removeFile = (index: number) => {
+    const fileToRemove = form.attachments[index];
+    setForm((prev) => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index)
+    }));
+    // Remover o tipo do arquivo removido
+    setAttachmentTypes((prev) => {
+      const newTypes = { ...prev };
+      delete newTypes[fileToRemove.name];
+      return newTypes;
+    });
+  };
+
+  const setAttachmentType = (fileName: string, type: string) => {
+    setAttachmentTypes((prev) => ({ ...prev, [fileName]: type }));
   };
 
   // Função auxiliar para criar o ticket
   async function createTicket(formData: typeof form) {
-    if (formData.attachment) {
-      const fd = new FormData();
-      fd.append("contractId", formData.project_id);
-      fd.append("partner_id", formData.partner_id);
-      fd.append("title", formData.title);
-      fd.append("category_id", formData.category_id);      fd.append("module_id", formData.module_id);
-      fd.append("priority_id", formData.priority_id);
-      fd.append("description", formData.description);
-      fd.append("type_id", "1"); // SmartCare é sempre AMS
-      if (formData.ref_ticket_id) {
-        fd.append("ref_ticket_id", formData.ref_ticket_id);
-      }
-      if (formData.ref_external_id) {
-        fd.append("ref_external_id", formData.ref_external_id);
-      }
-      const ticketRes = await fetch("/api/tickets/create", {
-        method: "POST",
-        body: fd,
-      });
-      if (!ticketRes.ok) {
-        const data = await ticketRes.json();
-        throw new Error(data.error ?? "Erro ao criar chamado");
-      }
-      const ticketData = await ticketRes.json();
-      return ticketData?.id ?? ticketData?.data?.id;
-    } else {
-      const ticketRes = await fetch("/api/tickets/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contractId: formData.project_id,
-          partner_id: formData.partner_id,
-          title: formData.title,
-          category_id: formData.category_id,          module_id: formData.module_id,
-          priority_id: formData.priority_id,
-          description: formData.description,
-          type_id: "1", // SmartCare é sempre AMS
-          ...(formData.ref_ticket_id && { ref_ticket_id: formData.ref_ticket_id }),
-          ...(formData.ref_external_id && { ref_external_id: formData.ref_external_id }),
-        }),
-      });
-      if (!ticketRes.ok) {
-        const data = await ticketRes.json();
-        throw new Error(data.error ?? "Erro ao criar chamado");
-      }
-      const ticketData = await ticketRes.json();
-      return ticketData?.id ?? ticketData?.data?.id;
+    // Para múltiplos arquivos, sempre usar FormData
+    const fd = new FormData();
+    fd.append("contractId", formData.project_id);
+    fd.append("partner_id", formData.partner_id);
+    fd.append("title", formData.title);
+    fd.append("category_id", formData.category_id);
+    fd.append("module_id", formData.module_id);
+    fd.append("priority_id", formData.priority_id);
+    fd.append("description", formData.description);
+    fd.append("type_id", "1"); // SmartCare é sempre AMS
+    if (formData.ref_ticket_id) {
+      fd.append("ref_ticket_id", formData.ref_ticket_id);
     }
+    if (formData.ref_external_id) {
+      fd.append("ref_external_id", formData.ref_external_id);
+    }
+
+    // Adicionar arquivos se houver
+    formData.attachments.forEach((file, index) => {
+      fd.append(`file_${index}`, file);
+    });
+
+    const ticketRes = await fetch("/api/tickets/create", {
+      method: "POST",
+      body: fd,
+    });
+
+    if (!ticketRes.ok) {
+      const data = await ticketRes.json();
+      throw new Error(data.error ?? "Erro ao criar chamado");
+    }
+    const ticketData = await ticketRes.json();
+    return ticketData?.id ?? ticketData?.data?.id;
   }
 
-  // Função auxiliar para upload de anexo
-  async function uploadAttachment(formData: typeof form, ticketId: string, attachmentType: string) {
+  // Função auxiliar para upload de anexos
+  async function uploadAttachments(formData: typeof form, ticketId: string, attachmentTypes: { [fileName: string]: string }) {
     const msgRes = await fetch(`/api/messages?ticket_id=${ticketId}`);
     if (!msgRes.ok) throw new Error("Erro ao buscar mensagem do chamado");
     const msgs = await msgRes.json();
     const systemMsg = Array.isArray(msgs) && msgs.length > 0 ? msgs[0] : null;
     if (!systemMsg?.id) throw new Error("Mensagem do sistema não encontrada");
-    const attFd = new FormData();
-    if (formData.attachment) attFd.append("file", formData.attachment);
-    attFd.append("messageId", systemMsg.id);
-    attFd.append("ticketId", ticketId);
-    if (attachmentType) attFd.append("att_type", attachmentType);
-    const attRes = await fetch("/api/attachment", {
-      method: "POST",
-      body: attFd,
-    });
-    if (!attRes.ok) {
-      const data = await attRes.json();
-      throw new Error(data.error ?? "Erro ao enviar anexo");
+
+    // Upload de cada arquivo separadamente
+    for (const file of formData.attachments) {
+      const attFd = new FormData();
+      attFd.append("file", file);
+      attFd.append("messageId", systemMsg.id);
+      attFd.append("ticketId", ticketId);
+      const fileType = attachmentTypes[file.name];
+      if (fileType) attFd.append("att_type", fileType);
+
+      const attRes = await fetch("/api/attachment", {
+        method: "POST",
+        body: attFd,
+      });
+      if (!attRes.ok) {
+        const data = await attRes.json();
+        throw new Error(`Erro ao enviar anexo ${file.name}: ${data.error ?? "Erro desconhecido"}`);
+      }
     }
   }
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,15 +224,20 @@ export default function CreateTicketPage() {
         }
       }
       
-      if (finalForm.attachment && !attachmentType) {
-        setError("Selecione o tipo do anexo quando um arquivo for adicionado.");
-        setLoading(false);
-        return;
+      // Validação dos anexos - todos os arquivos devem ter tipo definido
+      const hasAttachments = finalForm.attachments.length > 0;
+      if (hasAttachments) {
+        const missingTypes = finalForm.attachments.filter(file => !attachmentTypes[file.name]);
+        if (missingTypes.length > 0) {
+          setError(`Selecione o tipo para os seguintes anexos: ${missingTypes.map(f => f.name).join(', ')}`);
+          setLoading(false);
+          return;
+        }
       }
       
       const ticketId = await createTicket(finalForm);
-      if (finalForm.attachment && ticketId) {
-        await uploadAttachment(finalForm, ticketId, attachmentType);
+      if (hasAttachments && ticketId) {
+        await uploadAttachments(finalForm, ticketId, attachmentTypes);
       }
       
       // Mensagem personalizada para usuários functional-adm
@@ -240,12 +256,12 @@ export default function CreateTicketPage() {
         module_id: "",
         priority_id: "",
         description: "",
-        attachment: null,
+        attachments: [] as File[],
         ref_ticket_id: "",
         ref_external_id: "",
       };
       setForm(resetForm);
-      setAttachmentType("");
+      setAttachmentTypes({});
       setSelectedTicketTitle("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
@@ -605,63 +621,86 @@ export default function CreateTicketPage() {
             </div>            {error && (
               <div className="text-destructive text-sm">{error}</div>
             )}
-              {/* Seção de Anexo */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">              <div>
-                <label htmlFor="attachment" className="block text-sm font-medium mb-1">Anexo</label>
-                <Input
-                  id="attachment"
-                  type="file"
-                  accept="*"
-                  onChange={handleFile}
-                  disabled={loading}
-                  placeholder="Selecionar arquivo"
-                />
-              </div>
-              
-              {form.attachment && (
-                <div className="flex gap-2 items-end">
+            {/* Seção de Anexos */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Anexos</label>
+                <div className="flex items-center gap-2">
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setForm((prev) => ({ ...prev, attachment: null }));
-                      setAttachmentType("");
-                    }}
-                    className="h-9 w-9 p-0 text-destructive hover:text-destructive"
-                    title="Remover anexo"
+                    variant="outline"
+                    onClick={() => document.getElementById('file-input')?.click()}
+                    disabled={loading}
+                    className="flex items-center gap-2"
                   >
-                    <X className="h-4 w-4" />
+                    <Upload className="w-4 h-4" />
+                    Adicionar Arquivos
                   </Button>
-                  <div className="flex-1">
-                    <label htmlFor="attachment_type" className="block text-sm font-medium mb-1">
-                      Tipo do Anexo <span className="text-destructive">*</span>
-                    </label>
-                    <Select
-                      value={attachmentType}
-                      onValueChange={handleAttachmentType}
-                      disabled={loading}
-                    >
-                      <SelectTrigger className="w-full" id="attachment_type">
-                        <SelectValue placeholder="Selecione o tipo do anexo" className="truncate" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Evidencia de Erro">
-                          <span className="truncate">Evidência de Erro</span>
-                        </SelectItem>
-                        <SelectItem value="Evidencia de Teste">
-                          <span className="truncate">Evidência de Teste</span>
-                        </SelectItem>
-                        <SelectItem value="Especificação">
-                          <span className="truncate">Especificação</span>
-                        </SelectItem>
-                        <SelectItem value="Detalhamento de Chamado">
-                          <span className="truncate">Detalhamento de Chamado</span>
-                        </SelectItem>
-                        {/* <SelectItem value="Arquivo Contratual">Arquivo Contratual</SelectItem> */}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <input
+                    id="file-input"
+                    type="file"
+                    multiple
+                    accept="*"
+                    onChange={handleFile}
+                    disabled={loading}
+                    className="hidden"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {form.attachments.length > 0 ? `${form.attachments.length} arquivo(s) selecionado(s)` : "Nenhum arquivo selecionado"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Lista de arquivos selecionados */}
+              {form.attachments.length > 0 && (
+                <div className="space-y-2">
+                  {form.attachments.map((file, index) => (
+                    <div key={`${file.name}-${index}`} className="flex items-center gap-2 p-2 border rounded">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      
+                      <div className="flex-1 max-w-xs">
+                        <Select
+                          value={attachmentTypes[file.name] || ""}
+                          onValueChange={(value) => setAttachmentType(file.name, value)}
+                          disabled={loading}
+                        >
+                          <SelectTrigger className="w-full h-8 text-xs">
+                            <SelectValue placeholder="Tipo do anexo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Evidencia de Erro">
+                              <span className="text-xs">Evidência de Erro</span>
+                            </SelectItem>
+                            <SelectItem value="Evidencia de Teste">
+                              <span className="text-xs">Evidência de Teste</span>
+                            </SelectItem>
+                            <SelectItem value="Especificação">
+                              <span className="text-xs">Especificação</span>
+                            </SelectItem>
+                            <SelectItem value="Detalhamento de Chamado">
+                              <span className="text-xs">Detalhamento de Chamado</span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(index)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        title="Remover arquivo"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -686,13 +725,13 @@ export default function CreateTicketPage() {
                     module_id: "",
                     priority_id: "",
                     description: "",
-                    attachment: null,
+                    attachments: [] as File[],
                     ref_ticket_id: "",
                     ref_external_id: "",
                   };
                   setForm(resetForm);
                   setSelectedTicketTitle("");
-                  setAttachmentType("");
+                  setAttachmentTypes({});
                 }}
               >
                 Limpar

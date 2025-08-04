@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { ColoredBadge } from "@/components/ui/colored-badge";
+import { useTicketStatuses } from "@/hooks/useTicketStatuses";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface Ticket {
   id: string;
@@ -42,31 +44,47 @@ export function TicketSelectionDialog({
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { statuses } = useTicketStatuses();
+  const { user } = useCurrentUser();
 
-  useEffect(() => {
-    if (open && tickets.length === 0) {
-      fetchTickets();
-    }
-  }, [open, tickets.length]);
+  const getStatusName = (statusId: number): string => {
+    const status = statuses.find(s => Number(s.id) === statusId);
+    return status?.name || `Status ${statusId}`;
+  };
 
-  useEffect(() => {
-    if (searchTerm) {
-      const filtered = tickets.filter((ticket) =>
-        ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.external_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.project?.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredTickets(filtered);
-    } else {
-      setFilteredTickets(tickets);
-    }
-  }, [searchTerm, tickets]);
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
+    if (!user) return; // Aguardar informações do usuário
+    
     setLoading(true);
     try {
       console.log("Buscando tickets...");
-      const response = await fetch("/api/smartcare");
+      
+      // Aplicar filtros baseados no perfil do usuário
+      let apiUrl = "/api/smartcare";
+      const params = new URLSearchParams();
+
+      if (!user.is_client && user.role === 3) {
+        // Role 3 (Recurso): Vê apenas tickets onde está alocado
+        params.append("user_tickets", user.id);
+      } else if (!user.is_client && user.role === 2) {
+        // Role 2 (Manager): Vê tickets dos projetos que gerencia
+        // TODO: Implementar filtro por projetos do manager
+        // Por enquanto, vê todos os tickets
+      } else if (!user.is_client && user.role === 1) {
+        // Role 1 (Admin): Vê todos os tickets
+        // Não aplica filtros adicionais
+      } else if (user.is_client) {
+        // Cliente: Vê apenas tickets dos seus projetos/parceiro
+        if (user.partner_id) {
+          params.append("partner_id", user.partner_id);
+        }
+      }
+
+      if (params.toString()) {
+        apiUrl += `?${params.toString()}`;
+      }
+
+      const response = await fetch(apiUrl);
       console.log("Response status:", response.status);
       if (response.ok) {
         const data = await response.json();
@@ -80,7 +98,26 @@ export function TicketSelectionDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (open && tickets.length === 0 && user) {
+      fetchTickets();
+    }
+  }, [open, tickets.length, user, fetchTickets]);
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = tickets.filter((ticket) =>
+        ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.external_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.project?.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredTickets(filtered);
+    } else {
+      setFilteredTickets(tickets);
+    }
+  }, [searchTerm, tickets]);
 
   const handleSelectTicket = (ticket: Ticket) => {
     onSelect(ticket.id, ticket.title);
@@ -128,7 +165,7 @@ export function TicketSelectionDialog({
                         <span className="text-sm font-medium text-muted-foreground">
                           #{ticket.external_id}
                         </span>
-                        <ColoredBadge type="ticket_status" value={String(ticket.status_id)} />
+                        <ColoredBadge type="ticket_status" value={getStatusName(ticket.status_id)} />
                       </div>
                       <h4 className="font-medium text-sm leading-tight">
                         {ticket.title}

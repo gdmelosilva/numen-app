@@ -35,7 +35,7 @@ export function getTicketColumns({ priorities, types, statuses, modules }: {
   return [
     {
       accessorKey: "external_id",
-      header: "ID",
+      header: "Id. Chamado",
       cell: ({ row }) => String(row.original.external_id).padStart(5, "0"),
     },
     {
@@ -68,7 +68,7 @@ export function getTicketColumns({ priorities, types, statuses, modules }: {
     },
     {
       accessorKey: "type_id",
-      header: "Tipo",
+      header: "Categoria",
       cell: ({ row }) => {
         const type = row.original.type?.name ?? types.find(t => String(t.id) === String(row.original.type_id))?.name;
         return <ColoredBadge value={type} type="ticket_type" />;

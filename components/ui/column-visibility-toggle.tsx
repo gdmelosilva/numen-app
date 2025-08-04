@@ -42,26 +42,32 @@ export function ColumnVisibilityToggle<TData>({
 
     // Direct mappings based on the exact titles from columns.tsx
     const columnTitles: Record<string, string> = {
-      // Smartcare Management columns with simplified IDs
+      // Smartcare Management columns with exact titles from DataTableColumnHeader
       'is_private': 'Privado?',
-      'external_id': 'ID',
-      'ref_external_id': 'ID Externo Ref.',
-      'project': 'Contrato',
+      'external_id': 'Id. Chamado',
+      'ref_external_id': 'Ref. Externa',
+      'project': 'Projeto',
       'partner': 'Parceiro',
       'category': 'Categoria',
       'title': 'Título',
-      'module': 'Módulo',
+      'module': 'Módulo Func.',
       'status': 'Status',
       'created_at': 'Criado em',
       'priority': 'Prioridade',
       'planned_end_date': 'Prev. Fim',
-      'resources': 'Recursos',
+      'resources': 'Recursos Aloc.',
+      
+      // Project Tickets Tab columns
+      'priority_id': 'Prioridade',
+      'type_id': 'Categoria',
+      'module_id': 'Módulo - Torre',
+      'is_closed': 'Fechado?',
       
       // Legacy support for dot notation (fallback)
-      'project.projectName': 'Contrato',
+      'project.projectName': 'Projeto',
       'partner.partner_desc': 'Parceiro',
       'category.name': 'Categoria',
-      'module.name': 'Módulo',
+      'module.name': 'Módulo Func.',
       'status.name': 'Status',
       'priority.name': 'Prioridade',
       
