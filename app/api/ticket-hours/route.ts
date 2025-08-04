@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
         appoint_date,
         appoint_start,
         appoint_end,
+        is_deleted: false, // Garantir que novos registros não são marcados como deletados
       },
     ]).select().single();
 
@@ -132,6 +133,7 @@ export async function GET(req: NextRequest) {
     const year = searchParams.get("year");
     const month = searchParams.get("month");
     const client_view = searchParams.get("client_view");
+    const include_deleted = searchParams.get("include_deleted"); // Novo parâmetro
     
     // Permite busca flexível: por message_id, user_id, project_id, ou todos
     let query = supabase.from("ticket_hours")
@@ -141,6 +143,12 @@ export async function GET(req: NextRequest) {
         user:user_id(first_name, last_name),
         ticket:ticket_id(title, type_id, external_id, project_id)
       `);
+    
+    // Por padrão, filtrar registros não deletados
+    if (include_deleted !== "true") {
+      query = query.or('is_deleted.is.null,is_deleted.eq.false');
+    }
+    
     if (message_id) query = query.eq("message_id", message_id);
     if (user_id) query = query.eq("user_id", user_id);
     if (project_id) query = query.eq("project_id", project_id);

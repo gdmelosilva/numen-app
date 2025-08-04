@@ -6,7 +6,7 @@ import { DataTable } from '@/components/ui/data-table'
 import { TimesheetSidebar } from '@/components/TimesheetSidebar'
 import { useTicketHoursManagement } from '@/hooks/useTicketHoursManagement'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { getColumns } from './columns'
+import { getColumns, getChildColumns } from './columns'
 import { exportTimesheetReport } from '@/lib/export-file'
 import { useRouter } from 'next/navigation'
 
@@ -44,15 +44,6 @@ const TimeSheetManagementPage = () => {
 	const handleFilter = (userId: string | null) => {
 		setSelectedUserId(userId)
 	}
-	const handleDownloadReport = () => {
-		// Gerar nome do arquivo com data atual
-		const now = new Date()
-		const dateStr = now.toISOString().split('T')[0]
-		const filename = `relatorio-horas-${dateStr}`
-		
-		// Exportar relatório
-		exportTimesheetReport(data, filename, selectedUserId)
-	}
 
 	const lastUpdate = `${today.toLocaleDateString()} | ${today.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
 
@@ -86,10 +77,6 @@ const TimeSheetManagementPage = () => {
 	}
 
 	const estimatedHours = getBusinessDays(year, month) * 8 
-	const launchedDays = data.length
-	const workedMinutes = data.reduce((acc, row) => acc + (row.total_minutes || 0), 0)
-	const workedHours = `${String(Math.floor(workedMinutes / 60)).padStart(2, '0')}:${String(workedMinutes % 60).padStart(2, '0')}`
-	const statusHours = workedHours 
 
 	// Função para converter data UTC para data local sem conversão de fuso horário
 	const parseUTCDateAsLocal = (utcDateString: string) => {
@@ -123,28 +110,54 @@ const TimeSheetManagementPage = () => {
 			user_name: row.user_name,
 			user_id: row.user_id,
 			project: row.project,
-			children: row.children?.map(child => ({
-				id: child.id,
-				appoint_date: child.appoint_date,
-				total_minutes: child.total_minutes,
-				is_approved: child.is_approved,
-				user_name: child.user_name,
-				user_id: child.user_id,
-				project: child.project,
-				// Campos extras para TicketHour (se necessário)
-				minutes: child.total_minutes,
-				ticket_id: child.ticket_id,
-				project_id: child.project_id,
-				ticket_title: child.ticket_title,
-				ticket_type_id: child.ticket_type_id,
-				ticket_external_id: child.ticket_external_id,
-				appoint_start: parseUTCTimeAsLocal(child.appoint_start),
-				appoint_end: parseUTCTimeAsLocal(child.appoint_end)
-			}))
-		}));
+			children: row.children
+				?.filter(child => !child.is_deleted) // Filtrar apenas registros não deletados
+				?.map(child => ({
+					id: child.id,
+					appoint_date: child.appoint_date,
+					total_minutes: child.total_minutes,
+					is_approved: child.is_approved,
+					is_deleted: child.is_deleted,
+					user_name: child.user_name,
+					user_id: child.user_id,
+					project: child.project,
+					// Campos extras para TicketHour (se necessário)
+					minutes: child.total_minutes,
+					ticket_id: child.ticket_id,
+					project_id: child.project_id,
+					ticket_title: child.ticket_title,
+					ticket_type_id: child.ticket_type_id,
+					ticket_external_id: child.ticket_external_id,
+					appoint_start: parseUTCTimeAsLocal(child.appoint_start),
+					appoint_end: parseUTCTimeAsLocal(child.appoint_end)
+				}))
+		}))
+		.filter(row => row.children && row.children.length > 0); // Remover dias sem registros válidos
+
+	// Calcular dados para o sidebar após filtrar registros deletados
+	const launchedDays = tableData.length;
+	const workedMinutes = tableData.reduce((acc, row) => {
+		const validChildren = row.children?.filter(child => !child.is_deleted) || [];
+		const dayMinutes = validChildren.reduce((dayAcc, child) => dayAcc + (child.minutes || 0), 0);
+		return acc + dayMinutes;
+	}, 0);
+	const workedHours = `${String(Math.floor(workedMinutes / 60)).padStart(2, '0')}:${String(workedMinutes % 60).padStart(2, '0')}`;
+	const statusHours = workedHours;
+
+	// Função para download do relatório (definida após tableData)
+	const handleDownloadReport = () => {
+		// Gerar nome do arquivo com data atual
+		const now = new Date()
+		const dateStr = now.toISOString().split('T')[0]
+		const filename = `relatorio-horas-${dateStr}`
+		
+		// Exportar relatório usando dados filtrados
+		exportTimesheetReport(tableData as never, filename, selectedUserId)
+	}
 
 	// Obter colunas baseadas no perfil do usuário
-	const columns = getColumns(user);
+	const columns = getColumns();
+	const childColumns = getChildColumns(user);
 
 	return (
         <Card className='p-8 h-full'>
@@ -178,6 +191,7 @@ const TimeSheetManagementPage = () => {
                         meta={{ 
                             expanded, 
                             setExpanded,
+                            childColumns,
                             showUserInChildren: Boolean(user && !user.is_client && user.role === 1),
                             user: user ? {
                                 id: user.id,

@@ -5,7 +5,9 @@ export interface TicketHour {
   id: string;
   appoint_date: string;
   minutes: number;
+  total_minutes?: number;
   is_approved: boolean;
+  is_deleted: boolean;
   ticket_id?: string;
   appoint_start?: string;
   appoint_end?: string;
@@ -13,9 +15,12 @@ export interface TicketHour {
   user_name?: string;
   project_id?: string;
   ticket_title?: string;
+  ticket_type_id?: number;
+  ticket_external_id?: string;
   hora_faturavel?: number | null;
   billable_minutes?: number;
   original_minutes?: number;
+  children?: TicketHour[];
   user?: {
     first_name: string;
     last_name: string;
@@ -36,18 +41,19 @@ export interface TimesheetRow {
   appoint_date: string;
   total_minutes: number;
   is_approved: boolean;
+  is_deleted?: boolean;
   user_name?: string;
+  user_id?: string;
   project: {
     projectName: string;
     projectDesc: string;
   };
-  children?: TimesheetRow[];
+  children?: TicketHour[];
   // Campos adicionais para TicketHour
   ticket_id?: string;
   project_id?: string;
   appoint_start?: string;
   appoint_end?: string;
-  user_id?: string;
   ticket_title?: string;
   ticket_type_id?: number;
   ticket_external_id?: string;
@@ -144,8 +150,10 @@ export function useTicketHoursManagement() {
         grouped[key].children!.push({
           id: row.id,
           appoint_date: row.appoint_date,
+          minutes: row.minutes || 0,
           total_minutes: user.is_client && row.billable_minutes ? row.billable_minutes : row.minutes,
           is_approved: row.is_approved,
+          is_deleted: row.is_deleted || false,
           user_name: user.is_client ? undefined : row.user_name, // Não incluir user_name para clientes
           project: row.project ?? { projectName: '', projectDesc: '' },
           children: undefined,
