@@ -135,41 +135,50 @@ export function DataTable<
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => [
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className={onRowClick ? "cursor-pointer hover:bg-accent" : undefined}
-                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>,
-                // Renderiza filhos se expandido
-                expanded && expanded[row.original.id as string] && row.original.children && row.original.children.length > 0 ? (
-                  <TableRow key={`${row.id}-children`} className="bg-muted/40">
-                    <TableCell colSpan={columns.length} className="py-2 px-0">
-                      {meta?.childColumns ? (
-                        <NestedDataTable
-                          columns={meta.childColumns}
-                          data={row.original.children}
-                          className="mt-2"
-                        />
-                      ) : (
-                        <div className="text-center text-muted-foreground py-4">
-                          Nenhuma coluna configurada para dados aninhados
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ) : null
-              ])
+              table.getRowModel().rows.map((row) => {
+                const isExpanded = expanded && expanded[row.original.id as string];
+                const hasChildren = row.original.children && row.original.children.length > 0;
+                
+                return [
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className={`
+                      transition-colors duration-200
+                      ${onRowClick ? "cursor-pointer hover:bg-accent" : ""}
+                      ${isExpanded && hasChildren ? "bg-primary/10 dark:bg-primary/5 border-primary/20 dark:border-primary/10 shadow-sm" : ""}
+                    `.trim()}
+                    onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>,
+                  // Renderiza filhos se expandido
+                  isExpanded && hasChildren ? (
+                    <TableRow key={`${row.id}-children`} className="bg-muted/40 dark:bg-muted/10 border-none">
+                      <TableCell colSpan={columns.length} className="py-3 px-2 bg-muted/5 dark:bg-muted/5">
+                        {meta?.childColumns && row.original.children ? (
+                          <NestedDataTable
+                            columns={meta.childColumns}
+                            data={row.original.children}
+                            className="mx-1"
+                          />
+                        ) : (
+                          <div className="text-center text-muted-foreground py-4">
+                            Nenhuma coluna configurada para dados aninhados
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ) : null
+                ];
+              })
             ) : (
               <TableRow>
                 <TableCell

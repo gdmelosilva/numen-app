@@ -122,7 +122,7 @@ const TimeSheetManagementPage = () => {
 					user_id: child.user_id,
 					project: child.project,
 					// Campos extras para TicketHour (se necessário)
-					minutes: child.total_minutes,
+					minutes: child.minutes, // Usar child.minutes (não total_minutes)
 					ticket_id: child.ticket_id,
 					project_id: child.project_id,
 					ticket_title: child.ticket_title,
@@ -180,7 +180,7 @@ const TimeSheetManagementPage = () => {
                         workedHours={workedHours}
                         statusHours={statusHours}
                         selectedUserId={selectedUserId}
-                        showUserFilter={Boolean(user && !user.is_client && user.role === 1)}
+                        showUserFilter={Boolean(user && !user.is_client && (user.role === 1 || user.role === 2))}
                         isClient={Boolean(user?.is_client)}
                     />
                 </div>
@@ -192,7 +192,7 @@ const TimeSheetManagementPage = () => {
                             expanded, 
                             setExpanded,
                             childColumns,
-                            showUserInChildren: Boolean(user && !user.is_client && user.role === 1),
+                            showUserInChildren: Boolean(user && !user.is_client && (user.role === 1 || user.role === 2)),
                             user: user ? {
                                 id: user.id,
                                 role: user.role,

@@ -65,7 +65,11 @@ export const getColumns = (): ColumnDef<TimesheetRow>[] => {
                 e.stopPropagation();
                 if (setExpanded) setExpanded((prev: Record<string, boolean>) => ({ ...prev, [row.original.id]: !expanded }));
               }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              className={`
+                rounded-sm p-1 transition-colors duration-200
+                hover:bg-muted/40 dark:hover:bg-muted/20
+                ${expanded ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary' : 'text-muted-foreground'}
+              `.trim()}
             >
               {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             </button>
@@ -94,6 +98,38 @@ export const getColumns = (): ColumnDef<TimesheetRow>[] => {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Descrição" />, 
       accessorFn: (row) => row.project?.projectName || "",
       id: "descricao",
+      cell: ({ row }) => {
+        const children = row.original.children;
+        if (!children || children.length === 0) {
+          return <span>-</span>;
+        }
+
+        // Verificar se há múltiplos projetos
+        const uniqueProjects = new Set(children.map(child => child.project?.projectName).filter(Boolean));
+        const uniqueUsers = new Set(children.map(child => child.user_name).filter(Boolean));
+        
+        if (uniqueProjects.size > 1) {
+          return (
+            <span className="text-sm text-muted-foreground">
+              {uniqueProjects.size} projetos, {children.length} apontamento{children.length > 1 ? 's' : ''}
+            </span>
+          );
+        } else if (uniqueUsers.size > 1) {
+          const projectName = Array.from(uniqueProjects)[0] || "Projeto";
+          return (
+            <span className="text-sm">
+              {projectName} ({uniqueUsers.size} usuários)
+            </span>
+          );
+        } else {
+          const projectName = Array.from(uniqueProjects)[0] || "Projeto";
+          return (
+            <span className="max-w-[200px] truncate inline-block" title={projectName}>
+              {projectName}
+            </span>
+          );
+        }
+      },
     },
     {
         accessorKey: "total_minutes",
@@ -239,8 +275,8 @@ export const getChildColumns = (user: AuthenticatedUser | null): ColumnDef<Ticke
     }
   ];
 
-  // Adicionar coluna de usuário apenas para administradores (role 1) não-clientes
-  if (user && !user.is_client && user.role === 1) {
+  // Adicionar coluna de usuário para administradores (role 1) e gerentes administrativos (role 2) não-clientes
+  if (user && !user.is_client && (user.role === 1 || user.role === 2)) {
     childColumns.splice(-1, 0, {
       accessorKey: "user_name",
       header: ({ column }) => (

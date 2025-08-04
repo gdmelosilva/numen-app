@@ -74,9 +74,17 @@ export const TimesheetSidebar: React.FC<TimesheetSidebarProps> = ({
         </div>
         <div className="w-full px-2">
           <Tabs value={String(month)} onValueChange={v => onMonthChange(Number(v))}>
-            <TabsList className="grid grid-cols-4 w-full rounded-lg p- bg-white">
+            <TabsList className="grid grid-cols-4 w-full h-full rounded-lg p-1">
               {months.map((m, idx) => (
-                <TabsTrigger key={m} value={String(idx)} className="py-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md">
+                <TabsTrigger 
+                  key={m} 
+                  value={String(idx)} 
+                  className="py-1 px-2 text-xs font-medium transition-all duration-200 rounded-md
+                    data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm
+                    data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+                    dark:data-[state=active]:bg-accent dark:data-[state=active]:text-foreground
+                    hover:bg-background/50 dark:hover:bg-background/30"
+                >
                   {m}
                 </TabsTrigger>
               ))}

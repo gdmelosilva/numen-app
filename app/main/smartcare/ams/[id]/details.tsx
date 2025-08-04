@@ -20,6 +20,20 @@ interface ProjectDetailsTabProps {
 export default function ProjectDetailsTab({ project, editMode, setEditMode }: ProjectDetailsTabProps) {
   const { user: currentUser } = useCurrentUser();
   
+  // Função auxiliar para extrair o ID do status do projeto
+  const getProjectStatusId = (projectStatus: unknown, statusOptions: { id: string; name: string }[] = []) => {
+    if (typeof projectStatus === "object" && projectStatus !== null) {
+      if ("id" in projectStatus) {
+        return String((projectStatus as { id: unknown }).id || "");
+      } else if ("name" in projectStatus && statusOptions.length > 0) {
+        // Busca o ID baseado no name
+        const statusOption = statusOptions.find(s => s.name === (projectStatus as { name: string }).name);
+        return statusOption ? String(statusOption.id) : String((projectStatus as { name: string }).name || "");
+      }
+    }
+    return typeof projectStatus === "string" ? projectStatus : "";
+  };
+  
   // Determine if the project is closed (status 'Encerrado')
   const isClosed = (() => {
     let status = '';
@@ -47,17 +61,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
     end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
     project_type: project.project_type || "",
-    project_status: (() => {
-      if (typeof project.project_status === "object" && project.project_status !== null) {
-        if ("id" in project.project_status) {
-          return String(project.project_status.id || "");
-        } else if ("name" in project.project_status) {
-          // Busca o ID baseado no name
-          return String(project.project_status.name || "");
-        }
-      }
-      return typeof project.project_status === "string" ? project.project_status : "";
-    })(),
+    project_status: getProjectStatusId(project.project_status),
     is_wildcard: project.is_wildcard || false,
     is_247: project.is_247 || false,
     hours_max: project.hours_max ?? "",
@@ -71,6 +75,10 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     closing_time: project.closing_time ?? "",
   });
 
+  const [statusOptions, setStatusOptions] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   // Atualiza o form sempre que o project mudar
   useEffect(() => {
     const novoForm = {
@@ -79,17 +87,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
       end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
       project_type: project.project_type || "",
-      project_status: (() => {
-        if (typeof project.project_status === "object" && project.project_status !== null) {
-          if ("id" in project.project_status) {
-            return String(project.project_status.id || "");
-          } else if ("name" in project.project_status) {
-            // Busca o ID baseado no name
-            return String(project.project_status.name || "");
-          }
-        }
-        return typeof project.project_status === "string" ? project.project_status : "";
-      })(),
+      project_status: getProjectStatusId(project.project_status, statusOptions),
       is_wildcard: project.is_wildcard || false,
       is_247: project.is_247 || false,
       hours_max: project.hours_max ?? "",
@@ -103,11 +101,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       closing_time: project.closing_time ?? "",
     };
     setForm(novoForm);
-  }, [project]);
-
-  const [statusOptions, setStatusOptions] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  }, [project, statusOptions]);
 
   // Garante que o valor do status está sempre sincronizado com as opções
   useEffect(() => {
@@ -209,7 +203,21 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       changedFields.project_type = form.project_type || project.project_type || "";
       changedFields.is_wildcard = form.is_wildcard ?? project.is_wildcard ?? false;
       changedFields.is_247 = form.is_247 ?? project.is_247 ?? false;
-      changedFields.project_status = form.project_status || (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status ? project.project_status.id : project.project_status) || "";
+      
+      // Garantir que project_status seja sempre enviado como ID
+      let statusId = form.project_status;
+      if (statusId) {
+        // Verificar se o valor atual é um ID válido
+        const statusOption = statusOptions.find(s => String(s.id) === String(statusId));
+        if (!statusOption) {
+          // Se não encontrou por ID, procurar por name e pegar o ID
+          const statusByName = statusOptions.find(s => String(s.name) === String(statusId));
+          if (statusByName) {
+            statusId = String(statusByName.id);
+          }
+        }
+      }
+      changedFields.project_status = statusId || (typeof project.project_status === "object" && project.project_status !== null && "id" in project.project_status ? project.project_status.id : project.project_status) || "";
       const response = await fetch("/api/admin/contracts/update", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -236,16 +244,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       start_date: project.start_date ? String(project.start_date).slice(0, 10) : "",
       end_at: project.end_at ? String(project.end_at).slice(0, 10) : "",
       project_type: project.project_type || "",
-      project_status: (() => {
-        if (typeof project.project_status === "object" && project.project_status !== null) {
-          if ("id" in project.project_status) {
-            return String(project.project_status.id || "");
-          } else if ("name" in project.project_status) {
-            return String(project.project_status.name || "");
-          }
-        }
-        return typeof project.project_status === "string" ? project.project_status : "";
-      })(),
+      project_status: getProjectStatusId(project.project_status, statusOptions),
       is_wildcard: project.is_wildcard || false,
       is_247: project.is_247 || false,
       hours_max: project.hours_max ?? "",

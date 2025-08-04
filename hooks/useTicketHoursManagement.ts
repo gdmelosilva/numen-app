@@ -91,8 +91,8 @@ export function useTicketHoursManagement() {
         }
       }
 
-      // Filtro por usuário (apenas para administradores)
-      if (filterUserId && !user.is_client && user.role === 1) {
+      // Filtro por usuário (para administradores e gerentes administrativos)
+      if (filterUserId && !user.is_client && (user.role === 1 || user.role === 2)) {
         params.append("user_id", filterUserId);
       }
 
@@ -118,15 +118,11 @@ export function useTicketHoursManagement() {
         ticket_external_id: row.ticket ? row.ticket.external_id : undefined
       }));
       
-      // Agrupa por appoint_date e is_approved (e por usuário se necessário)
+      // Agrupa apenas por appoint_date e is_approved (todos os usuários juntos por data)
       const grouped: Record<string, TimesheetRow> = {};
       processedRows.forEach((row) => {
-        // Para clientes, agrupar tudo junto (unificado)
-        // Para outros usuários, agrupar por data/status/usuário
-        const shouldShowUser = !user.is_client && user.role === 1;
-        const key = user.is_client 
-          ? `${row.appoint_date}|${row.is_approved}` 
-          : `${row.appoint_date}|${row.is_approved}|${row.user_id || 'unknown'}`;
+        // Agrupar apenas por data e status de aprovação, independente do usuário
+        const key = `${row.appoint_date}|${row.is_approved}`;
         
         if (!grouped[key]) {
           grouped[key] = {
@@ -134,10 +130,10 @@ export function useTicketHoursManagement() {
             appoint_date: row.appoint_date,
             total_minutes: 0,
             is_approved: row.is_approved,
-            user_name: shouldShowUser ? row.user_name : undefined,
+            user_name: undefined, // Não mostrar usuário na linha principal (apenas nos filhos)
             project: row.project ?? { projectName: '', projectDesc: '' },
             children: [],
-            user_id: shouldShowUser ? row.user_id : undefined,
+            user_id: undefined, // Não mostrar user_id na linha principal
           };
         }        
         
@@ -154,7 +150,7 @@ export function useTicketHoursManagement() {
           total_minutes: user.is_client && row.billable_minutes ? row.billable_minutes : row.minutes,
           is_approved: row.is_approved,
           is_deleted: row.is_deleted || false,
-          user_name: user.is_client ? undefined : row.user_name, // Não incluir user_name para clientes
+          user_name: user.is_client ? undefined : row.user_name, // Incluir user_name para não-clientes
           project: row.project ?? { projectName: '', projectDesc: '' },
           children: undefined,
           ticket_id: row.ticket_id,
@@ -164,7 +160,7 @@ export function useTicketHoursManagement() {
           ticket_external_id: row.ticket_external_id, // Incluir ticket_external_id nos children
           appoint_start: user.is_client ? undefined : row.appoint_start, // Não incluir para clientes
           appoint_end: user.is_client ? undefined : row.appoint_end, // Não incluir para clientes
-          user_id: user.is_client ? undefined : row.user_id, // Não incluir user_id para clientes
+          user_id: user.is_client ? undefined : row.user_id, // Incluir user_id para não-clientes
         });
       });
       
