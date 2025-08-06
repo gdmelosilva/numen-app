@@ -46,16 +46,17 @@ export function ResetPasswordForm({
       const supabase = createClient();
       
       try {
-        // Verificar se já existe uma sessão válida
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           setHasValidSession(true);
           setMode('session');
         } else {
+          setHasValidSession(false);
           setMode('token');
         }
       } catch (error) {
         console.error('Session check error:', error);
+        setHasValidSession(false);
         setMode('token');
       }
     };
@@ -123,8 +124,8 @@ export function ResetPasswordForm({
 
       // Redirecionar para a página principal para fazer login
       setTimeout(() => {
-        router.push("/main");
-      });
+        router.push("/");
+      }, 2000);
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Falha ao redefinir a senha"
@@ -162,7 +163,7 @@ export function ResetPasswordForm({
 
       // Redirecionar para a página principal para fazer login
       setTimeout(() => {
-        router.refresh();
+        router.push("/");
       }, 2000);
     } catch (error: unknown) {
       toast.error(

@@ -19,20 +19,62 @@ export default function Home() {
     const handleAuth = async () => {
       const supabase = createClient();
       
-      // Check if this is an auth callback with tokens in the URL
+      // Check if this is an auth callback with tokens in the URL (hash params)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
-      const type = hashParams.get('type');
+      const hashAccessToken = hashParams.get('access_token');
+      const hashRefreshToken = hashParams.get('refresh_token');
+      const hashType = hashParams.get('type');
       
-      console.log('Auth tokens:', { accessToken: !!accessToken, type });
+      // Check if this is an auth callback with tokens in query params (for recovery)
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryToken = urlParams.get('token');
+      const queryType = urlParams.get('type');
       
-      if (accessToken && refreshToken && type === 'invite') {
+      console.log('Auth tokens:', { 
+        hashAccessToken: !!hashAccessToken, 
+        hashType, 
+        queryToken: !!queryToken, 
+        queryType 
+      });
+      
+      // Handle recovery from query params (direct link from email)
+      if (queryToken && queryType === 'recovery') {
+        try {
+          // Verify the OTP token to establish session
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: queryToken,
+            type: 'recovery'
+          });
+          
+          if (error) {
+            console.error('Error verifying recovery token:', error);
+            setIsProcessingAuth(false);
+            return;
+          }
+          
+          console.log('Recovery token verified successfully');
+          // Clear the query params from URL
+          const url = new URL(window.location.href);
+          url.searchParams.delete('token');
+          url.searchParams.delete('type');
+          window.history.replaceState(null, '', url.pathname);
+          // Show reset password view
+          setCurrentView('reset-password');
+          setIsProcessingAuth(false);
+          return;
+        } catch (error) {
+          console.error('Recovery token verification error:', error);
+          setIsProcessingAuth(false);
+          return;
+        }
+      }
+      
+      if (hashAccessToken && hashRefreshToken && hashType === 'invite') {
         try {
           // Set the session with the tokens from the URL
           const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
+            access_token: hashAccessToken,
+            refresh_token: hashRefreshToken
           });
           
           if (error) {
@@ -53,12 +95,12 @@ export default function Home() {
       }
 
       // Check if this is a password recovery callback
-      if (accessToken && refreshToken && type === 'recovery') {
+      if (hashAccessToken && hashRefreshToken && hashType === 'recovery') {
         try {
           // Set the session with the tokens from the URL
           const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
+            access_token: hashAccessToken,
+            refresh_token: hashRefreshToken
           });
           
           if (error) {
