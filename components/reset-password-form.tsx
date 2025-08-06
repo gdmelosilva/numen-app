@@ -14,6 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ResetPasswordFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onBack?: () => void;
@@ -27,8 +35,6 @@ export function ResetPasswordForm({
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasValidSession, setHasValidSession] = useState(false);
   const [mode, setMode] = useState<'session' | 'token' | 'auto'>('auto');
@@ -77,25 +83,23 @@ export function ResetPasswordForm({
     e.preventDefault();
 
     if (!token.trim()) {
-      setError("Por favor, insira o token de redefinição");
+      toast.error("Por favor, insira o token de redefinição");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("As senhas não coincidem");
+      toast.error("As senhas não coincidem");
       return;
     }
 
     const passwordError = validatePassword(password);
     if (passwordError) {
-      setError(passwordError);
+      toast.error(passwordError);
       return;
     }
 
     const supabase = createClient();
     setIsLoading(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       // Usar o token para redefinir a senha
@@ -115,14 +119,14 @@ export function ResetPasswordForm({
 
       if (updateError) throw updateError;
 
-      setSuccess("Senha redefinida com sucesso! Redirecionando para o login...");
+      toast.success("Senha redefinida com sucesso! Redirecionando para o login...");
 
       // Redirecionar para a página principal para fazer login
       setTimeout(() => {
-        router.push("/");
-      }, 2000);
+        router.push("/main");
+      });
     } catch (error: unknown) {
-      setError(
+      toast.error(
         error instanceof Error ? error.message : "Falha ao redefinir a senha"
       );
     } finally {
@@ -134,20 +138,18 @@ export function ResetPasswordForm({
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      setError("As senhas não coincidem");
+      toast.error("As senhas não coincidem");
       return;
     }
 
     const passwordError = validatePassword(password);
     if (passwordError) {
-      setError(passwordError);
+      toast.error(passwordError);
       return;
     }
 
     const supabase = createClient();
     setIsLoading(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       const { error } = await supabase.auth.updateUser({
@@ -156,14 +158,14 @@ export function ResetPasswordForm({
 
       if (error) throw error;
 
-      setSuccess("Senha redefinida com sucesso! Redirecionando para o login...");
+      toast.success("Senha redefinida com sucesso! Redirecionando para o login...");
 
       // Redirecionar para a página principal para fazer login
       setTimeout(() => {
-        router.push("/");
+        router.refresh();
       }, 2000);
     } catch (error: unknown) {
-      setError(
+      toast.error(
         error instanceof Error ? error.message : "Falha ao redefinir a senha"
       );
     } finally {
@@ -201,15 +203,6 @@ export function ResetPasswordForm({
         </CardHeader>
         <CardContent>
           {!hasValidSession && (
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Dica:</strong> Se você clicou no link do email, use a opção &quot;Redefinir com Link&quot;. 
-                Caso contrário, copie o token do email e cole abaixo.
-              </p>
-            </div>
-          )}
-          
-          {!hasValidSession && (
             <div className="mb-6 flex gap-2">
               <Button
                 type="button"
@@ -236,7 +229,29 @@ export function ResetPasswordForm({
             <div className="flex flex-col gap-6">
               {!hasValidSession && mode === 'token' && (
                 <div className="grid gap-2">
-                  <Label htmlFor="token">Token de Redefinição</Label>
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor="token">Token de Redefinição</Label>
+                    <TooltipProvider>
+                      <Tooltip delayDuration={300}>
+                        <TooltipTrigger asChild>
+                          <button 
+                            type="button" 
+                            className="inline-flex items-center justify-center ml-1"
+                            aria-label="Informação sobre token de redefinição"
+                          >
+                            <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs p-3">
+                          <div className="text-sm">
+                            <p className="font-medium mb-1">💡 Dica</p>
+                            <p>Se você clicou no link do email, use a opção &quot;Redefinir com Link&quot;.</p>
+                            <p className="mt-1">Caso contrário, copie o token do email e cole abaixo.</p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input
                     id="token"
                     type="text"
@@ -245,7 +260,6 @@ export function ResetPasswordForm({
                     value={token}
                     onChange={(e) => {
                       setToken(e.target.value);
-                      if (error) setError(null);
                     }}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -265,7 +279,6 @@ export function ResetPasswordForm({
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (error) setError(null);
                   }}
                 />
               </div>
@@ -281,7 +294,6 @@ export function ResetPasswordForm({
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
-                    if (error) setError(null);
                   }}
                 />
               </div>
@@ -294,9 +306,6 @@ export function ResetPasswordForm({
                   <li>Pelo menos 1 caractere especial</li>
                 </ul>
               </div>
-
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              {success && <p className="text-sm text-green-500">{success}</p>}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Redefinindo..." : "Redefinir Senha"}
