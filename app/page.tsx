@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { SignUpForm } from "@/components/sign-up-form";
 import { LoginForm } from "@/components/login-form";
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
+import { ResetPasswordForm } from "@/components/reset-password-form";
 import ThemeSwitcher from "@/components/theme-switcher";
 import Image from "next/image";
 import { createClient } from '@/lib/supabase/client';
@@ -51,6 +52,33 @@ export default function Home() {
         }
       }
 
+      // Check if this is a password recovery callback
+      if (accessToken && refreshToken && type === 'recovery') {
+        try {
+          // Set the session with the tokens from the URL
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          
+          if (error) {
+            console.error('Error setting recovery session:', error);
+            setIsProcessingAuth(false);
+            return;
+          }
+          
+          console.log('Recovery session established successfully');
+          // Clear the hash from URL
+          window.history.replaceState(null, '', window.location.pathname);
+          // Show reset password view
+          setCurrentView('reset-password');
+          setIsProcessingAuth(false);
+          return;
+        } catch (error) {
+          console.error('Recovery session setup error:', error);
+        }
+      }
+
       // Check if user is already authenticated
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -73,13 +101,15 @@ export default function Home() {
   const renderView = () => {
     switch (currentView) {
       case 'login':
-        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} />;
+        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} onResetPassword={() => setCurrentView('reset-password')} />;
       case 'forgot':
         return <ForgotPasswordForm onBack={() => setCurrentView('login')} />;
       case 'signup':
         return <SignUpForm onBack={() => setCurrentView('login')} />;
+      case 'reset-password':
+        return <ResetPasswordForm onBack={() => setCurrentView('login')} />;
       default:
-        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} />;
+        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} onResetPassword={() => setCurrentView('reset-password')} />;
     }
   };
 

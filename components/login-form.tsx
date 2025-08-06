@@ -17,11 +17,13 @@ import { useEffect, useRef, useState } from "react";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   onForgotPassword?: () => void;
+  onResetPassword?: () => void;
 }
 
 export function LoginForm({
   className,
   onForgotPassword,
+  onResetPassword,
   ...props
 }: React.ComponentPropsWithoutRef<"div">&LoginFormProps) {
   const [email, setEmail] = useState("");
@@ -119,7 +121,7 @@ export function LoginForm({
           </Button>
         </div>
           </form>
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-4 mb-0 text-center text-sm">
           <Button
             onClick={onForgotPassword}
             variant="link"
@@ -127,9 +129,17 @@ export function LoginForm({
           >
             Esqueceu sua Senha?
           </Button>
-          <div className="mt-2">
-          </div>
         </div>
+        <div className="text-center text-sm">
+          <Button
+            onClick={onResetPassword}
+            variant="link"
+            className="text-sm underline-offset-4 hover:underline p-0"
+          >
+            Tem um Token de Redefinição?
+          </Button>
+        </div>
+        <div className="mt-2"></div>
       </CardContent>
       </Card>
     </div>
