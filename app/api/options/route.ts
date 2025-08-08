@@ -54,12 +54,25 @@ export async function GET(request: Request) {
     
     const supabase = await createClient();
     
-    // Buscar parceiros dos projetos em que o usuário está alocado
+    // Se é admin (role = 1) e não é cliente (is_client = false), mostrar todos os parceiros
+    if (user.role === 1 && !user.is_client) {
+      const { data, error } = await supabase
+        .from("partner")
+        .select("id, name: partner_desc")
+        .eq("is_active", true);
+      
+      if (error) {
+        return NextResponse.json([], { status: 200 });
+      }
+      return NextResponse.json(data || [], { status: 200 });
+    }
+    
+    // Para usuários não-admin, buscar apenas parceiros dos projetos em que está alocado
     const { data, error } = await supabase
       .from("project_resources")
       .select(`
         project:project_id (
-          partner:partner_id (
+          partner:partnerId (
             id,
             name: partner_desc
           )
@@ -98,7 +111,36 @@ export async function GET(request: Request) {
     
     const supabase = await createClient();
     
-    // Buscar projetos em que o usuário está alocado
+    // Se é admin (role = 1) e não é cliente (is_client = false), mostrar todos os projetos
+    if (user.role === 1 && !user.is_client) {
+      const { data, error } = await supabase
+        .from("project")
+        .select(`
+          id,
+          projectName,
+          projectDesc,
+          partner_id,
+          project_type
+        `)
+        .eq("is_active", true);
+      
+      if (error) {
+        return NextResponse.json([], { status: 200 });
+      }
+      
+      const projects = (data || []).map(project => ({
+        id: project.id,
+        name: project.projectName || project.projectDesc || project.id,
+        projectName: project.projectName,
+        projectDesc: project.projectDesc,
+        partner_id: project.partner_id,
+        project_type: project.project_type
+      }));
+      
+      return NextResponse.json(projects, { status: 200 });
+    }
+    
+    // Para usuários não-admin, buscar apenas projetos em que está alocado
     const { data, error } = await supabase
       .from("project_resources")
       .select(`
