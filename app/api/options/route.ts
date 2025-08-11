@@ -147,7 +147,7 @@ export async function GET(request: Request) {
           id,
           projectName,
           projectDesc,
-          partner_id,
+          partnerId,
           project_type
         )
       `)
