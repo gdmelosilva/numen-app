@@ -503,7 +503,7 @@ export async function POST(req: NextRequest) {
           ref_external_id: ref_external_id || null,
         },
       ])
-      .select()
+      .select('*, external_id')
       .single();
 
     if (error) {
@@ -623,9 +623,9 @@ export async function POST(req: NextRequest) {
       const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Usuário';
       console.log('DEBUG: Nome do usuário para notificação:', userName);
       
-      // Criar notificação de forma assíncrona
+      // Criar notificação de forma assíncrona usando external_id
       createTicketNotification({
-        ticketId: ticket.id.toString(),
+        ticketId: ticket.external_id || ticket.id.toString(), // Usar external_id se disponível
         categoryName,
         userName,
         userId: user.id,
@@ -687,7 +687,7 @@ export async function POST(req: NextRequest) {
         ref_external_id: ref_external_id || null,
       },
     ])
-    .select()
+    .select('*, external_id')
     .single();
 
   if (error) {
@@ -778,9 +778,9 @@ export async function POST(req: NextRequest) {
 
     const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Usuário';
     
-    // Criar notificação de forma assíncrona
+    // Criar notificação de forma assíncrona usando external_id
     createTicketNotification({
-      ticketId: data.id.toString(),
+      ticketId: data.external_id || data.id.toString(), // Usar external_id se disponível
       categoryName,
       userName,
       userId: user.id,

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react";
-import { Bell, X, AlertCircle, Info, AlertTriangle, CheckCircle } from "lucide-react";
+import { Bell, X, Info, Megaphone, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -13,31 +13,64 @@ import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { Notification } from "@/hooks/useNotifications";
 
-function getNotificationIcon(type: Notification["type"]) {
+function getNotificationIcon(type: Notification["type"], severity: Notification["severity"]) {
+  // Determinar cor baseada na severity
+  const getColorClass = () => {
+    switch (severity) {
+      case "critical":
+        return "text-red-500";
+      case "high":
+        return "text-orange-500";
+      case "medium":
+        return "text-yellow-500";
+      case "low":
+      default:
+        return "text-blue-500";
+    }
+  };
+
+  const colorClass = getColorClass();
+
+  // Determinar ícone baseado no type
+  // Mapeamento: error=ALERT(sino), warning=SYSTEM(info), info=ANNOUNCEMENT(megafone), success=REMINDER(relógio)
   switch (type) {
-    case "error":
-      return <AlertCircle className="h-4 w-4 text-destructive" />;
-    case "warning":
-      return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-    case "success":
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
-    case "info":
+    case "error": // ALERT
+      return <Bell className={`h-4 w-4 ${colorClass}`} />;
+    case "warning": // SYSTEM
+      return <Info className={`h-4 w-4 ${colorClass}`} />;
+    case "info": // ANNOUNCEMENT
+      return <Megaphone className={`h-4 w-4 ${colorClass}`} />;
+    case "success": // REMINDER
     default:
-      return <Info className="h-4 w-4 text-blue-500" />;
+      return <Clock className={`h-4 w-4 ${colorClass}`} />;
   }
 }
 
-function getSeverityColor(severity: Notification["severity"]) {
+// function getSeverityColor(severity: Notification["severity"]) {
+//   switch (severity) {
+//     case "critical":
+//       return "text-red-600";
+//     case "high":
+//       return "text-orange-600";
+//     case "medium":
+//       return "text-yellow-600";
+//     case "low":
+//     default:
+//       return "text-blue-600";
+//   }
+// }
+
+function getSeverityBorderColor(severity: Notification["severity"]) {
   switch (severity) {
     case "critical":
-      return "bg-red-100 text-red-800 border-red-200";
+      return "border-red-200 hover:border-red-300";
     case "high":
-      return "bg-orange-100 text-orange-800 border-orange-200";
+      return "border-orange-200 hover:border-orange-300";
     case "medium":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      return "border-yellow-200 hover:border-yellow-300";
     case "low":
     default:
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "border-blue-200 hover:border-blue-300";
   }
 }
 
@@ -105,7 +138,7 @@ export function NotificationPopover() {
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+              className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-xs bg-red-600 text-white"
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
@@ -151,16 +184,17 @@ export function NotificationPopover() {
                   key={notification.id}
                   className={cn(
                     "group relative p-3 rounded-lg border transition-colors cursor-pointer",
+                    getSeverityBorderColor(notification.severity),
                     notification.read 
-                      ? "bg-muted/30 border-border/50" 
-                      : "bg-background border-border hover:bg-muted/50",
+                      ? "bg-muted/30" 
+                      : "bg-background hover:bg-muted/50",
                     notification.action_url && "hover:bg-muted/70"
                   )}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-0.5">
-                      {getNotificationIcon(notification.type)}
+                      {getNotificationIcon(notification.type, notification.severity)}
                     </div>
                     
                     <div className="flex-1 space-y-1">
@@ -189,12 +223,12 @@ export function NotificationPopover() {
                       </p>
                       
                       <div className="flex items-center justify-between">
-                        <Badge 
+                        {/* <Badge 
                           variant="outline" 
                           className={cn("text-xs", getSeverityColor(notification.severity))}
                         >
                           {notification.severity}
-                        </Badge>
+                        </Badge> */}
                         <span className="text-xs text-muted-foreground">
                           {formatTimeAgo(notification.created_at)}
                         </span>
@@ -213,7 +247,7 @@ export function NotificationPopover() {
         
         {notifications.length > 0 && (
           <div className="p-2 border-t">
-            <Button 
+            {/* <Button 
               variant="ghost" 
               size="sm" 
               className="w-full text-xs"
@@ -223,7 +257,7 @@ export function NotificationPopover() {
               }}
             >
               Ver todas as notificações
-            </Button>
+            </Button> */}
           </div>
         )}
       </PopoverContent>
