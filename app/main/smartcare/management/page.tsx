@@ -58,6 +58,7 @@ export default function TicketManagementPage() {
   const [resourceUsers, setResourceUsers] = useState<ResourceUser[]>([]);
   const [resourceUsersLoading, setResourceUsersLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [userProjectIds, setUserProjectIds] = useState<string[]>([]);
 
   // Estados para opções dos dropdowns
   const { statuses: ticketStatuses, loading: statusesLoading } = useTicketStatuses();
@@ -296,13 +297,14 @@ export default function TicketManagementPage() {
 
     return queryParams;
   }, []);
-  // Função para buscar projetos que o manager gerencia
-  const fetchManagedProjects = useCallback(
+
+  // Função para buscar todos os projetos aos quais o usuário está vinculado
+  const fetchUserProjects = useCallback(
     async (userId: string): Promise<string[]> => {
       try {
-        // Busca na tabela project-resource onde o usuário tem função gerencial
+        // Busca na tabela project-resource onde o usuário está vinculado
         const response = await fetch(
-          `/api/project-resources?user_id=${userId}&user_functional=manager`
+          `/api/project-resources?user_id=${userId}`
         );
         if (!response.ok) return [];
         const data = await response.json();
@@ -337,12 +339,8 @@ export default function TicketManagementPage() {
           }
           break;
         case "manager-adm": {
-          // Manager-adm: tickets dos projetos que o usuário gerencia
-          const managedProjects = await fetchManagedProjects(user.id);
-          if (managedProjects.length > 0) {
-            // Backend deve interpretar múltiplos project_ids separados por vírgula
-            filteredQuery.project_id = managedProjects.join(",");
-          }
+          // Manager-adm: sem filtros automáticos de projeto
+          // O usuário pode selecionar manualmente os projetos que gerencia
           break;
         }
         case "functional-adm": {
@@ -357,7 +355,7 @@ export default function TicketManagementPage() {
       }
       return filteredQuery;
     },
-    [user, profile, fetchManagedProjects]
+    [user, profile]
   );
 
   const fetchTickets = useCallback(
@@ -468,6 +466,24 @@ export default function TicketManagementPage() {
       setResourceUsersLoading(false);
     }
   }, [profile]);
+
+  // Efeito para carregar projetos vinculados ao usuário administrativo
+  useEffect(() => {
+    async function loadUserProjects() {
+      if (user && !user.is_client && user.id && profile && profile !== "admin-adm") {
+        try {
+          const projectIds = await fetchUserProjects(user.id);
+          setUserProjectIds(projectIds);
+        } catch {
+          setUserProjectIds([]);
+        }
+      } else {
+        setUserProjectIds([]);
+      }
+    }
+
+    loadUserProjects();
+  }, [user, profile, fetchUserProjects]);
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
     setPendingFilters((prev) => ({ ...prev, [key]: value }));
@@ -717,6 +733,16 @@ export default function TicketManagementPage() {
     if (user?.is_client && user?.partner_id) {
       filteredProjects = projects.filter(project => project.partner_id === user.partner_id);
     }
+    // Para usuários administrativos que NÃO são admin-adm, filtrar apenas projetos aos quais estão vinculados
+    else if (user && !user.is_client && profile && profile !== "admin-adm") {
+      if (userProjectIds.length > 0) {
+        filteredProjects = projects.filter(project => userProjectIds.includes(project.id));
+      } else {
+        // Se não tem projetos vinculados, não mostrar nenhum projeto
+        filteredProjects = [];
+      }
+    }
+    // Para admin-adm, mostrar todos os projetos sem filtro
     // Para usuários não clientes, se tiver parceiro selecionado, filtrar projetos desse parceiro
     else if (pendingFilters.partner_id) {
       filteredProjects = projects.filter(project => project.partner_id === pendingFilters.partner_id);
