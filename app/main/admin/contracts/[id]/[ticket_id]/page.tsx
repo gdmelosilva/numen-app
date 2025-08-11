@@ -81,6 +81,15 @@ export default function TicketDetailsPage() {
       if (!res.ok) throw new Error("Erro ao buscar mensagens");
       const msgs = await res.json();
       setAllMessages(Array.isArray(msgs) ? msgs.map(mapMessageBackendToFrontend) : []);
+      
+      // Também atualizar os dados do ticket para refletir mudanças de status
+      const ticketResponse = await fetch(`/api/smartcare/tickets/${ticket_id}`);
+      if (ticketResponse.ok) {
+        const ticketData = await ticketResponse.json();
+        if (ticketData?.data) {
+          setTicket(ticketData.data);
+        }
+      }
     } catch {
       setAllMessages([]);
     }

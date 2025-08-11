@@ -3,6 +3,176 @@ import { createClient } from "@/lib/supabase/server";
 import { Message } from "@/types/messages";
 import { authenticateRequest } from "@/lib/api-auth";
 
+// Função auxiliar para buscar recipients de notificação quando status é alterado
+async function getNotificationRecipients(ticketId: string): Promise<string[]> {
+  const supabase = await createClient();
+  const recipients = new Set<string>();
+
+  try {
+    // Buscar informações do ticket para obter project_id e category
+    const { data: ticket, error: ticketError } = await supabase
+      .from('ticket')
+      .select(`
+        id,
+        project_id,
+        external_id,
+        category_id,
+        ticket_categories:category_id (name)
+      `)
+      .eq('id', ticketId)
+      .single();
+
+    if (ticketError || !ticket) {
+      console.error('Erro ao buscar ticket para notificação:', ticketError);
+      return [];
+    }
+
+    // 1. Buscar usuários vinculados ao chamado (ticket_resource)
+    const { data: ticketResources, error: resourcesError } = await supabase
+      .from('ticket_resource')
+      .select(`
+        user_id,
+        user:user_id!inner(
+          id,
+          is_active,
+          is_client
+        )
+      `)
+      .eq('ticket_id', ticketId);
+
+    if (!resourcesError && ticketResources) {
+      ticketResources.forEach(resource => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const user = resource.user as any;
+        if (user?.is_active) {
+          recipients.add(resource.user_id);
+        }
+      });
+    }
+
+    // 2. Buscar gerentes do projeto
+    const { data: projectResources, error: projectError } = await supabase
+      .from('project_resources')
+      .select(`
+        user_id,
+        user!inner(
+          id,
+          is_active,
+          is_client,
+          role
+        )
+      `)
+      .eq('project_id', ticket.project_id)
+      .eq('user_functional', 2) // 2 = Manager
+      .eq('is_suspended', false);
+
+    if (!projectError && projectResources) {
+      projectResources.forEach(resource => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const user = resource.user as any;
+        if (user?.is_active && !user?.is_client) {
+          recipients.add(resource.user_id);
+        }
+      });
+    }
+
+    // 3. Buscar usuários clientes do parceiro do contrato
+    const { data: project, error: partnerError } = await supabase
+      .from('project')
+      .select('"partnerId"')
+      .eq('id', ticket.project_id)
+      .single();
+
+    if (!partnerError && project?.partnerId) {
+      const { data: partnerUsers, error: usersError } = await supabase
+        .from('user')
+        .select('id')
+        .eq('partner_id', project.partnerId)
+        .eq('is_client', true)
+        .eq('is_active', true);
+
+      if (!usersError && partnerUsers) {
+        partnerUsers.forEach(user => recipients.add(user.id));
+      }
+    }
+
+    return Array.from(recipients);
+  } catch (error) {
+    console.error('Erro ao buscar recipients para notificação:', error);
+    return [];
+  }
+}
+
+// Função auxiliar para criar notificação de alteração de status
+async function createStatusChangeNotification(ticketId: string, createdBy: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    
+    // Buscar informações do ticket
+    const { data: ticket, error: ticketError } = await supabase
+      .from('ticket')
+      .select(`
+        id,
+        external_id,
+        title,
+        category_id,
+        ticket_categories:category_id (name)
+      `)
+      .eq('id', ticketId)
+      .single();
+
+    if (ticketError || !ticket) {
+      console.error('Erro ao buscar ticket para criar notificação:', ticketError);
+      return;
+    }
+
+    // Buscar recipients
+    const recipients = await getNotificationRecipients(ticketId);
+    
+    if (recipients.length === 0) {
+      console.log('Nenhum recipient encontrado para notificação de status');
+      return;
+    }
+
+    // Criar a notificação
+    const { data: notification, error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        type: 'ALERT',
+        severity: 'info',
+        title: 'Status do Chamado Alterado',
+        body: `O chamado #${ticket.external_id} foi encaminhado para o atendente`,
+        action_url: `/main/smartcare/management/${ticket.external_id}`,
+        created_by: createdBy,
+      })
+      .select('id')
+      .single();
+
+    if (notificationError) {
+      console.error('Erro ao criar notificação de status:', notificationError);
+      return;
+    }
+
+    // Criar recipients da notificação
+    const recipientRecords = recipients.map(userId => ({
+      notification_id: notification.id,
+      user_id: userId,
+    }));
+
+    const { error: recipientError } = await supabase
+      .from('notification_recipients')
+      .insert(recipientRecords);
+
+    if (recipientError) {
+      console.error('Erro ao criar recipients da notificação:', recipientError);
+    } else {
+      console.log(`Notificação de status criada para ${recipients.length} usuários`);
+    }
+  } catch (error) {
+    console.error('Erro na função createStatusChangeNotification:', error);
+  }
+}
+
 // GET: Lista todas as mensagens de um ticket (por ticket_id)
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -206,6 +376,30 @@ export async function POST(req: NextRequest) {
   if (error) {
     console.error("[POST /api/messages] Supabase insert error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Se o usuário é cliente, alterar automaticamente o status do ticket para "Enc. para o Atendente" (id = 3)
+  // Esta funcionalidade garante que sempre que um cliente enviar uma mensagem, 
+  // o chamado será automaticamente direcionado para o atendente responsável
+  if (user.is_client) {
+    const { error: ticketUpdateError } = await supabase
+      .from("ticket")
+      .update({ 
+        status_id: 3, // "Enc. para o Atendente"
+        updated_by: user.id 
+      })
+      .eq("id", ticket_id);
+
+    if (ticketUpdateError) {
+      console.error("[POST /api/messages] Erro ao atualizar status do ticket:", ticketUpdateError);
+      // Não falhamos a criação da mensagem por causa do erro de atualização do status
+      // Apenas logamos o erro para análise posterior
+    } else {
+      // Se a atualização do status foi bem-sucedida, criar notificação
+      createStatusChangeNotification(ticket_id, user.id).catch(error => {
+        console.error("Erro ao criar notificação de alteração de status:", error);
+      });
+    }
   }
 
   return NextResponse.json(data as Message);

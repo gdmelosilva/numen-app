@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download, SquareMousePointer, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { LinkResourceDialog } from "@/components/LinkResourceDialog";
 import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 import { usePartnerOptions } from "@/hooks/usePartnerOptions";
 import { useProjectOptions } from "@/hooks/useProjectOptions";
@@ -106,6 +107,10 @@ export default function TicketManagementPage() {
   });
   const [loading, setLoading] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+
+  // Estados para o dialog de vinculação de recursos
+  const [linkResourceDialogOpen, setLinkResourceDialogOpen] = useState(false);
+  const [selectedTicketForLinking, setSelectedTicketForLinking] = useState<Ticket | null>(null);
 
   // Estados para paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -796,6 +801,16 @@ export default function TicketManagementPage() {
     setColumnVisibility(newVisibility);
     saveColumnVisibilityToSession(newVisibility);
   }, [saveColumnVisibilityToSession]);
+
+  const handleLinkResource = useCallback((ticket: Ticket) => {
+    setSelectedTicketForLinking(ticket);
+    setLinkResourceDialogOpen(true);
+  }, []);
+
+  const handleLinkResourceSuccess = useCallback(() => {
+    // Recarregar a lista de tickets para refletir as mudanças
+    fetchTickets(filters, currentPage, pageSize);
+  }, [fetchTickets, filters, currentPage, pageSize]);
 
   return (
     <div className="space-y-4">
@@ -1525,7 +1540,7 @@ export default function TicketManagementPage() {
         </div>
       ) : (
         <DataTable 
-          columns={getColumns(user)} 
+          columns={getColumns(user, handleLinkResource)} 
           data={tickets} 
           onRowClick={handleRowClick}
           showColumnVisibility={true}
@@ -1550,6 +1565,14 @@ export default function TicketManagementPage() {
           }}
         />
       )}
+
+      {/* Dialog para vincular recurso */}
+      <LinkResourceDialog
+        open={linkResourceDialogOpen}
+        onOpenChange={setLinkResourceDialogOpen}
+        ticket={selectedTicketForLinking}
+        onSuccess={handleLinkResourceSuccess}
+      />
     </div>
   );
 }

@@ -4,14 +4,17 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Ticket } from "@/types/tickets";
 import { useRouter } from "next/navigation";
 import { AuthenticatedUser } from "@/lib/api-auth";
 
-export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[] => {
+export const getColumns = (
+  user?: AuthenticatedUser | null,
+  onLinkResource?: (ticket: Ticket) => void
+): ColumnDef<Ticket>[] => {
   const allColumns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "is_private",
@@ -219,24 +222,55 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     enableHiding: false,
     cell: function ActionsCell({ row }) {
       const ticketId = row.original.external_id || row.original.id;
+      const ticket = row.original;
       const router = useRouter();
-      const handleDetails = () => {
+      
+      const handleDetails = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
         if (ticketId) {
           router.push(`/main/smartcare/management/${ticketId}`);
         }
       };
+
+      const handleLinkResource = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (onLinkResource) {
+          onLinkResource(ticket);
+        }
+      };
+
+      // Verificar se o usuário pode vincular recursos (admin-adm ou manager-adm)
+      const canLinkResource = user && !user.is_client && (
+        user.role === 1 || // admin-adm
+        user.role === 2    // manager-adm (assumindo que role 2 é manager-adm)
+      );
+
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex h-8 w-8 p-0 data-[state=open]:bg-muted">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[160px]">
-            <DropdownMenuItem onClick={handleDetails}>Detalhes</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[180px]">
+              <DropdownMenuItem onClick={handleDetails}>
+                Detalhes
+              </DropdownMenuItem>
+              {canLinkResource && onLinkResource && (
+                <DropdownMenuItem onClick={handleLinkResource}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Vincular Recurso
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   },
