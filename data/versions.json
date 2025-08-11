@@ -1,0 +1,65 @@
+{
+  "versions": [
+    {
+      "id": "1.1.4",
+      "version": "1.1.4",
+      "title": "Versão 1.1.4 - Atual",
+      "releaseDate": "2025-08-12",
+      "isLatest": true,
+      "isStable": true,
+      "changes": [
+        {
+          "type": "major",
+          "description": "Lançamento da versão EasyTime do serviço! Agora os usuários terão uma experiência muito mais próxima do que planejamos para a versão final do produto.",
+          "priority": "major"
+        },
+        {
+          "type": "improvement",
+          "description": "Melhorias de Qualidade de Vida",
+          "priority": "major",
+          "items": [
+            "Os filtros ficam armazenados em sua sessão",
+            "Os chamados agora podem ser acessados ao clicar em sua respectiva linha.",
+            "Os chamados agora são paginados na seção \"Administrar Chamados\", você pode escolher a quantidade de registros por página e, isso também fica salvo em sessão!",
+            "Os recursos do chamado foram divididos na exibição de linhas para \"Recurso Principal\" e \"Demais Recursos\" - mas não menos importantes...",
+            "Agora o Administrar Chamados possui uma tabela mais dinâmica e responsiva. Esperamos que isso ajude os usuários com telas menores",
+            "Melhorado o esquema de cores para o modo claro e o modo escuro",
+            "Melhor consistência visual nos componentes", 
+            "Melhorias visuais e, de responsividade por todo o programa"
+          ]
+        },
+        {
+          "type": "feature",
+          "description": "Novas Funcionalidades",
+          "priority": "major",
+          "items": [
+            "Ding-Ding! Agora temos um sistema de notificação! Esperem ser notificados em todas as atualizações pertinentes a suas atividades - ou de bug-fixes que estivermos subindo hehe.",
+            "Dentro do chamado, agora é possível visualizar o histórico de atualizações através de um esquema de fases - assim você nem precisa ler todas as 50 mensagens para saber que o chamado está esperando a aprovação de um gerente!",
+            "Abertura de chamados, atualização de status, vínculo de recursos e encerramentos agora disparam e-mails de notificação. Para todos os usuários envolvidos no chamado E para o parceiro do contrato."
+          ]
+
+        },
+        {
+          "type": "bugfix",
+          "description": "Correções gerais",
+          "priority": "minor",
+          "items": [
+            "Ajuste no alinhamento de botões",
+            "Correção de tooltips em dispositivos móveis",
+            "Melhoria na responsividade de tabelas",
+            "Acerto em pequenos bugs de interface por todo o programa"
+          ]
+        },
+        {
+          "type": "feature",
+          "description": "Melhorias para Recursos",
+          "priority": "minor",
+          "items": [
+            "[Recursos] Incluímos o ID do Ticket na exibição do Timesheet e, ao clicar nele, o usuário será levado diretamente a tela de chamados do respectivo ticket",
+            "[Recursos] Melhoramos a seleção de Ticket no Timesheet - Apontar Horas. Aqueles usuários que tem uma grande fila, agora conseguem apontar em massa!"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { TicketSelectionDialog } from '@/components/TicketSelectionDialog'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { useUserProjects } from '@/hooks/useUserProjects'
-import { useTicketOptions } from '@/hooks/useTicketOptions'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
@@ -53,7 +53,7 @@ const TimeSheetCreatePage = () => {
   const router = useRouter()
   
   // Estados para seleção
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
+  const [selectedTicketTitle, setSelectedTicketTitle] = useState<string>('')
   
   // Hooks para buscar dados baseados no perfil do usuário
   const shouldUseUserProjects = profile === "functional-adm" || profile === "manager-adm"
@@ -64,7 +64,7 @@ const TimeSheetCreatePage = () => {
     profile: profile || undefined,
     enabled: shouldUseUserProjects && !!user?.id
   })
-  
+   
   // Para admin: usar hook tradicional (mas sem parceiro pré-selecionado)
   const { projects: adminProjects, loading: adminProjectsLoading } = useProjectOptions({ 
     user
@@ -73,12 +73,6 @@ const TimeSheetCreatePage = () => {
   // Determinar quais projetos usar
   const projects = shouldUseUserProjects ? userProjects : adminProjects
   const projectsLoading = shouldUseUserProjects ? userProjectsLoading : adminProjectsLoading
-  
-  const { tickets, loading: ticketsLoading } = useTicketOptions({ 
-    projectId: selectedProjectId, 
-    partnerId: '', // Será determinado automaticamente pelo projeto
-    userId: user?.id
-  })
   
   const [formData, setFormData] = useState<FormData>({
     projectId: '',
@@ -315,6 +309,7 @@ const TimeSheetCreatePage = () => {
           startTime: '08:00',
           endTime: '17:00'
         })
+        setSelectedTicketTitle('')
       }
 
     } catch (error) {
@@ -351,9 +346,10 @@ const TimeSheetCreatePage = () => {
                   ...formData, 
                   projectId: value, 
                   partnerId: partnerId,
-                  ticketId: '' 
+                  ticketId: '',
                 })
-                setSelectedProjectId(value)
+                // Limpar título do ticket selecionado quando mudar o projeto
+                setSelectedTicketTitle('')
               }}
             >
               <SelectTrigger className="space-y-2 w-full w-max-full">
@@ -384,28 +380,26 @@ const TimeSheetCreatePage = () => {
           {/* Ticket */}
           <div className="space-y-2 w-full w-max-full">
             <Label htmlFor="ticketId">Ticket *</Label>
-            <Select
-              value={formData.ticketId}
-              onValueChange={(value) => setFormData({ ...formData, ticketId: value })}
-              disabled={!formData.projectId}
-            >
-              <SelectTrigger className='space-y-2 w-full w-max-full'>
-                <SelectValue placeholder="Selecione o ticket..." />
-              </SelectTrigger>
-              <SelectContent>
-                {ticketsLoading ? (
-                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                ) : tickets.length > 0 ? (
-                  tickets.map((ticket) => (
-                    <SelectItem key={String(ticket.id)} value={String(ticket.id)}>
-                      #{String(ticket.id).slice(-6)} - {String(ticket.title || 'Ticket sem título')}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="no-tickets" disabled>Nenhum ticket disponível</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <TicketSelectionDialog
+              trigger={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                  disabled={!formData.projectId}
+                >
+                  <span className="truncate">
+                    {selectedTicketTitle || "Selecionar ticket..."}
+                  </span>
+                </Button>
+              }
+              onSelect={(ticketId, ticketTitle) => {
+                setFormData({ ...formData, ticketId: ticketId })
+                setSelectedTicketTitle(ticketTitle)
+              }}
+              selectedTicketId={formData.ticketId}
+              projectId={formData.projectId}
+            />
           </div>
         </div>
 

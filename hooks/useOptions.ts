@@ -43,7 +43,7 @@ export async function getMarketSegments(): Promise<MarketingInterface[] | null> 
 }
 
 // Função para opções de categoria
-export async function getCategoryOptions(ams: boolean = false): Promise<{ id: string; name: string; description: string }[]> {
+export async function getCategoryOptions(ams: boolean = true): Promise<{ id: string; name: string; description: string }[]> {
   const { data, error } = await supabase
     .from('ticket_categories')
     .select('*')

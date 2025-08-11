@@ -1,0 +1,74 @@
+{
+  "versions": [
+    {
+      "id": "2.1.0",
+      "version": "2.1.0",
+      "title": "Versão 2.1.0 - Atual",
+      "releaseDate": "2025-08-08",
+      "isLatest": true,
+      "isStable": true,
+      "changes": [
+        {
+          "type": "feature",
+          "description": "Nova Timeline Clarissa de progresso para tickets"
+        },
+        {
+          "type": "improvement",
+          "description": "Melhorias no sistema de badges coloridas"
+        },
+        {
+          "type": "bugfix",
+          "description": "Correção de filtros por parceiro para usuários clientes"
+        },
+        {
+          "type": "feature",
+          "description": "Otimização na exibição de projetos"
+        }
+      ]
+    },
+    {
+      "id": "2.0.5",
+      "version": "2.0.5",
+      "title": "Versão 2.0.5",
+      "releaseDate": "2025-07-25",
+      "isLatest": false,
+      "isStable": true,
+      "changes": [
+        {
+          "type": "improvement",
+          "description": "Implementação do sistema de permissões por perfil de usuário"
+        },
+        {
+          "type": "feature",
+          "description": "Nova funcionalidade de exportação para Excel"
+        },
+        {
+          "type": "bugfix",
+          "description": "Correções de performance na listagem de tickets"
+        }
+      ]
+    },
+    {
+      "id": "2.0.0",
+      "version": "2.0.0",
+      "title": "Versão 2.0.0",
+      "releaseDate": "2025-07-01",
+      "isLatest": false,
+      "isStable": true,
+      "changes": [
+        {
+          "type": "major",
+          "description": "Lançamento da versão beta do sistema"
+        },
+        {
+          "type": "improvement",
+          "description": "Interface completamente redesenhada"
+        },
+        {
+          "type": "feature",
+          "description": "Sistema de gestão de tickets integrado"
+        }
+      ]
+    }
+  ]
+}

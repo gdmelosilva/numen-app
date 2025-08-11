@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/ui/data-table";
 import type { Ticket } from "@/types/tickets";
 import { getColumns } from "./columns";
@@ -10,13 +11,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download, SquareMousePointer } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download, SquareMousePointer, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 import { usePartnerOptions } from "@/hooks/usePartnerOptions";
 import { useProjectOptions } from "@/hooks/useProjectOptions";
 import { getCategoryOptions, getPriorityOptions, getModuleOptions } from "@/hooks/useOptions";
 import { exportTicketsToExcel } from "@/lib/export-file";
+import type { VisibilityState } from "@tanstack/react-table";
 
 interface Filters {
   external_id: string;
@@ -38,7 +41,7 @@ interface Filters {
   user_tickets?: string; // Campo especial para filtrar tickets do usuário
   resource_user_id: string; // Novo campo para filtrar por usuário recurso
   ref_ticket_id: string; // Ticket Referência
-  ref_external_id: string; // Identificação Externa
+  ref_external_id: string; // Identificação Externaaa
 }
 
 interface ResourceUser {
@@ -49,6 +52,7 @@ interface ResourceUser {
 }
 
 export default function TicketManagementPage() {
+  const router = useRouter();
   const { user, profile, loading: profileLoading } = useUserProfile();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [resourceUsers, setResourceUsers] = useState<ResourceUser[]>([]);
@@ -68,6 +72,11 @@ export default function TicketManagementPage() {
   // Estados para dialogs
   const [partnerDialogOpen, setPartnerDialogOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
+  const [partnerSearchTerm, setPartnerSearchTerm] = useState("");
+  const [projectSearchTerm, setProjectSearchTerm] = useState("");
+  const [resourceSearchTerm, setResourceSearchTerm] = useState("");
+  const [exportPopoverOpen, setExportPopoverOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
     external_id: "",
@@ -97,6 +106,129 @@ export default function TicketManagementPage() {
   const [loading, setLoading] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
+  // Estados para paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // Estado para controlar visibilidade das colunas
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // Função para salvar filtros no sessionStorage
+  const saveFiltersToSession = useCallback((filtersToSave: Filters) => {
+    try {
+      sessionStorage.setItem('smartcare-filters', JSON.stringify(filtersToSave));
+    } catch {
+      // Silent error - filtros não são críticos
+    }
+  }, []);
+
+  // Função para carregar filtros do sessionStorage
+  const loadFiltersFromSession = useCallback((): Filters | null => {
+    try {
+      const savedFilters = sessionStorage.getItem('smartcare-filters');
+      if (savedFilters) {
+        return JSON.parse(savedFilters);
+      }
+    } catch {
+      // Silent error - filtros não são críticos  
+    }
+    return null;
+  }, []);
+
+  // Função para salvar/carregar pageSize do sessionStorage
+  const savePageSizeToSession = useCallback((size: number) => {
+    try {
+      sessionStorage.setItem('smartcare-page-size', size.toString());
+    } catch {
+      // Silent error - pageSize não é crítico
+    }
+  }, []);
+
+  const loadPageSizeFromSession = useCallback((): number => {
+    try {
+      const savedPageSize = sessionStorage.getItem('smartcare-page-size');
+      if (savedPageSize) {
+        const size = parseInt(savedPageSize, 10);
+        return [10, 25, 50, 100].includes(size) ? size : 10;
+      }
+    } catch {
+      // Silent error - pageSize não é crítico
+    }
+    return 10;
+  }, []);
+
+  // Função para salvar/carregar visibilidade das colunas do sessionStorage
+  const saveColumnVisibilityToSession = useCallback((visibility: VisibilityState) => {
+    try {
+      sessionStorage.setItem('smartcare-column-visibility', JSON.stringify(visibility));
+    } catch {
+      // Silent error - visibilidade das colunas não é crítica
+    }
+  }, []);
+
+  const loadColumnVisibilityFromSession = useCallback((): VisibilityState => {
+    try {
+      const savedVisibility = sessionStorage.getItem('smartcare-column-visibility');
+      if (savedVisibility) {
+        return JSON.parse(savedVisibility);
+      }
+    } catch {
+      // Silent error - visibilidade das colunas não é crítica
+    }
+    return {};
+  }, []);
+
+  // Efeito para definir automaticamente o parceiro do cliente
+  useEffect(() => {
+    if (user?.is_client && user?.partner_id && !pendingFilters.partner_id) {
+      const partnerId = user.partner_id.toString();
+      setPendingFilters(prev => ({ ...prev, partner_id: partnerId }));
+      setFilters(prev => ({ ...prev, partner_id: partnerId }));
+    }
+  }, [user?.is_client, user?.partner_id, pendingFilters.partner_id]);
+
+  // Efeito para carregar filtros salvos na inicialização
+  useEffect(() => {
+    const savedFilters = loadFiltersFromSession();
+    if (savedFilters) {
+      setFilters(savedFilters);
+      setPendingFilters(savedFilters);
+    }
+    
+    // Carregar pageSize salvo
+    const savedPageSize = loadPageSizeFromSession();
+    setPageSize(savedPageSize);
+    
+    // Carregar visibilidade das colunas salva
+    const savedColumnVisibility = loadColumnVisibilityFromSession();
+    setColumnVisibility(savedColumnVisibility);
+    
+    // Carregar estado dos filtros colapsados
+    try {
+      const savedCollapsed = sessionStorage.getItem('smartcare-filters-collapsed');
+      if (savedCollapsed !== null) {
+        setFiltersCollapsed(JSON.parse(savedCollapsed));
+      }
+    } catch {
+      // Silent error - filtros não são críticos
+    }
+  }, [loadFiltersFromSession, loadPageSizeFromSession, loadColumnVisibilityFromSession]);
+
+  // Efeito para limpar filtros quando o usuário faz logout
+  useEffect(() => {
+    if (!user && !profileLoading) {
+      // Usuário fez logout, limpar filtros salvos
+      try {
+        sessionStorage.removeItem('smartcare-filters');
+        sessionStorage.removeItem('smartcare-filters-collapsed');
+      } catch {
+        // Silent error - filtros não são críticos
+      }
+    }
+  }, [user, profileLoading]);
+
   // Carregar opções dos dropdowns
   useEffect(() => {
     const loadOptions = async () => {
@@ -118,8 +250,8 @@ export default function TicketManagementPage() {
           const typesData = await typesResponse.json();
           setTypes(Array.isArray(typesData) ? typesData : []);
         }
-      } catch (error) {
-        console.error('Erro ao carregar opções:', error);
+      } catch {
+        // Silent error - opções carregarão posteriormente
       } finally {
         setOptionsLoading(false);
       }
@@ -127,7 +259,7 @@ export default function TicketManagementPage() {
 
     loadOptions();
   }, []);
-  const buildTicketQueryParams = useCallback((customFilters: Filters) => {
+  const buildTicketQueryParams = useCallback((customFilters: Filters, page: number = 1, limit: number = 10) => {
     const queryParams = new URLSearchParams();
     const filterKeys = [
       "external_id",
@@ -157,6 +289,11 @@ export default function TicketManagementPage() {
         queryParams.append(key, customFilters[key]);
       }
     });
+
+    // Adicionar parâmetros de paginação
+    queryParams.append('page', page.toString());
+    queryParams.append('limit', limit.toString());
+
     return queryParams;
   }, []);
   // Função para buscar projetos que o manager gerencia
@@ -172,8 +309,7 @@ export default function TicketManagementPage() {
         return Array.isArray(data)
           ? data.map((resource: { project_id: string }) => resource.project_id)
           : [];
-      } catch (error) {
-        console.error("Erro ao buscar projetos gerenciados:", error);
+      } catch {
         return [];
       }
     },
@@ -225,32 +361,72 @@ export default function TicketManagementPage() {
   );
 
   const fetchTickets = useCallback(
-    async (customFilters: Filters) => {
+    async (customFilters: Filters, page: number = 1, limit: number = 10) => {
       setLoading(true);
       try {
-        const queryParams = buildTicketQueryParams(customFilters);
-        const response = await fetch(`/api/smartcare?${queryParams.toString()}`);
+        const queryParams = buildTicketQueryParams(customFilters, page, limit);
+        const url = `/api/smartcare?${queryParams.toString()}`;
+        
+        const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar chamados");
+        
         const data = await response.json();
-        setTickets(data);
-      } catch (error) {
-        console.error("Erro ao buscar tickets:", error);
+        
+        // Verificar se a API retorna dados paginados ou array simples
+        if (data && typeof data === 'object' && 'data' in data) {
+          // Resposta paginada da API
+          setTickets(data.data || []);
+          setTotalCount(data.total || 0);
+          setTotalPages(data.totalPages || Math.ceil((data.total || 0) / limit));
+          setCurrentPage(page);
+        } else if (Array.isArray(data)) {
+          // Resposta simples (array direto) - implementar paginação do lado cliente
+          const totalItems = data.length;
+          const startIndex = (page - 1) * limit;
+          const endIndex = startIndex + limit;
+          const paginatedData = data.slice(startIndex, endIndex);
+          
+          setTickets(paginatedData);
+          setTotalCount(totalItems);
+          setTotalPages(Math.ceil(totalItems / limit));
+          setCurrentPage(page);
+        } else {
+          // Fallback
+          setTickets([]);
+          setTotalCount(0);
+          setTotalPages(0);
+          setCurrentPage(1);
+        }
+      } catch {
         setTickets([]);
+        setTotalCount(0);
+        setTotalPages(0);
+        setCurrentPage(1);
       } finally {
         setLoading(false);
       }
     },
     [buildTicketQueryParams]
   );
-  // Aplicar filtros de perfil sempre que o usuário mudar
+
   useEffect(() => {
     const applyProfileFilters = async () => {
       if (user && profile && !profileLoading) {
-        const profileFilters = await handleUserProfile(filters);
-        if (JSON.stringify(profileFilters) !== JSON.stringify(filters)) {
+        const currentFilters = loadFiltersFromSession() || filters;
+        const profileFilters = await handleUserProfile(currentFilters);
+        const hasFiltersToApply = Object.values(currentFilters).some(value => value !== "");
+        
+        if (JSON.stringify(profileFilters) !== JSON.stringify(currentFilters)) {
           setFilters(profileFilters);
           setPendingFilters(profileFilters);
-          fetchTickets(profileFilters);
+          saveFiltersToSession(profileFilters);
+          fetchTickets(profileFilters, 1, pageSize);
+        } else if (JSON.stringify(currentFilters) !== JSON.stringify(filters)) {
+          setFilters(currentFilters);
+          setPendingFilters(currentFilters);
+          fetchTickets(currentFilters, 1, pageSize);
+        } else if (hasFiltersToApply && tickets.length === 0) {
+          fetchTickets(profileFilters, 1, pageSize);
         }
       }
     };
@@ -263,9 +439,12 @@ export default function TicketManagementPage() {
     filters,
     handleUserProfile,
     fetchTickets,
+    loadFiltersFromSession,
+    saveFiltersToSession,
+    tickets.length,
+    pageSize,
   ]);
 
-  // Efeito para buscar usuários recursos ao carregar a página
   useEffect(() => {
     async function fetchResourceUsers() {
       setResourceUsersLoading(true);
@@ -281,11 +460,9 @@ export default function TicketManagementPage() {
       }
     }
 
-    // Apenas admin-adm pode ver todos os usuários recursos
     if (profile === "admin-adm") {
       fetchResourceUsers();
     } else {
-      // Outros perfis: usar apenas tickets do usuário
       setResourceUsersLoading(true);
       setResourceUsers([]);
       setResourceUsersLoading(false);
@@ -298,7 +475,9 @@ export default function TicketManagementPage() {
 
   const handleSearch = () => {
     setFilters(pendingFilters);
-    fetchTickets(pendingFilters);
+    saveFiltersToSession(pendingFilters);
+    setCurrentPage(1); 
+    fetchTickets(pendingFilters, 1, pageSize);
   };
 
   const handleClearFilters = () => {
@@ -326,10 +505,19 @@ export default function TicketManagementPage() {
     };
     setPendingFilters(cleared);
     setFilters(cleared);
-    fetchTickets(cleared);
+    saveFiltersToSession(cleared);
+    setCurrentPage(1); 
+    fetchTickets(cleared, 1, pageSize);
   };
 
-  const handleExportToExcel = async () => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !loading) {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
+
+  const handleExportCurrentPageToExcel = async () => {
     if (tickets.length === 0) {
       alert("Não há dados para exportar");
       return;
@@ -338,16 +526,73 @@ export default function TicketManagementPage() {
     setExportLoading(true);
     try {
       const timestamp = new Date().toISOString().slice(0, 10);
-      const filename = `chamados_${timestamp}`;
+      const filename = `chamados_pagina_${currentPage}_${timestamp}`;
       await exportTicketsToExcel(tickets, filename, user?.is_client || false);
-    } catch (error) {
-      console.error("Erro ao exportar:", error);
+      setExportPopoverOpen(false);
+    } catch {
       alert("Erro ao exportar dados. Tente novamente.");
     } finally {
       setExportLoading(false);
     }
   };
-  // Função para gerar resumo dos filtros ativos
+
+  const handleExportAllToExcel = async () => {
+    setExportLoading(true);
+    try {
+      const queryParams = new URLSearchParams();
+      const filterKeys = [
+        "external_id",
+        "title",
+        "description", 
+        "category_id",
+        "type_id",
+        "module_id",
+        "status_id",
+        "priority_id",
+        "partner_id",
+        "project_id",
+        "created_by",
+        "is_closed",
+        "is_private",
+        "created_at",
+        "planned_end_date",
+        "actual_end_date",
+        "user_tickets",
+        "resource_user_id",
+        "ref_ticket_id",
+        "ref_external_id",
+      ] as const;
+
+      filterKeys.forEach((key) => {
+        if (filters[key]) {
+          queryParams.append(key, filters[key]);
+        }
+      });
+
+      const url = `/api/smartcare?${queryParams.toString()}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Erro ao buscar chamados para exportação");
+      
+      const allTickets: Ticket[] = await response.json();
+
+      if (!Array.isArray(allTickets) || allTickets.length === 0) {
+        alert("Não há dados para exportar com os filtros aplicados");
+        return;
+      }
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `chamados_todos_${timestamp}`;
+      await exportTicketsToExcel(allTickets, filename, user?.is_client || false);
+      setExportPopoverOpen(false);
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      alert("Erro ao exportar dados. Tente novamente.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const getActiveFiltersSummary = () => {
     const filterMap = [
       { key: "external_id", label: "ID" },
@@ -374,11 +619,51 @@ export default function TicketManagementPage() {
       .filter(({ key }) => pendingFilters[key as keyof Filters])
       .map(({ key, label }) => {
         const value = pendingFilters[key as keyof Filters];
-        // Truncar valores muito longos
-        const displayValue = typeof value === 'string' && value.length > 20 
-          ? value.substring(0, 20) + '...' 
-          : value;
-        return `${label}: ${displayValue}`;
+        
+        let displayValue = value;
+        
+        switch (key) {
+          case "partner_id":
+            const partner = partners.find(p => p.id === value);
+            displayValue = partner?.name || value;
+            break;
+          case "project_id":
+            const project = projects.find(p => p.id === value);
+            displayValue = project?.projectDesc || project?.name || value;
+            break;
+          case "category_id":
+            const category = categories.find(c => c.id === value);
+            displayValue = category?.name || value;
+            break;
+          case "type_id":
+            const type = types.find(t => t.id === value);
+            displayValue = type?.name || value;
+            break;
+          case "module_id":
+            const moduleItem = modules.find(m => m.id === value);
+            displayValue = moduleItem?.name || value;
+            break;
+          case "status_id":
+            const status = ticketStatuses.find(s => String(s.id) === value);
+            displayValue = status?.name || value;
+            break;
+          case "priority_id":
+            const priority = priorities.find(p => p.id === value);
+            displayValue = priority?.name || value;
+            break;
+          case "resource_user_id":
+            const user = resourceUsers.find(u => u.id === value);
+            displayValue = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email : value;
+            break;
+          default:
+            displayValue = value;
+        }
+        
+        const finalDisplayValue = typeof displayValue === 'string' && displayValue.length > 20 
+          ? displayValue.substring(0, 20) + '...' 
+          : displayValue;
+        
+        return `${label}: ${finalDisplayValue}`;
       });
 
     if (activeFilters.length === 0) {
@@ -392,6 +677,100 @@ export default function TicketManagementPage() {
     return `${activeFilters.slice(0, 3).join(" • ")} e mais ${activeFilters.length - 3} filtro(s)`;
   };
 
+  const getFilteredResources = () => {
+    if (!resourceSearchTerm.trim()) {
+      return resourceUsers;
+    }
+    
+    const searchLower = resourceSearchTerm.toLowerCase().trim();
+    return resourceUsers.filter(user => {
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      return fullName.includes(searchLower) || email.includes(searchLower);
+    });
+  };
+
+  const getFilteredPartners = () => {
+    let filteredPartners = partners;
+    
+    // Para usuários clientes, mostrar apenas seu próprio parceiro
+    if (user?.is_client && user?.partner_id) {
+      filteredPartners = partners.filter(partner => partner.id === user.partner_id);
+    }
+    
+    // Aplicar filtro de busca por texto
+    if (!partnerSearchTerm.trim()) {
+      return filteredPartners;
+    }
+    
+    const searchLower = partnerSearchTerm.toLowerCase().trim();
+    return filteredPartners.filter(partner => {
+      const name = (partner.name || '').toLowerCase();
+      return name.includes(searchLower);
+    });
+  };
+
+  const getFilteredProjects = () => {
+    let filteredProjects = projects;
+    
+    // Para usuários clientes, filtrar apenas projetos do seu parceiro
+    if (user?.is_client && user?.partner_id) {
+      filteredProjects = projects.filter(project => project.partner_id === user.partner_id);
+    }
+    // Para usuários não clientes, se tiver parceiro selecionado, filtrar projetos desse parceiro
+    else if (pendingFilters.partner_id) {
+      filteredProjects = projects.filter(project => project.partner_id === pendingFilters.partner_id);
+    }
+    
+    // Aplicar filtro de busca por texto
+    if (!projectSearchTerm.trim()) {
+      return filteredProjects;
+    }
+    
+    const searchLower = projectSearchTerm.toLowerCase().trim();
+    return filteredProjects.filter(project => {
+      const projectDesc = (project.projectDesc || '').toLowerCase();
+      const name = (project.name || '').toLowerCase();
+      return projectDesc.includes(searchLower) || name.includes(searchLower);
+    });
+  };
+
+  const handleRowClick = (ticket: Ticket) => {
+    const ticketId = ticket.external_id || ticket.id;
+    if (ticketId) {
+      router.push(`/main/smartcare/management/${ticketId}`);
+    }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+    savePageSizeToSession(newPageSize);
+    fetchTickets(filters, 1, newPageSize);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    fetchTickets(filters, newPage, pageSize);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
+  const handleColumnVisibilityChange = useCallback((newVisibility: VisibilityState) => {
+    setColumnVisibility(newVisibility);
+    saveColumnVisibilityToSession(newVisibility);
+  }, [saveColumnVisibilityToSession]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -402,24 +781,65 @@ export default function TicketManagementPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleExportToExcel}
-            disabled={loading || tickets.length === 0 || exportLoading}
-            aria-label="Exportar para Excel"
-          >
-            {exportLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Exportando...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar Excel
-              </>
-            )}
-          </Button>
+          <Popover open={exportPopoverOpen} onOpenChange={setExportPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={loading || totalCount === 0 || exportLoading}
+                aria-label="Exportar para Excel"
+              >
+                {exportLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exportando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Exportar Excel
+                  </>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium leading-none mb-2">Opções de Exportação</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Escolha como deseja exportar os dados
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto p-4"
+                    onClick={handleExportCurrentPageToExcel}
+                    disabled={exportLoading}
+                  >
+                    <div className="text-left">
+                      <div className="font-medium">Página Atual</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Exportar {tickets.length} registros da página
+                      </div>
+                    </div>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto p-4"
+                    onClick={handleExportAllToExcel}
+                    disabled={exportLoading}
+                  >
+                    <div className="text-left">
+                      <div className="font-medium">Todos os Registros</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Exportar {totalCount} Registros Filtrados
+                      </div>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button variant="colored2" onClick={handleSearch} disabled={loading}>
             <Search className="mr-2 h-4 w-4" /> Buscar
           </Button>
@@ -427,7 +847,7 @@ export default function TicketManagementPage() {
       </div>
       {/* Card de filtros: expandido ou resumo */}
       {filtersCollapsed ? (
-        <Card>
+        <Card className="shadow-sm border-gray-200 border-[1px]">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -448,7 +868,7 @@ export default function TicketManagementPage() {
                     variant="outline"
                     onClick={handleClearFilters}
                     disabled={loading}
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash className="w-4 h-4 mr-1" />
                     Limpar
@@ -457,7 +877,14 @@ export default function TicketManagementPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setFiltersCollapsed(false)}
+                  onClick={() => {
+                    setFiltersCollapsed(false);
+                    try {
+                      sessionStorage.setItem('smartcare-filters-collapsed', 'false');
+                    } catch {
+                      // Silent error - filtros não são críticos
+                    }
+                  }}
                 >
                   <ChevronDown className="w-4 h-4 mr-2" />
                   Editar filtros
@@ -472,7 +899,7 @@ export default function TicketManagementPage() {
             filtersCollapsed ? " collapsed" : ""
           }`}
         >
-          <Card>
+          <Card className="shadow-sm border-gray-200 border-[1px]">
             <CardContent className="pt-6 relative">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-2">
@@ -484,6 +911,7 @@ export default function TicketManagementPage() {
                     onChange={(e) =>
                       handleFilterChange("external_id", e.target.value)
                     }
+                    onKeyDown={handleKeyDown}
                     disabled={loading}
                   />
                 </div>
@@ -494,6 +922,7 @@ export default function TicketManagementPage() {
                     placeholder="Filtrar por título"
                     value={pendingFilters.title}
                     onChange={(e) => handleFilterChange("title", e.target.value)}
+                    onKeyDown={handleKeyDown}
                     disabled={loading}
                   />
                 </div>
@@ -506,6 +935,7 @@ export default function TicketManagementPage() {
                     onChange={(e) =>
                       handleFilterChange("description", e.target.value)
                     }
+                    onKeyDown={handleKeyDown}
                     disabled={loading}
                   />
                 </div>
@@ -529,7 +959,7 @@ export default function TicketManagementPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="type_id">Tipo</Label>
                   <Select
                     value={pendingFilters.type_id}
@@ -548,7 +978,7 @@ export default function TicketManagementPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
                 <div className="space-y-2">
                   <Label htmlFor="module_id">Módulo</Label>
                   <Select
@@ -614,10 +1044,14 @@ export default function TicketManagementPage() {
                   <div className="flex gap-1">
                     <Input
                       id="partner_id"
-                      placeholder="Selecione um parceiro"
-                      value={pendingFilters.partner_id ? 
-                        partners.find(p => p.id === pendingFilters.partner_id)?.name || pendingFilters.partner_id
-                        : ""
+                      placeholder={user?.is_client ? "Seu parceiro" : "Selecione um parceiro"}
+                      value={
+                        // Para usuários clientes, mostrar sempre seu parceiro
+                        user?.is_client && user?.partner_id
+                          ? partners.find(p => p.id === user.partner_id)?.name || "Carregando..."
+                          : pendingFilters.partner_id 
+                            ? partners.find(p => p.id === pendingFilters.partner_id)?.name || pendingFilters.partner_id
+                            : ""
                       }
                       disabled={true}
                       className="cursor-pointer"
@@ -628,45 +1062,70 @@ export default function TicketManagementPage() {
                           type="button" 
                           variant="outline" 
                           size="sm"
-                          disabled={loading || partnersLoading}
+                          disabled={loading || partnersLoading || (user?.is_client && !!user?.partner_id)}
+                          title={user?.is_client && !!user?.partner_id ? "Clientes não podem alterar o parceiro" : "Selecionar parceiro"}
                         >
                           <SquareMousePointer className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle>Selecionar Parceiro</DialogTitle>
+                          <DialogTitle>
+                            {user?.is_client ? "Seu Parceiro" : "Selecionar Parceiro"}
+                          </DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            onClick={() => {
-                              handleFilterChange("partner_id", "");
-                              setPartnerDialogOpen(false);
-                            }}
-                          >
-                            Todos os parceiros
-                          </Button>
-                          {partnersLoading ? (
-                            <div className="flex items-center justify-center py-4">
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                        <div className="space-y-3">
+                          {!user?.is_client && (
+                            <div className="relative">
+                              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"  />
+                              <Input
+                                placeholder="Buscar parceiro..."
+                                value={partnerSearchTerm}
+                                onChange={(e) => setPartnerSearchTerm(e.target.value)}
+                                className="pl-8"
+                              />
                             </div>
-                          ) : (
-                            partners.map((partner) => (
+                          )}
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            {!user?.is_client && (
                               <Button
-                                key={partner.id}
-                                variant="ghost"
+                                variant="outline"
                                 className="w-full justify-start"
                                 onClick={() => {
-                                  handleFilterChange("partner_id", partner.id);
+                                  handleFilterChange("partner_id", "");
                                   setPartnerDialogOpen(false);
+                                  setPartnerSearchTerm("");
                                 }}
                               >
-                                {partner.name}
+                                Todos os parceiros
                               </Button>
-                            ))
-                          )}
+                            )}
+                            {partnersLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              </div>
+                            ) : (
+                              getFilteredPartners().map((partner) => (
+                                <Button
+                                  key={partner.id}
+                                  variant="ghost"
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    handleFilterChange("partner_id", partner.id);
+                                    setPartnerDialogOpen(false);
+                                    setPartnerSearchTerm("");
+                                  }}
+                                >
+                                  {partner.name}
+                                </Button>
+                              ))
+                            )}
+                            {!partnersLoading && getFilteredPartners().length === 0 && partnerSearchTerm && (
+                              <div className="text-center text-muted-foreground py-4">
+                                Nenhum parceiro encontrado
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -698,45 +1157,65 @@ export default function TicketManagementPage() {
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle>Selecionar Projeto</DialogTitle>
+                          <DialogTitle>
+                            {user?.is_client ? "Projetos do Seu Parceiro" : "Selecionar Projeto"}
+                          </DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            onClick={() => {
-                              handleFilterChange("project_id", "");
-                              setProjectDialogOpen(false);
-                            }}
-                          >
-                            Todos os projetos
-                          </Button>
-                          {projectsLoading ? (
-                            <div className="flex items-center justify-center py-4">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            </div>
-                          ) : (
-                            projects.map((project) => (
-                              <Button
-                                key={project.id}
-                                variant="ghost"
-                                className="w-full justify-start h-auto p-3"
-                                onClick={() => {
-                                  handleFilterChange("project_id", project.id);
-                                  setProjectDialogOpen(false);
-                                }}
-                              >
-                                <div className="text-left">
-                                  <div className="font-medium">{project.projectDesc}</div>
-                                  {project.name && (
-                                    <div className="text-sm text-muted-foreground mt-1">
-                                      {project.name}
-                                    </div>
-                                  )}
-                                </div>
-                              </Button>
-                            ))
-                          )}
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"  />
+                            <Input
+                              placeholder="Buscar projeto..."
+                              value={projectSearchTerm}
+                              onChange={(e) => setProjectSearchTerm(e.target.value)}
+                              className="pl-8"
+                            />
+                          </div>
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start"
+                              onClick={() => {
+                                handleFilterChange("project_id", "");
+                                setProjectDialogOpen(false);
+                                setProjectSearchTerm("");
+                              }}
+                            >
+                              {user?.is_client ? "Todos os seus projetos" : "Todos os projetos"}
+                            </Button>
+                            {projectsLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              </div>
+                            ) : (
+                              getFilteredProjects().map((project) => (
+                                <Button
+                                  key={project.id}
+                                  variant="ghost"
+                                  className="w-full justify-start h-auto p-3"
+                                  onClick={() => {
+                                    handleFilterChange("project_id", project.id);
+                                    setProjectDialogOpen(false);
+                                    setProjectSearchTerm("");
+                                  }}
+                                >
+                                  <div className="text-left">
+                                    <div className="font-medium">{project.projectDesc}</div>
+                                    {project.name && (
+                                      <div className="text-sm text-muted-foreground mt-1">
+                                        {project.name}
+                                      </div>
+                                    )}
+                                  </div>
+                                </Button>
+                              ))
+                            )}
+                            {!projectsLoading && getFilteredProjects().length === 0 && projectSearchTerm && (
+                              <div className="text-center text-muted-foreground py-4">
+                                Nenhum projeto encontrado
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -760,6 +1239,7 @@ export default function TicketManagementPage() {
                       placeholder="true/false"
                       value={pendingFilters.is_private}
                       onChange={(e) => handleFilterChange("is_private", e.target.value)}
+                      onKeyDown={handleKeyDown}
                       disabled={loading}
                     />
                   </div>
@@ -771,6 +1251,7 @@ export default function TicketManagementPage() {
                     type="date"
                     value={pendingFilters.created_at}
                     onChange={(e) => handleFilterChange("created_at", e.target.value)}
+                    onKeyDown={handleKeyDown}
                     disabled={loading}
                   />
                 </div>
@@ -781,6 +1262,7 @@ export default function TicketManagementPage() {
                     type="date"
                     value={pendingFilters.planned_end_date}
                     onChange={(e) => handleFilterChange("planned_end_date", e.target.value)}
+                    onKeyDown={handleKeyDown}
                     disabled={loading}
                   />
                 </div>
@@ -791,6 +1273,7 @@ export default function TicketManagementPage() {
                     type="date"
                     value={pendingFilters.actual_end_date}
                     onChange={(e) => handleFilterChange("actual_end_date", e.target.value)}
+                    onKeyDown={handleKeyDown}
                     disabled={loading}
                   />
                 </div>
@@ -801,6 +1284,7 @@ export default function TicketManagementPage() {
                     placeholder="Filtrar por ticket referência"
                     value={pendingFilters.ref_ticket_id}
                     onChange={(e) => handleFilterChange("ref_ticket_id", e.target.value)}
+                    onKeyDown={handleKeyDown}
                     disabled={loading}
                   />
                 </div>
@@ -811,31 +1295,101 @@ export default function TicketManagementPage() {
                     placeholder="Filtrar por identificação externa"
                     value={pendingFilters.ref_external_id}
                     onChange={(e) => handleFilterChange("ref_external_id", e.target.value)}
+                    onKeyDown={handleKeyDown}
                     disabled={loading}
                   />
                 </div>
                 {/* Novo filtro: Recurso (Usuário vinculado) */}
                 {!user?.is_client && (user?.role === 1 || user?.role === 2) && (
-                  <div className="space-y-2 w-full max-w-full">
+                  <div className="space-y-2">
                     <Label htmlFor="resource_user_id">Recurso (Usuário vinculado)</Label>
-                    <Select
-                      value={pendingFilters.resource_user_id || undefined}
-                      onValueChange={(value) =>
-                        handleFilterChange("resource_user_id", value || "")
-                      }
-                      disabled={resourceUsersLoading || loading}
-                    >
-                      <SelectTrigger className="w-full max-w-full">
-                        <SelectValue className="w-full max-w-full" placeholder="Todos" />
-                      </SelectTrigger>
-                      <SelectContent className="w-full max-w-full">
-                        {resourceUsers.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.first_name || ""} {u.last_name || ""} ({u.email})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-1">
+                      <Input
+                        id="resource_user_id"
+                        placeholder="Selecione um recurso"
+                        value={pendingFilters.resource_user_id ? 
+                          resourceUsers.find(u => u.id === pendingFilters.resource_user_id)?.first_name 
+                            ? `${resourceUsers.find(u => u.id === pendingFilters.resource_user_id)?.first_name} ${resourceUsers.find(u => u.id === pendingFilters.resource_user_id)?.last_name}` 
+                            : pendingFilters.resource_user_id
+                          : ""
+                        }
+                        disabled={true}
+                        className="cursor-pointer"
+                      />
+                      <Dialog open={resourceDialogOpen} onOpenChange={setResourceDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            disabled={loading || resourceUsersLoading}
+                          >
+                            <SquareMousePointer className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Selecionar Recurso</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-3">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input
+                              placeholder="Buscar por nome ou email..."
+                              value={resourceSearchTerm}
+                              onChange={(e) => setResourceSearchTerm(e.target.value)}
+                              className="pl-8"
+                              />
+                            </div>
+                            <div className="space-y-2 max-h-80 overflow-y-auto">
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                onClick={() => {
+                                  handleFilterChange("resource_user_id", "");
+                                  setResourceDialogOpen(false);
+                                  setResourceSearchTerm("");
+                                }}
+                              >
+                                Todos os recursos
+                              </Button>
+                              {resourceUsersLoading ? (
+                                <div className="flex items-center justify-center py-4">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                </div>
+                              ) : (
+                                getFilteredResources().map((user) => (
+                                  <Button
+                                    key={user.id}
+                                    variant="ghost"
+                                    className="w-full justify-start h-auto p-3"
+                                    onClick={() => {
+                                      handleFilterChange("resource_user_id", user.id);
+                                      setResourceDialogOpen(false);
+                                      setResourceSearchTerm("");
+                                    }}
+                                  >
+                                    <div className="text-left">
+                                      <div className="font-medium">{user.first_name} {user.last_name}</div>
+                                      {user.email && (
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                          {user.email}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </Button>
+                                ))
+                              )}
+                              {!resourceUsersLoading && getFilteredResources().length === 0 && resourceSearchTerm && (
+                                <div className="text-center text-muted-foreground py-4">
+                                  Nenhum recurso encontrado
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </div>
                 )}
               </div>
@@ -853,9 +1407,16 @@ export default function TicketManagementPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setFiltersCollapsed(true)}
+                  onClick={() => {
+                    setFiltersCollapsed(true);
+                    try {
+                      sessionStorage.setItem('smartcare-filters-collapsed', 'true');
+                    } catch {
+                      // Silent error - filtros não são críticos
+                    }
+                  }}
                   aria-label="Recolher filtros"
-                  className="hover:bg-secondary/90 hover:text-black"
+                  className="hover:bg-primary/90 hover:text-white"
                   title="Recolher filtros para visualização compacta"
                 >
                   <ChevronUp className="w-4 h-4 mr-2" />
@@ -866,6 +1427,72 @@ export default function TicketManagementPage() {
           </Card>
         </div>
       )}
+      
+      {/* Interface de Paginação */}
+      <div className="flex items-center justify-between py-4 border-b">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="page-size" className="text-sm font-medium">
+            Tickets por página:
+          </Label>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={(value) => handlePageSizeChange(parseInt(value, 10))}
+            disabled={loading}
+          >
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-muted-foreground">
+            {totalCount > 0 ? (
+              <>
+                Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalCount)} de {totalCount} tickets
+              </>
+            ) : (
+              "Nenhum ticket encontrado"
+            )}
+          </span>
+          
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousPage}
+              disabled={loading || currentPage <= 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Anterior
+            </Button>
+            
+            <div className="flex items-center space-x-1">
+              <span className="text-sm">Página</span>
+              <span className="font-medium">{currentPage}</span>
+              <span className="text-sm">de</span>
+              <span className="font-medium">{totalPages}</span>
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextPage}
+              disabled={loading || currentPage >= totalPages}
+            >
+              Próximo
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      </div>
+      
       {loading ? (
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -874,7 +1501,11 @@ export default function TicketManagementPage() {
         <DataTable 
           columns={getColumns(user)} 
           data={tickets} 
+          onRowClick={handleRowClick}
           showColumnVisibility={true}
+          showPagination={false}
+          columnVisibility={columnVisibility}
+          onColumnVisibilityChange={handleColumnVisibilityChange}
           columnLabels={{
             'is_private': 'Privado?',
             'external_id': 'Id Chamado',
@@ -888,7 +1519,8 @@ export default function TicketManagementPage() {
             'created_at': 'Criado em',
             'priority': 'Prioridade',
             'planned_end_date': 'Prev. Fim',
-            'resources': 'Recursos Aloc.',
+            'main_resource': 'Recurso Principal',
+            'other_resources': 'Demais Recursos',
           }}
         />
       )}

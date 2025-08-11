@@ -4,110 +4,381 @@ import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/api-auth";
 import { sendOutlookMail } from "@/lib/sendOutlookMail";
 
-// Função auxiliar para enviar notificação por email
-async function notifyProjectManagers(ticketData: {
+// ===== CONFIGURAÇÃO DE TESTE - REMOVER EM PRODUÇÃO =====
+const TEST_MODE = false; // Altere para false para desabilitar o modo de teste
+const TEST_EMAIL = "guilherme.rocha@numenit.com"; // Substitua pelo seu email para testes
+// ========================================================
+
+// Helper reutilizável para identificar quem deve receber notificações/emails
+async function getRecipientsForTicket({
+  projectId,
+  moduleId,
+  categoryName,
+}: {
+  projectId: string;
+  moduleId: number;
+  categoryName: string | null;
+}): Promise<string[]> {
+  const supabase = await createClient();
+  const recipients = new Set<string>(); // Usar Set para evitar duplicatas
+  const isIncident = categoryName === 'Incidente';
+
+  console.log('DEBUG: Buscando recipients para:', { projectId, moduleId, categoryName, isIncident });
+
+  // 1. Buscar gerentes administrativos do projeto
+  const { data: projectResources, error: resourceError } = await supabase
+    .from('project_resources')
+    .select(`
+      user_id,
+      user_functional,
+      user!inner(
+        id,
+        email,
+        first_name,
+        last_name,
+        is_client,
+        role
+      )
+    `)
+    .eq('project_id', projectId)
+    .eq('user_functional', 3)
+    .eq('is_suspended', false);
+
+  if (resourceError) {
+    console.error('Erro ao buscar recursos do projeto para recipients:', resourceError);
+  } else {
+    // Filtrar apenas gerentes administrativos (não clientes e com role/functional = 2)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const managers = projectResources?.filter((resource: any) => {
+      const userRecord = resource.user;
+      return (
+        userRecord && 
+        !userRecord.is_client && 
+        (resource.user_functional === 2 || userRecord.role === 2) // role 2 = Manager
+      );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }).map((resource: any) => resource.user.id) || [];
+
+    managers.forEach(managerId => recipients.add(managerId));
+    console.log(`Adicionados ${managers.length} gerentes administrativos aos recipients`);
+  }
+
+  // 2. Buscar informações do projeto para obter o parceiro
+  const { data: project, error: projectError } = await supabase
+    .from('project')
+    .select('"partnerId"')
+    .eq('id', projectId)
+    .single();
+
+  if (projectError) {
+    console.error('Erro ao buscar informações do projeto:', projectError);
+  } else if (project?.partnerId) {
+    // Buscar todos os usuários clientes do parceiro
+    const { data: partnerUsers, error: partnerUsersError } = await supabase
+      .from('user')
+      .select('id')
+      .eq('partner_id', project.partnerId)
+      .eq('is_client', true)
+      .eq('is_active', true);
+
+    if (partnerUsersError) {
+      console.error('Erro ao buscar usuários do parceiro:', partnerUsersError);
+    } else {
+      partnerUsers?.forEach(user => recipients.add(user.id));
+      console.log(`Adicionados ${partnerUsers?.length || 0} usuários clientes do parceiro aos recipients`);
+    }
+  }
+
+  // 3. Se for incidente, buscar recursos do projeto do mesmo módulo
+  if (isIncident) {
+    // Buscar recursos do projeto que estão no mesmo módulo do ticket
+    const { data: moduleResources, error: moduleResourcesError } = await supabase
+      .from('project_resources')
+      .select(`
+        user_id,
+        user!inner(
+          id,
+          is_active
+        )
+      `)
+      .eq('project_id', projectId)
+      .eq('is_suspended', false);
+
+    if (moduleResourcesError) {
+      console.error('Erro ao buscar recursos do módulo:', moduleResourcesError);
+    } else {
+      // Buscar quais usuários têm acesso ao módulo específico através de ticket_resources
+      const { data: moduleTickets, error: moduleTicketsError } = await supabase
+        .from('ticket')
+        .select(`
+          id,
+          ticket_resource(
+            user_id,
+            user:user_id(id, is_active)
+          )
+        `)
+        .eq('project_id', projectId)
+        .eq('module_id', moduleId)
+        .not('ticket_resource', 'is', null);
+
+      if (!moduleTicketsError && moduleTickets) {
+        const moduleUserIds = new Set<string>();
+        moduleTickets.forEach(ticket => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ticket.ticket_resource?.forEach((resource: any) => {
+            if (resource.user?.is_active) {
+              moduleUserIds.add(resource.user_id);
+            }
+          });
+        });
+
+        // Adicionar apenas usuários que são recursos do projeto E trabalham no módulo
+        moduleResources?.forEach(projectResource => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const userRecord = projectResource.user as any;
+          if (userRecord?.is_active && moduleUserIds.has(projectResource.user_id)) {
+            recipients.add(projectResource.user_id);
+          }
+        });
+
+        console.log(`Adicionados ${moduleUserIds.size} recursos do módulo ${moduleId} aos recipients (incidente)`);
+      }
+
+      // Fallback: se não encontrou usuários específicos do módulo, adicionar todos os recursos ativos do projeto
+      if (moduleTickets?.length === 0) {
+        moduleResources?.forEach(projectResource => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const userRecord = projectResource.user as any;
+          if (userRecord?.is_active) {
+            recipients.add(projectResource.user_id);
+          }
+        });
+        console.log(`Fallback: Adicionados todos os recursos ativos do projeto aos recipients (incidente sem histórico do módulo)`);
+      }
+    }
+  }
+
+  const recipientsList = Array.from(recipients);
+  console.log(`Total de recipients encontrados: ${recipientsList.length}`);
+  
+  return recipientsList;
+}
+
+// Função auxiliar para criar notificação
+async function createTicketNotification(ticketData: {
+  ticketId: string;
+  categoryName: string | null;
+  userName: string;
+  userId: string;
+  projectId: string;
+  moduleId: number;
+}) {
+  console.log('DEBUG: createTicketNotification iniciada com dados:', ticketData);
+  
+  try {
+    const { categoryName, userName, userId, ticketId, projectId, moduleId } = ticketData;
+    
+    console.log('DEBUG: Extraindo dados para notificação:', {
+      categoryName,
+      userName,
+      userId,
+      ticketId,
+      projectId,
+      moduleId
+    });
+    
+    // Determinar severidade baseada na categoria
+    const severity = categoryName === 'Incidente' ? 'warning' : 'info';
+    const supabase = await createClient();
+
+    // Usar o helper para buscar recipients
+    const recipientsList = await getRecipientsForTicket({
+      projectId,
+      moduleId,
+      categoryName,
+    });
+
+    if (recipientsList.length === 0) {
+      console.warn('Nenhum recipient encontrado para a notificação do ticket:', ticketId);
+      return;
+    }
+    
+    console.log('DEBUG: Recipients para notificação:', recipientsList);
+    console.log('DEBUG: Criando notificação para ticket:', ticketId);
+    
+    // Criar a notificação diretamente no banco de dados (sem API HTTP)
+    const { data: notification, error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        type: 'ALERT',
+        severity,
+        title: 'Novo Chamado Aberto',
+        body: `Um(a) novo(a) ${categoryName || 'chamado'} foi aberto por ${userName}`,
+        action_url: `/main/smartcare/management/${ticketId}`,
+        created_by: userId,
+      })
+      .select('id')
+      .single();
+
+    console.log('DEBUG: Resultado da criação de notificação:', { notification, notificationError });
+
+    if (notificationError) {
+      console.error('Erro ao criar notificação:', notificationError);
+      return;
+    }
+
+    console.log('DEBUG: Notificação criada com ID:', notification?.id);
+    console.log('DEBUG: Criando recipients...');
+
+    // Criar os recipients da notificação
+    const recipientRecords = recipientsList.map(userId => ({
+      notification_id: notification.id,
+      user_id: userId,
+    }));
+
+    console.log('DEBUG: Records de recipients:', recipientRecords);
+
+    const { error: recipientError } = await supabase
+      .from('notification_recipients')
+      .insert(recipientRecords);
+
+    console.log('DEBUG: Resultado da criação de recipients:', { recipientError });
+
+    if (recipientError) {
+      console.error('Erro ao criar recipients da notificação:', recipientError);
+    } else {
+      console.log(`Notificação criada com sucesso para o ticket: ${ticketId}`);
+      console.log(`Total de recipients: ${recipientsList.length}`);
+      console.log(`Tipo de chamado: ${categoryName || 'N/A'} (${categoryName === 'Incidente' ? 'INCIDENTE' : 'NORMAL'})`);
+    }
+  } catch (error) {
+    console.error('Erro ao criar notificação para ticket:', error);
+  }
+}
+
+// Função auxiliar para enviar notificação por email usando a mesma lógica de recipients
+async function notifyByEmailForTicket({
+  ticketId,
+  ticketTitle,
+  ticketDescription,
+  projectId,
+  moduleId,
+  categoryName,
+  clientName,
+  clientEmail,
+}: {
   ticketId: string;
   ticketTitle: string;
   ticketDescription: string;
   projectId: string;
+  moduleId: number;
+  categoryName: string | null;
   clientName: string;
   clientEmail: string;
 }) {
   try {
+    console.log('DEBUG: Iniciando envio de emails para ticket:', ticketId);
+    
     const supabase = await createClient();
 
-    // Buscar informações do projeto
+    // Usar o helper para buscar recipients (mesma lógica das notificações)
+    const recipientUserIds = await getRecipientsForTicket({
+      projectId,
+      moduleId,
+      categoryName,
+    });
+
+    if (recipientUserIds.length === 0) {
+      console.warn(`Nenhum recipient encontrado para envio de email do ticket ${ticketId}`);
+      return;
+    }
+
+    // Buscar dados completos dos usuários (email, nome, etc.) filtrando apenas ativos
+    const { data: recipientUsers, error: usersError } = await supabase
+      .from('user')
+      .select('id, email, first_name, last_name, is_active')
+      .in('id', recipientUserIds)
+      .eq('is_active', true)
+      .not('email', 'is', null);
+
+    if (usersError) {
+      console.error('Erro ao buscar dados dos recipients para email:', usersError);
+      return;
+    }
+
+    if (!recipientUsers || recipientUsers.length === 0) {
+      console.warn(`Nenhum usuário ativo com email encontrado para o ticket ${ticketId}`);
+      return;
+    }
+
+    // ===== MODO DE TESTE - ENVIAR APENAS PARA UM EMAIL =====
+    let finalRecipients = recipientUsers;
+    if (TEST_MODE && TEST_EMAIL) {
+      console.log(`🧪 MODO DE TESTE ATIVADO: Enviando email apenas para ${TEST_EMAIL}`);
+      console.log(`📧 Recipients originais: ${recipientUsers.length} usuários`);
+      console.log(`📋 Lista original:`, recipientUsers.map(u => `${u.first_name} ${u.last_name} (${u.email})`));
+      
+      // Criar um recipient fictício com o email de teste
+      finalRecipients = [{
+        id: 'test-user',
+        email: TEST_EMAIL,
+        first_name: 'Teste',
+        last_name: 'Desenvolvimento',
+        is_active: true
+      }];
+      
+      console.log(`✅ Redirecionando todos os emails para: ${TEST_EMAIL}`);
+    }
+    // =====================================================
+
+    // Buscar informações do projeto para o email
     const { data: project, error: projectError } = await supabase
       .from('project')
-      .select('name, partner_id, partners(name)')
-      .eq('id', ticketData.projectId)
+      .select(`
+        projectName,
+        partnerId,
+        partner:partnerId ( partner_desc )
+      `)
+      .eq('id', projectId)
       .single();
 
     if (projectError || !project) {
-      console.error('Erro ao buscar projeto:', projectError);
-      return;
-    }
-
-    // Buscar gerentes do projeto
-    const { data: projectResources, error: resourceError } = await supabase
-      .from('project_resources')
-      .select(`
-        user_id,
-        user_functional,
-        users!inner(
-          id,
-          email,
-          first_name,
-          last_name,
-          is_client,
-          role
-        )
-      `)
-      .eq('project_id', ticketData.projectId)
-      .eq('is_suspended', false);
-
-    if (resourceError) {
-      console.error('Erro ao buscar recursos do projeto:', resourceError);
-      return;
-    }
-
-    // Filtrar apenas gerentes que não são clientes
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const managers = projectResources?.filter((resource: any) => {
-      const userRecord = resource.users;
-      return (
-        userRecord && 
-        !userRecord.is_client && 
-        (resource.user_functional === 2 || userRecord.role === 2) // Assumindo que 2 = Manager
-      );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }).map((resource: any) => ({
-      id: resource.users.id,
-      email: resource.users.email,
-      first_name: resource.users.first_name,
-      last_name: resource.users.last_name,
-      full_name: `${resource.users.first_name || ''} ${resource.users.last_name || ''}`.trim()
-    })) || [];
-
-    if (!managers || managers.length === 0) {
-      console.warn(`Nenhum gerente encontrado para o projeto ${ticketData.projectId}`);
+      console.error('Erro ao buscar projeto para email:', projectError);
       return;
     }
 
     // Preparar o conteúdo do email
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const partnerName = (project.partners as any)?.name || 'N/A';
-    const subject = `🎫 Novo Chamado AMS: ${ticketData.ticketTitle}`;
+    const partnerName = (project.partner as any)?.partner_desc || 'N/A';
+    const subject = `EasyTime - Novo Chamado: ${ticketTitle}`;
     
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
         <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <h2 style="color: #2563eb; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">
-            🎫 Novo Chamado AMS Criado
+            Novo Chamado de ${partnerName} 
           </h2>
           
           <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
             <h3 style="color: #374151; margin-top: 0;">Detalhes do Chamado</h3>
-            <p><strong>ID do Chamado:</strong> #${ticketData.ticketId}</p>
-            <p><strong>Título:</strong> ${ticketData.ticketTitle}</p>
-            <p><strong>Projeto:</strong> ${project.name}</p>
+            <p><strong>ID do Chamado:</strong> #${ticketId}</p>
+            <p><strong>Título:</strong> ${ticketTitle}</p>
+            <p><strong>Projeto:</strong> ${project.projectName}</p>
             <p><strong>Parceiro:</strong> ${partnerName}</p>
-            <p><strong>Cliente:</strong> ${ticketData.clientName} ${ticketData.clientEmail ? `(${ticketData.clientEmail})` : ''}</p>
+            <p><strong>Criador:</strong> ${clientName} ${clientEmail ? `(${clientEmail})` : ''}</p>
+            ${categoryName ? `<p><strong>Categoria:</strong> ${categoryName}</p>` : ''}
           </div>
 
           <div style="margin: 20px 0;">
             <h4 style="color: #374151; margin-bottom: 10px;">Descrição:</h4>
             <div style="background-color: #f9fafb; padding: 15px; border-left: 4px solid #2563eb; border-radius: 4px;">
-              ${ticketData.ticketDescription.replace(/\n/g, '<br>')}
+              ${ticketDescription.replace(/\n/g, '<br>')}
             </div>
           </div>
 
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
-              📧 Este é um email automático gerado pelo sistema Numen.
-            </p>
-            <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
-              🔔 Você está recebendo esta notificação porque é gerente do projeto.
+              📧 Este é um email automático gerado pelo sistema EasyTime.
             </p>
           </div>
         </div>
@@ -117,47 +388,42 @@ async function notifyProjectManagers(ticketData: {
     const textContent = `
 Novo Chamado AMS Criado
 
-ID do Chamado: #${ticketData.ticketId}
-Título: ${ticketData.ticketTitle}
-Projeto: ${project.name}
+ID do Chamado: #${ticketId}
+Título: ${ticketTitle}
+Projeto: ${project.projectName}
 Parceiro: ${partnerName}
-Cliente: ${ticketData.clientName} ${ticketData.clientEmail ? `(${ticketData.clientEmail})` : ''}
+Cliente: ${clientName} ${clientEmail ? `(${clientEmail})` : ''}
+${categoryName ? `Categoria: ${categoryName}` : ''}
 
 Descrição:
-${ticketData.ticketDescription}
+${ticketDescription}
 
 ---
-Este é um email automático gerado pelo sistema Numen.
-Você está recebendo esta notificação porque é gerente do projeto.
+Este é um email automático gerado pelo sistema EasyTime.
     `.trim();
 
-    // Interface para o gerente
-    interface Manager {
-      id: string;
-      email: string;
-      full_name: string;
-    }
-
-    // Enviar email para cada gerente
-    const emailPromises = managers.map(async (manager: Manager) => {
-      if (!manager.email) {
-        console.warn(`Gerente ${manager.full_name} não possui email cadastrado`);
-        return { success: false, manager: manager.full_name, error: 'Email não cadastrado' };
+    // Enviar email para cada recipient
+    const emailPromises = finalRecipients.map(async (user) => {
+      if (!user.email) {
+        console.warn(`Usuário ${user.first_name} ${user.last_name} não possui email cadastrado`);
+        return { success: false, user: `${user.first_name} ${user.last_name}`, error: 'Email não cadastrado' };
       }
+
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
 
       try {
         await sendOutlookMail({
-          to: manager.email,
+          to: user.email,
           subject,
           text: textContent,
           html: htmlContent,
         });
 
-        console.log(`Email enviado com sucesso para ${manager.full_name} (${manager.email})`);
-        return { success: true, manager: manager.full_name, email: manager.email };
+        console.log(`Email enviado com sucesso para ${fullName} (${user.email})`);
+        return { success: true, user: fullName, email: user.email };
       } catch (error) {
-        console.error(`Erro ao enviar email para ${manager.full_name}:`, error);
-        return { success: false, manager: manager.full_name, error: error instanceof Error ? error.message : 'Erro desconhecido' };
+        console.error(`Erro ao enviar email para ${fullName}:`, error);
+        return { success: false, user: fullName, error: error instanceof Error ? error.message : 'Erro desconhecido' };
       }
     });
 
@@ -165,13 +431,20 @@ Você está recebendo esta notificação porque é gerente do projeto.
     const successful = results.filter(r => r.success);
     const failed = results.filter(r => !r.success);
 
-    console.log(`Notificações de email processadas: ${successful.length} enviadas, ${failed.length} falharam`);
+    console.log(`Emails processados para ticket ${ticketId}: ${successful.length} enviados, ${failed.length} falharam`);
+    console.log(`Recipients encontrados: ${recipientUserIds.length}, com email válido: ${recipientUsers.length}`);
+    
+    if (TEST_MODE) {
+      console.log(`🧪 MODO DE TESTE: Email redirecionado para ${TEST_EMAIL}`);
+      console.log(`📊 Estatísticas originais: ${recipientUserIds.length} recipients, ${recipientUsers.length} com email válido`);
+    }
+    
     if (failed.length > 0) {
       console.error('Falhas no envio de email:', failed);
     }
 
   } catch (error) {
-    console.error('Erro ao processar notificação de gerentes:', error);
+    console.error('Erro ao processar notificação de email para ticket:', error);
   }
 }
 
@@ -191,12 +464,13 @@ export async function POST(req: NextRequest) {
     const category_id = formData.get("category_id") as string;
     const module_id = formData.get("module_id") as string;
     const priority_id = formData.get("priority_id") as string;
-    const description = formData.get("description") as string;    const type_id = formData.get("type_id") as string;
+    const description = formData.get("description") as string;    
+    const type_id = formData.get("type_id") as string;
     const attachment = formData.get("file") as File | null;
     const ref_ticket_id = formData.get("ref_ticket_id") as string | null;
     const ref_external_id = formData.get("ref_external_id") as string | null;
 
-    console.log('DEBUG API FormData - type_id recebido:', type_id);    // Validação detalhada dos campos obrigatórios (FormData)
+    console.log('DEBUG API FormData - category_id recebido:', category_id);    // Validação detalhada dos campos obrigatórios (FormData)
     const missingFields = [];
     if (!contractId) missingFields.push('contractId');
     if (!partner_id) missingFields.push('partner_id');
@@ -293,19 +567,72 @@ export async function POST(req: NextRequest) {
     
     // Após criar o ticket com sucesso, verificar se deve enviar notificação por email
     if (ticket?.id && user.is_client) {
-      // Disparar notificação para os gerentes do projeto
-      const notificationData = {
-        ticketId: ticket.id,
+      // Buscar nome da categoria para o email
+      let categoryName: string | null = null;
+      if (category_id) {
+        try {
+          const { data: categoryData } = await supabase
+            .from('ticket_categories')
+            .select('name')
+            .eq('id', Number(category_id))
+            .single();
+          categoryName = categoryData?.name || null;
+        } catch (error) {
+          console.warn('Erro ao buscar categoria para email:', error);
+        }
+      }
+
+      // Disparar notificação para os mesmos recipients das notificações do sistema
+      const emailNotificationData = {
+        ticketId: ticket.id.toString(),
         ticketTitle: title,
         ticketDescription: description,
-        projectId: contractId,
+        projectId: contractId.toString(),
+        moduleId: Number(module_id),
+        categoryName,
         clientName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Cliente',
         clientEmail: user.email || '',
       };
 
       // Chamar função de notificação de forma assíncrona para não bloquear a resposta
-      notifyProjectManagers(notificationData).catch(error => {
+      notifyByEmailForTicket(emailNotificationData).catch((error: unknown) => {
         console.error('Erro ao enviar notificação por email:', error);
+      });
+    }
+
+    // Criar notificação no sistema para o ticket criado
+    if (ticket?.id) {
+      console.log('DEBUG: Iniciando criação de notificação para ticket:', ticket.id);
+      
+      // Buscar nome da categoria para determinar se é incidente
+      let categoryName: string | null = null;
+      if (category_id) {
+        try {
+          const { data: categoryData } = await supabase
+            .from('ticket_categories')
+            .select('name')
+            .eq('id', Number(category_id))
+            .single();
+          categoryName = categoryData?.name || null;
+          console.log('DEBUG: Categoria encontrada:', categoryName);
+        } catch (error) {
+          console.warn('Erro ao buscar categoria:', error);
+        }
+      }
+
+      const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Usuário';
+      console.log('DEBUG: Nome do usuário para notificação:', userName);
+      
+      // Criar notificação de forma assíncrona
+      createTicketNotification({
+        ticketId: ticket.id.toString(),
+        categoryName,
+        userName,
+        userId: user.id,
+        projectId: contractId.toString(),
+        moduleId: Number(module_id),
+      }).catch(error => {
+        console.error('Erro ao criar notificação do sistema:', error);
       });
     }
 
@@ -315,7 +642,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const {
     contractId,
-    partner_id,
+    partnerId,
     title,
     category_id,
     module_id,
@@ -330,9 +657,10 @@ export async function POST(req: NextRequest) {
   // Validação detalhada dos campos obrigatórios (JSON)
   const missingFieldsJson = [];
   if (!contractId) missingFieldsJson.push('contractId');
-  if (!partner_id) missingFieldsJson.push('partner_id');
+  if (!partnerId) missingFieldsJson.push('partnerId');
   if (!title) missingFieldsJson.push('title');
   // category_id é opcional (só obrigatório para type_id = 2 - SmartBuild)
+  if (!category_id) missingFieldsJson.push('category_id');
   if (!module_id) missingFieldsJson.push('module_id');
   if (!priority_id) missingFieldsJson.push('priority_id');
   if (!description) missingFieldsJson.push('description');
@@ -343,7 +671,7 @@ export async function POST(req: NextRequest) {
     .insert([
       {
         project_id: contractId,
-        partner_id,
+        partner_id: partnerId,
         title,
         category_id: category_id ? Number(category_id) : null,
         module_id: Number(module_id),
@@ -397,19 +725,69 @@ export async function POST(req: NextRequest) {
 
   // Após criar o ticket com sucesso, verificar se deve enviar notificação por email s
   if (data?.id && user.is_client) {
-    // Disparar notificação para os gerentes do projeto
-    const notificationData = {
-      ticketId: data.id,
+    // Buscar nome da categoria para o email
+    let categoryNameForEmail: string | null = null;
+    if (category_id) {
+      try {
+        const { data: categoryData } = await supabase
+          .from('ticket_categories')
+          .select('name')
+          .eq('id', Number(category_id))
+          .single();
+        categoryNameForEmail = categoryData?.name || null;
+      } catch (error) {
+        console.warn('Erro ao buscar categoria para email:', error);
+      }
+    }
+
+    // Disparar notificação para os mesmos recipients das notificações do sistema
+    const emailNotificationData = {
+      ticketId: data.id.toString(),
       ticketTitle: title,
       ticketDescription: description,
-      projectId: contractId,
+      projectId: contractId.toString(),
+      moduleId: Number(module_id),
+      categoryName: categoryNameForEmail,
       clientName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Cliente',
       clientEmail: user.email || '',
     };
 
     // Chamar função de notificação de forma assíncrona para não bloquear a resposta
-    notifyProjectManagers(notificationData).catch(error => {
+    notifyByEmailForTicket(emailNotificationData).catch((error: unknown) => {
       console.error('Erro ao enviar notificação por email:', error);
+    });
+  }
+
+  // Criar notificação no sistema para o ticket criado
+  if (data?.id) {
+    // Buscar nome da categoria para determinar se é incidente
+    let categoryName: string | null = null;
+    console.log('DEBUG GUI: category_id', category_id);
+    if (category_id) {
+      try {
+        const { data: categoryData } = await supabase
+          .from('ticket_categories')
+          .select('name')
+          .eq('id', Number(category_id))
+          .single();
+        categoryName = categoryData?.name || null;
+      } catch (error) {
+        console.warn('Erro ao buscar categoria:', error);
+      }
+    }
+
+    const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Usuário';
+    
+    // Criar notificação de forma assíncrona
+    createTicketNotification({
+      ticketId: data.id.toString(),
+      categoryName,
+      userName,
+      userId: user.id,
+      projectId: contractId.toString(),
+      moduleId: Number(module_id),
+    }).catch(error => {
+      console.error('Erro ao criar notificação do sistema:', error);
     });
   }
 

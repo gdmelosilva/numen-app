@@ -8,6 +8,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const ticket_id = searchParams.get("ticket_id");
   const ref_msg_id = searchParams.get("ref_msg_id");
+  const system_only = searchParams.get("system_only");
+  const status_only = searchParams.get("status_only");
 
   if (!ticket_id && !ref_msg_id) {
     return NextResponse.json({ error: "ticket_id ou ref_msg_id é obrigatório" }, { status: 400 });
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
   // Monta a query dinâmica
   let query = supabase
     .from("message")
-    .select(`id, ext_id, body, hours, is_private, created_at, created_by, ticket_id, status_id, user:created_by(id, first_name, last_name, is_client), is_system, ref_msg_id`)
+    .select(`id, ext_id, body, hours, is_private, created_at, created_by, ticket_id, status_id, user:created_by(id, first_name, last_name, is_client), is_system, ref_msg_id, status:status_id(id, name, stage)`)
     .order("created_at", { ascending: true });
 
   if (ref_msg_id) {
@@ -37,6 +39,16 @@ export async function GET(req: NextRequest) {
     }
   } else if (ticket_id) {
     query = query.eq("ticket_id", ticket_id);
+  }
+
+  // Filtro para mensagens do sistema apenas
+  if (system_only === "true") {
+    query = query.eq("is_system", true);
+  }
+
+  // Filtro para mensagens que possuem status
+  if (status_only === "true") {
+    query = query.not("status_id", "is", null);
   }
 
   // Se o usuário é cliente, filtrar apenas mensagens não-privadas

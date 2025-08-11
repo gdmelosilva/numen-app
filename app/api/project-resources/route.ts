@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const project_id = searchParams.get('project_id');
   const user_id = searchParams.get('user_id');
-  const user_functional = searchParams.get('user_functional');
+  // const user_functional = searchParams.get('user_functional');
   
   if (!project_id && !user_id) {
     return NextResponse.json({ error: 'project_id ou user_id é obrigatório' }, { status: 400 });
@@ -40,10 +40,10 @@ export async function GET(req: NextRequest) {
   }
   
   // Filtrar por função do usuário (ex: manager)
-  if (user_functional === 'manager') {
-    // Assumindo que gerentes têm user_functional específico ou role = 2
-    query = query.or('user_functional.eq.2,user.role.eq.2');
-  }
+  // if (user_functional === 'manager') {
+  //   // Assumindo que gerentes têm user_functional específico ou role = 2
+  //   query = query.or('user_functional.eq.2,user.role.eq.2');
+  // }
   
   const { data, error } = await query;
     

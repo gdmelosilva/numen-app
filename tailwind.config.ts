@@ -50,6 +50,10 @@ export default {
           DEFAULT: "hsl(var(--primary-2))",
           foreground: "hsl(var(--primary-2-foreground))",
         },
+        orange: {
+          DEFAULT: "hsl(var(--orange))",
+        },
+        themebackground: "hsl(var(--theme-background))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -59,6 +63,32 @@ export default {
           "3": "hsl(var(--chart-3))",
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
+        },
+        ticket: {
+          yellow: {
+            DEFAULT: "hsl(var(--ticket-yellow))",
+            foreground: "hsl(var(--ticket-yellow-foreground))",
+          },
+          orange: {
+            DEFAULT: "hsl(var(--ticket-orange))",
+            foreground: "hsl(var(--ticket-orange-foreground))",
+          },
+          purple: {
+            DEFAULT: "hsl(var(--ticket-purple))",
+            foreground: "hsl(var(--ticket-purple-foreground))",
+          },
+          gray: {
+            DEFAULT: "hsl(var(--ticket-gray))",
+            foreground: "hsl(var(--ticket-gray-foreground))",
+          },
+          cyan: {
+            DEFAULT: "hsl(var(--ticket-cyan))",
+            foreground: "hsl(var(--ticket-cyan-foreground))",
+          },
+          green: {
+            DEFAULT: "hsl(var(--ticket-green))",
+            foreground: "hsl(var(--ticket-green-foreground))",
+          },
         },
       },
       borderRadius: {

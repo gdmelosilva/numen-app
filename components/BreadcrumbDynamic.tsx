@@ -15,6 +15,11 @@ export function BreadcrumbDynamic() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
 
+  // Não exibe breadcrumb na página principal /main
+  if (pathname === "/main" || segments.length === 1) {
+    return null;
+  }
+
   // Mapeia os nomes traduzidos sem alterar os segmentos originais
   const translatedSegments = segments.map((segment) => {
     if (segment === "main") return "Página Principal";
@@ -35,7 +40,7 @@ export function BreadcrumbDynamic() {
 
   return (
     <Breadcrumb>
-      <BreadcrumbList>
+      <BreadcrumbList className="text-primary-foreground">
         {segments.map((segment, index) => {
           const href = `/${segments.slice(0, index + 1).join("/")}`;
           const isLast = index === segments.length - 1;
@@ -55,11 +60,14 @@ export function BreadcrumbDynamic() {
 
           return (
             <BreadcrumbItem key={href}>
-              {index > 0 && <BreadcrumbSeparator />}
+              {index > 0 && <BreadcrumbSeparator className="text-primary-foreground" />}
               {isLast || isNonClickable ? (
-                <BreadcrumbPage className="capitalize">{label}</BreadcrumbPage>
+                <BreadcrumbPage className="capitalize text-primary-foreground font-medium">{label}</BreadcrumbPage>
               ) : (
-                <BreadcrumbLink href={href} className="capitalize">
+                <BreadcrumbLink 
+                  href={href} 
+                  className="capitalize text-primary-foreground hover:text-primary-foreground transition-colors border-b border-transparent hover:border-primary-foreground hover:border-b-1 font-bold"
+                >
                   {label}
                 </BreadcrumbLink>
               )}

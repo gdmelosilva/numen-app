@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SidebarInset, SidebarProvider, AppSidebar } from "@/components/sidebar";
-import { BreadcrumbDynamic } from "@/components/BreadcrumbDynamic";
-import ThemeSwitcher from "@/components/theme-switcher";
-import { LogoutButton } from "@/components/logout-button";
+import { TopBar } from "@/components/TopBar";
 // import Image from "next/image";
 import "../globals.css";
 import AuthProvider from "@/components/auth-provider";
@@ -12,7 +10,7 @@ import { UserProvider } from "@/components/user-context";
 import SidebarMarginWrapper from "@/components/sidebar/SidebarMarginWrapper";
 
 export const metadata: Metadata = {
-  title: "Numen Ops - Home",
+  title: "EasyTime - Home",
   description: "Plataforma de Gestão Operacional Numen",
 };
 
@@ -32,7 +30,7 @@ export default async function MainLayout({
     <AuthProvider>
       <UserProvider>
         <SidebarProvider>
-          <div className="flex min-h-screen bg-secondary dark:bg-transparent relative">
+          <div className="flex min-h-screen bg-transparent dark:bg-transparent relative">
             <div className="absolute inset-0 z-0">
               {/* <Image
                 src="/bg.png"
@@ -45,13 +43,7 @@ export default async function MainLayout({
               <AppSidebar />
               <SidebarMarginWrapper>
                 <SidebarInset>
-                  <header className="flex h-14 items-center justify-between border-b px-4">
-                    <BreadcrumbDynamic />
-                    <div className="flex items-center gap-2">
-                      <ThemeSwitcher />
-                      <LogoutButton />
-                    </div>
-                  </header>
+                  <TopBar />
                   <main className="flex-1 p-6">
                     {children}
                   </main>

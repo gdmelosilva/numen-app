@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserContext } from "@/components/user-context";
 import type { UserWithModule } from "@/types/users";
+import Timeline from "@/components/Timeline";
 import { ForwardButton } from "@/components/ForwardButton";
 import { isTicketFinalized } from "@/lib/ticket-status";
 import { getCategoryOptions, getPriorityOptions } from "@/hooks/useOptions";
@@ -861,6 +862,10 @@ export default function TicketDetailsPage() {
                 </div>
               );
             })()}
+            <Separator className="my-4 mb-4" />
+            
+            {/* Timeline do Chamado */}
+            <Timeline ticketId={ticket?.id} />
             <Separator className="my-4 mb-4" />
           </CardContent>
           {/* --- Recursos vinculados ao chamado --- */}

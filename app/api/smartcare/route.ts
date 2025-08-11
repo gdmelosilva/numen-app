@@ -24,14 +24,14 @@ interface TicketRow {
   created_by: string;
   ref_ticket_id?: string | number | null;
   ref_external_id?: string | null;
-  category?: { id: number; name: string };
-  type?: { id: number; name: string };
-  module?: { id: number; name: string };
-  status?: { id: number; name: string };
-  priority?: { id: number; name: string };
-  partner?: { id: string; partnerDesc: string };
-  project?: { id: string; projectName: string };
-  created_by_user?: { id: string; name: string };
+  category?: { id: number; name: string; is_ams?: boolean; is_active?: boolean };
+  type?: { id: number; name: string; is_active?: boolean };
+  module?: { id: number; name: string; is_active?: boolean };
+  status?: { id: number; name: string; color?: string; is_active?: boolean };
+  priority?: { id: number; name: string; is_active?: boolean };
+  partner?: { id: string; partner_desc: string; is_active?: boolean };
+  project?: { id: string; projectName: string; endAt?: string | null; end_at?: string | null; is_247?: boolean };
+  created_by_user?: { id: string; first_name?: string; last_name?: string; email?: string; is_client?: boolean };
   attachments?: { id: string; name: string; path: string }[];
   ticket_resource?: { 
     user_id: string; 
@@ -93,7 +93,7 @@ function mapTicketRow(row: unknown) {
     priority: r.priority,
     partner: r.partner,
     project: r.project,
-    created_by_user: r.created_by_user,
+    created_by_user: r.created_by,
     attachments: r.attachments || [],
     resources: r.ticket_resource || [],
   };
@@ -103,35 +103,17 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = new URL(req.url);
 
-  // Verificar autenticação e obter dados do usuário
-  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !authUser) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  }
-
-  // Buscar dados completos do usuário
-  const { data: userData, error: userError } = await supabase
-    .from('user')
-    .select('id, role, is_client, partner_id')
-    .eq('id', authUser.id)
-    .single();
-
-  if (userError || !userData) {
-    return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
-  }
-
   let query = supabase
     .from("ticket")
     .select(`*,
-    module:fk_module(*),
-    partner:fk_partner(*),
-    priority:fk_priority(*),
-    category:fk_category(*),
-    status:fk_status(*),
-    type:fk_type(*),
-    project:fk_project(*),
-    created_by: ticket_created_by_fkey(*),
+    category:fk_category(id, name, is_ams, is_active),
+    type:fk_type(id, name, is_active),
+    module:fk_module(id, name, is_active),
+    status:fk_status(id, name, color, is_active),
+    priority:fk_priority(id, name, is_active),
+    partner:fk_partner(id, partner_desc, is_active),
+    project:fk_project(id, projectName, endAt, end_at, is_247),
+    created_by:ticket_created_by_fkey(id, first_name, last_name, email, is_client),
     ticket_resource(
       *,
       user:user_id(id, first_name, last_name, email, is_client, is_active)
@@ -139,74 +121,7 @@ export async function GET(req: NextRequest) {
     `, { count: "exact" })
     .eq("type_id", 1);
 
-  // Aplicar filtros automáticos baseados no perfil do usuário (apenas se não houver filtros específicos aplicados)
-  const hasManualFilters = Array.from(searchParams.keys()).some(key => 
-    !['user_tickets', 'resource_user_id'].includes(key) && searchParams.get(key)
-  );
-
-  if (!hasManualFilters) {
-    // Determinar perfil do usuário
-    let profile = "";
-    if (userData.role === 1) {
-      profile = userData.is_client ? "admin-client" : "admin-adm";
-    } else if (userData.role === 2) {
-      profile = userData.is_client ? "manager-client" : "manager-adm";
-    } else if (userData.role === 3) {
-      profile = userData.is_client ? "functional-client" : "functional-adm";
-    }
-
-    // Aplicar filtros automáticos baseados no perfil
-    switch (profile) {
-      case "admin-client":
-      case "manager-client":
-      case "functional-client":
-        // Cliente: apenas tickets do seu parceiro
-        if (userData.partner_id) {
-          query = query.eq("partner_id", userData.partner_id);
-        }
-        break;
-
-      case "manager-adm":
-        // Manager-adm: tickets dos projetos que o usuário gerencia
-        const { data: managedProjects } = await supabase
-          .from("project_resource")
-          .select("project_id")
-          .eq("user_id", userData.id)
-          .eq("user_functional", "manager");
-        
-        if (managedProjects && managedProjects.length > 0) {
-          const projectIds = managedProjects.map(mp => mp.project_id);
-          query = query.in("project_id", projectIds);
-        } else {
-          // Sem projetos gerenciados, retorna lista vazia
-          query = query.eq("id", "00000000-0000-0000-0000-000000000000");
-        }
-        break;
-
-      case "functional-adm":
-        // Functional-adm: tickets onde está alocado como recurso
-        const { data: userTickets } = await supabase
-          .from("ticket_resource")
-          .select("ticket_id")
-          .eq("user_id", userData.id);
-        
-        if (userTickets && userTickets.length > 0) {
-          const ticketIds = userTickets.map(ut => ut.ticket_id);
-          query = query.in("id", ticketIds);
-        } else {
-          // Sem tickets alocados, retorna lista vazia
-          query = query.eq("id", "00000000-0000-0000-0000-000000000000");
-        }
-        break;
-
-      case "admin-adm":
-      default:
-        // Admin-adm: acesso total, sem filtros automáticos
-        break;
-    }
-  }
-
-  // Aplicar filtros manuais (se fornecidos)
+  // Filtering
   if (searchParams.get("external_id")) {
     query = query.eq("external_id", searchParams.get("external_id"));
   }

@@ -32,12 +32,14 @@ interface TicketSelectionDialogProps {
   trigger: React.ReactNode;
   onSelect: (ticketId: string, ticketTitle: string) => void;
   selectedTicketId?: string;
+  projectId?: string; // Opcional: filtrar tickets por projeto
 }
 
 export function TicketSelectionDialog({
   trigger,
   onSelect,
   selectedTicketId,
+  projectId,
 }: TicketSelectionDialogProps) {
   const [open, setOpen] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -80,6 +82,11 @@ export function TicketSelectionDialog({
         }
       }
 
+      // Filtro adicional por projeto se fornecido
+      if (projectId) {
+        params.append("project_id", projectId);
+      }
+
       if (params.toString()) {
         apiUrl += `?${params.toString()}`;
       }
@@ -98,13 +105,16 @@ export function TicketSelectionDialog({
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, projectId]);
 
   useEffect(() => {
-    if (open && tickets.length === 0 && user) {
+    if (open && user) {
+      // Recarregar tickets sempre que o dialog abrir ou quando o projectId mudar
+      setTickets([]);
+      setFilteredTickets([]);
       fetchTickets();
     }
-  }, [open, tickets.length, user, fetchTickets]);
+  }, [open, user, projectId, fetchTickets]);
 
   useEffect(() => {
     if (searchTerm) {

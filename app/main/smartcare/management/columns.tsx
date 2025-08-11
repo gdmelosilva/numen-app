@@ -18,18 +18,25 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Privado?" />
     ),
-    cell: ({ row }) => row.original.is_private ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>,
+    cell: ({ row }) => (
+      <div className="flex justify-center">
+        {row.original.is_private ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}
+      </div>
+    ),
   },
   {
     accessorKey: "external_id",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Id. Chamado" />
+      <DataTableColumnHeader column={column} title="ID" />
     ),
+    size: 120,
+    minSize: 100,
+    maxSize: 150,
   },
   {
     accessorKey: "ref_external_id",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Ref. Externa" />
+      <DataTableColumnHeader column={column} title="Ref.Ext." />
     ),
   },
   {
@@ -38,6 +45,9 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Projeto" />
     ),
+    size: 200,
+    minSize: 150,
+    maxSize: 250,
     cell: ({ row }) => row.original.project?.projectName || row.original.project_id || "-",
   },
   {
@@ -46,6 +56,9 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Parceiro" />
     ),
+    size: 180,
+    minSize: 150,
+    maxSize: 220,
     cell: ({ row }) => row.original.partner?.partner_desc || row.original.partner_id || "-",
   },
     {
@@ -61,6 +74,9 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Título" />
     ),
+    size: 20,
+    minSize: 20,
+    maxSize: 20,
   },
   {
     id: "module",
@@ -76,10 +92,17 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
+    size: 240,
+    minSize: 240,
+    maxSize: 240,
     cell: ({ row }) => {
       const status = row.original.status;
       const name = status?.name || row.original.status_id || "-";
-      return name !== "-" ? <ColoredBadge value={status} type="ticket_status" /> : "-";
+      return (
+        <div className="flex justify-center">
+          {name !== "-" ? <ColoredBadge value={status} type="ticket_status" /> : "-"}
+        </div>
+      );
     },
   },
   {
@@ -87,7 +110,11 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Criado em" />
     ),
-    cell: ({ row }) => row.original.created_at ? format(new Date(row.original.created_at), "dd/MM/yyyy", { locale: ptBR }) : "-",
+    cell: ({ row }) => (
+      <div className="flex justify-center">
+        {row.original.created_at ? format(new Date(row.original.created_at), "dd/MM/yyyy", { locale: ptBR }) : "-"}
+      </div>
+    ),
   },
   {
     id: "priority",
@@ -96,14 +123,13 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
       <DataTableColumnHeader column={column} title="Prioridade" />
     ),
     cell: ({ row }) => {
-      const prioridade = row.original.priority?.name || row.original.priority_id || "-";
-      let variant: "primary" | "outline" | "destructive" = "primary";
-      if (typeof prioridade === "string") {
-        if (prioridade.toLowerCase() === "alta") variant = "destructive";
-        else if (prioridade.toLowerCase() === "baixa") variant = "outline";
-        else variant = "primary";
-      }
-      return prioridade !== "-" ? <Badge variant={variant}>{prioridade}</Badge> : "-";
+      const priority = row.original.priority;
+      const name = priority?.name || row.original.priority_id || "-";
+      return (
+        <div className="flex justify-center">
+          {name !== "-" ? <ColoredBadge value={priority?.name} type="priority" /> : "-"}
+        </div>
+      );
     },
   },
   {
@@ -111,34 +137,81 @@ export const getColumns = (user?: AuthenticatedUser | null): ColumnDef<Ticket>[]
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Prev. Fim" />
     ),
-    cell: ({ row }) => row.original.planned_end_date ? format(new Date(row.original.planned_end_date), "dd/MM/yyyy", { locale: ptBR }) : "-",
+    cell: ({ row }) => (
+      <div className="flex justify-center">
+        {row.original.planned_end_date ? format(new Date(row.original.planned_end_date), "dd/MM/yyyy", { locale: ptBR }) : "-"}
+      </div>
+    ),
   },
   {
-    accessorKey: "resources",
+    id: "main_resource",
+    accessorKey: "main_resource",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Recursos Aloc." />
+      <DataTableColumnHeader column={column} title="Recurso Principal" />
     ),
+    size: 180,
+    minSize: 150,
+    maxSize: 220,
     cell: ({ row }) => {
       const resources = row.original.resources || [];
-      const count = resources.length;
-      if (count === 0) {
-        return <Badge variant="outline">0</Badge>;
-      }
-      
       const mainResource = resources.find(r => r.is_main);
+      
       if (mainResource && mainResource.user) {
         const userName = `${mainResource.user.first_name || ""} ${mainResource.user.last_name || ""}`.trim() 
           || mainResource.user.email 
           || mainResource.user.id;
         return (
-          <div className="flex flex-col gap-1">
-            <Badge variant="approved">{userName} (Principal)</Badge>
-            {count > 1 && <Badge variant="secondary">+{count - 1} outros</Badge>}
+          <div className="flex justify-center">
+            <Badge variant="approved">{userName}</Badge>
           </div>
         );
       }
       
-      return <Badge variant="secondary">{count} recurso{count > 1 ? 's' : ''}</Badge>;
+      return (
+        <div className="flex justify-center">
+          <Badge variant="outline">-</Badge>
+        </div>
+      );
+    },
+  },
+  {
+    id: "other_resources", 
+    accessorKey: "other_resources",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Demais Recursos" />
+    ),
+    size: 160,
+    minSize: 130,
+    maxSize: 200,
+    cell: ({ row }) => {
+      const resources = row.original.resources || [];
+      const otherResources = resources.filter(r => !r.is_main);
+      const count = otherResources.length;
+      
+      if (count === 0) {
+        return (
+          <div className="flex justify-center">
+            <Badge variant="outline">-</Badge>
+          </div>
+        );
+      }
+      
+      if (count === 1 && otherResources[0].user) {
+        const userName = `${otherResources[0].user.first_name || ""} ${otherResources[0].user.last_name || ""}`.trim() 
+          || otherResources[0].user.email 
+          || otherResources[0].user.id;
+        return (
+          <div className="flex justify-center">
+            <Badge variant="secondary">{userName}</Badge>
+          </div>
+        );
+      }
+      
+      return (
+        <div className="flex justify-center">
+          <Badge variant="secondary">{count} recurso{count > 1 ? 's' : ''}</Badge>
+        </div>
+      );
     },
   },
   {

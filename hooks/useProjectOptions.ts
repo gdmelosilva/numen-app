@@ -5,6 +5,7 @@ export interface ProjectOption {
   id: string;
   name: string;
   partner_id: string;
+  partnerId?: string; // API might return camelCase
   projectName?: string;
   projectDesc?: string;
   project_type?: string;
@@ -48,10 +49,11 @@ export function useProjectOptions({
       .then(data => {
         let filtered = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
         
-        // Mapeia para garantir que name sempre seja projectName
+        // Mapeia para garantir que name sempre seja projectName e partner_id seja mapeado corretamente
         filtered = filtered.map((p: ProjectOption) => ({
           ...p,
           name: p.projectName || p.name || p.projectDesc || p.id,
+          partner_id: p.partner_id || p.partnerId || '', // Mapear both snake_case and camelCase
         }));
         
         // Filtrar apenas projetos AMS

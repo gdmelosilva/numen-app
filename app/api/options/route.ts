@@ -119,10 +119,9 @@ export async function GET(request: Request) {
           id,
           projectName,
           projectDesc,
-          partner_id,
+          partnerId,
           project_type
         `)
-        .eq("is_active", true);
       
       if (error) {
         return NextResponse.json([], { status: 200 });
@@ -133,7 +132,7 @@ export async function GET(request: Request) {
         name: project.projectName || project.projectDesc || project.id,
         projectName: project.projectName,
         projectDesc: project.projectDesc,
-        partner_id: project.partner_id,
+        partner_id: project.partnerId,
         project_type: project.project_type
       }));
       

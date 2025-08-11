@@ -8,8 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download, SquareMousePointer } from "lucide-react";
 import { exportProjectsToExcel } from "@/lib/export-file";
+import { usePartnerOptions } from "@/hooks/usePartnerOptions";
+import { useUserContext } from "@/components/user-context";
 
 interface Filters {
     projectName: string;
@@ -24,6 +27,9 @@ interface Filters {
 }
 
 export default function AMSAdminPage() {
+    const { user } = useUserContext();
+    const { partners, loading: partnersLoading } = usePartnerOptions(user);
+    
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [filters, setFilters] = useState<Filters>({
         projectName: "",
@@ -39,6 +45,7 @@ export default function AMSAdminPage() {
     const [pendingFilters, setPendingFilters] = useState<Filters>(filters);
     const [loading, setLoading] = useState(false);
     const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+    const [partnerDialogOpen, setPartnerDialogOpen] = useState(false);
 
     const buildQueryParams = (customFilters: Filters) => {
         const queryParams = new URLSearchParams();
@@ -108,7 +115,10 @@ export default function AMSAdminPage() {
         const summary: string[] = [];
         if (pendingFilters.projectName) summary.push(`Título: ${pendingFilters.projectName}`);
         if (pendingFilters.projectDesc) summary.push(`Descrição: ${pendingFilters.projectDesc}`);
-        if (pendingFilters.partnerId) summary.push(`Parceiro: ${pendingFilters.partnerId}`);
+        if (pendingFilters.partnerId) {
+            const partnerName = partners.find(p => p.id === pendingFilters.partnerId)?.name || pendingFilters.partnerId;
+            summary.push(`Parceiro: ${partnerName}`);
+        }
         if (pendingFilters.project_type) summary.push(`Tipo: ${pendingFilters.project_type}`);
         if (pendingFilters.project_status) summary.push(`Status: ${pendingFilters.project_status}`);
         if (pendingFilters.is_wildcard) summary.push(`Wildcard: ${pendingFilters.is_wildcard}`);
@@ -144,7 +154,7 @@ export default function AMSAdminPage() {
                 </div>
             </div>
             {filtersCollapsed ? (
-                <Card>
+                <Card className="shadow-sm border-gray-200 border-[1px]">
                     <CardContent className="pt-6 flex items-center justify-between">
                         <span className="text-muted-foreground text-sm">{getActiveFiltersSummary()}</span>
                         <Button size="sm" variant="ghost" onClick={() => setFiltersCollapsed(false)}>
@@ -154,14 +164,14 @@ export default function AMSAdminPage() {
                 </Card>
             ) : (
                 <div>
-                    <Card>
+                    <Card className="shadow-sm border-gray-200 border-[1px]">
                         <CardContent className="pt-6 relative">
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="projectName">Título</Label>
+                                    <Label htmlFor="projectName">Nome do Projeto</Label>
                                     <Input
                                         id="projectName"
-                                        placeholder="Filtrar por título"
+                                        placeholder="Nome do Projeto"
                                         value={pendingFilters.projectName}
                                         onChange={e => handleFilterChange("projectName", e.target.value)}
                                         disabled={loading}
@@ -179,13 +189,66 @@ export default function AMSAdminPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="partnerId">Parceiro</Label>
-                                    <Input
-                                        id="partnerId"
-                                        placeholder="Filtrar por parceiro (ID)"
-                                        value={pendingFilters.partnerId}
-                                        onChange={e => handleFilterChange("partnerId", e.target.value)}
-                                        disabled={loading}
-                                    />
+                                    <div className="flex gap-1">
+                                        <Input
+                                            id="partnerId"
+                                            placeholder="Selecione um parceiro"
+                                            value={pendingFilters.partnerId ? 
+                                                partners.find(p => p.id === pendingFilters.partnerId)?.name || pendingFilters.partnerId
+                                                : ""
+                                            }
+                                            disabled={true}
+                                            className="cursor-pointer"
+                                        />
+                                        <Dialog open={partnerDialogOpen} onOpenChange={setPartnerDialogOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button 
+                                                    type="button" 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    disabled={loading || partnersLoading}
+                                                >
+                                                    <SquareMousePointer className="h-4 w-4" />
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-md">
+                                                <DialogHeader>
+                                                    <DialogTitle>Selecionar Parceiro</DialogTitle>
+                                                </DialogHeader>
+                                                <div className="space-y-2 max-h-96 overflow-y-auto">
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full justify-start"
+                                                        onClick={() => {
+                                                            handleFilterChange("partnerId", "");
+                                                            setPartnerDialogOpen(false);
+                                                        }}
+                                                    >
+                                                        Todos os parceiros
+                                                    </Button>
+                                                    {partnersLoading ? (
+                                                        <div className="flex items-center justify-center py-4">
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        </div>
+                                                    ) : (
+                                                        partners.map((partner) => (
+                                                            <Button
+                                                                key={partner.id}
+                                                                variant="ghost"
+                                                                className="w-full justify-start"
+                                                                onClick={() => {
+                                                                    handleFilterChange("partnerId", partner.id);
+                                                                    setPartnerDialogOpen(false);
+                                                                }}
+                                                            >
+                                                                {partner.name}
+                                                            </Button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="project_type">Tipo</Label>

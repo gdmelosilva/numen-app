@@ -26,9 +26,9 @@ interface ModuleOption {
   description: string;
 }
 
-export function getTicketColumns({ priorities, types, statuses, modules }: {
+export function getTicketColumns({ priorities, categories, statuses, modules }: {
   priorities: { id: string | number; name: string }[];
-  types: { id: string | number; name: string }[];
+  categories: { id: string | number; name: string }[];
   statuses: StatusOption[];
   modules?: ModuleOption[];
 }): ColumnDef<Ticket>[] {
@@ -67,10 +67,10 @@ export function getTicketColumns({ priorities, types, statuses, modules }: {
       },
     },
     {
-      accessorKey: "type_id",
+      accessorKey: "category_id",
       header: "Categoria",
       cell: ({ row }) => {
-        const type = row.original.type?.name ?? types.find(t => String(t.id) === String(row.original.type_id))?.name;
+        const type = row.original.category?.name ?? categories.find(t => String(t.id) === String(row.original.category_id))?.name;
         return <ColoredBadge value={type} type="ticket_type" />;
       },
     },

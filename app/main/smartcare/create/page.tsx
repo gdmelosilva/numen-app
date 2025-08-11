@@ -574,7 +574,7 @@ export default function CreateTicketPage() {
                 onChange={handleChange}
                 required
                 disabled={loading}
-                className="w-full h-48 border-2 bg-secondary text-foreground rounded p-2 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] outline-none resize-none overflow-auto"
+                className="w-full h-48 border-2 bg-background text-foreground rounded p-2 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] outline-none resize-none overflow-auto"
               />
             </div>
 

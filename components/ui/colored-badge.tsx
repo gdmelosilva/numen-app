@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 
 // Badge variants type alias
 export type BadgeVariant =
+  | "orange"
   | "accent"
   | "primary"
   | "approved"
@@ -34,27 +35,30 @@ const typeLabelMap: Record<string, string> = {
 // Mapeamento para status de projeto conforme tabela
 const statusColorMap: Record<string, BadgeVariant> = {
   cyan: 'approved',      // Ativo
-  orange: 'primary',  // Em Analise
+  orange: 'orange',  // Em Analise
   purple: 'accent',  // Em Mobilização
   red: 'destructive',       // Encerrado
   colorless: 'outline',     // Suspenso
-  gray: 'secondary',      // Ticket - Ag.Atendimento
+  gray: 'ticket-gray',      // Ticket - Ag.Atendimento
   yellow: 'ticket-yellow',  // Amarelo
   green: 'ticket-green',    // Verde
+  blue: 'primary'
 };
 
 // Mapeamento específico para status de tickets baseado na tabela ticket_status
 const ticketStatusColorMap: Record<string, BadgeVariant> = {
-  "Aguardando Atendimento": "ticket-gray",            // gray
+  "Ag. Atendimento": "ticket-gray",            // gray
   "Em Analise": "ticket-yellow",                      // yellow  
-  "Encaminhado para Atendente": "ticket-gray",        // gray
+  "Enc. para o Atendente": "ticket-gray",        // gray
   "Finalizado": "ticket-green",                       // green
-  "Encaminhado para o Solicitante": "ticket-orange",  // orange
-  "Em Configuração / Desenvolvimento": "ticket-purple", // purple
+  "Enc. para o Solicitante": "ticket-orange",  // orange
+  "Na Fábrica": "ticket-purple", // purple
   "Em Estimativa": "ticket-orange",                   // orange
-  "Aguardando Aprovação do Solicitante": "ticket-yellow", // yellow
-  "Encaminhado para Encerramento": "ticket-green",    // green
-  "Aguardando Validação / Testes do Solicitante": "ticket-cyan", // cyan
+  "Ag. Apr. do Solicitante": "ticket-yellow", // yellow
+  "Enc. para Encerramento": "ticket-green",    // green
+  "Ag. Valid. Solicitante": "ticket-cyan", // cyan
+  "Ag. Alocação ABAP": "ticket-cyan", // cyan
+  "Ag. Testes Solicitante": "ticket-cyan", // cyan
 };
 
 // Função para determinar a cor baseada no status name e color da tabela
@@ -107,16 +111,16 @@ const isClientLabelMap: Record<string, string> = {
 
 // Mapeamento para prioridade de ticket
 const ticketPriorityColorMap: Record<string, BadgeVariant> = {
-  Alta: "destructive",
-  Média: "accent",
-  Baixa: "secondary",
-  Urgente: "primary",
+  Alta: "orange",
+  Média: "approved",
+  Baixa: "primary",
+  Crítica: "destructive",
 };
 const ticketPriorityLabelMap: Record<string, string> = {
   Alta: "Alta",
   Média: "Média",
   Baixa: "Baixa",
-  Urgente: "Urgente",
+  Crítica: "Crítica",
 };
 function renderTicketPriorityBadge(value: ValueType, className?: string) {
   const label = ticketPriorityLabelMap[String(value)] ?? String(value);
@@ -127,15 +131,19 @@ function renderTicketPriorityBadge(value: ValueType, className?: string) {
 // Mapeamento para tipo de ticket
 const ticketTypeColorMap: Record<string, BadgeVariant> = {
   Incidente: "destructive",
-  Requisição: "primary",
-  Problema: "accent",
-  "Mudança": "secondary",
+  Melhoria: "accent",
+  "Problema Recorrente": "orange",
+  "Dúvida": "ticket-yellow",
+  "Manutenção": "ticket-purple",
+  "Plantão 24/7": "ticket-purple"
 };
 const ticketTypeLabelMap: Record<string, string> = {
   Incidente: "Incidente",
-  Requisição: "Requisição",
-  Problema: "Problema",
-  Mudança: "Mudança",
+  Melhoria: "Melhoria",
+  "Problema Recorrente": "Problema Recorrente",
+  "Dúvida": "Dúvida",
+  "Manutenção": "Manutenção",
+  "Plantão 24/7": "Plantão 24/7"
 };
 function renderTicketTypeBadge(value: ValueType, className?: string) {
   const label = ticketTypeLabelMap[String(value)] ?? String(value);

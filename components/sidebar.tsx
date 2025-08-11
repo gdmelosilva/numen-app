@@ -3,12 +3,11 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, SquareTerminal, WrenchIcon, ShieldUser, ClockFading, } from "lucide-react";
+import { ChevronLeft, SquareTerminal, WrenchIcon, ShieldUser, ClockFading, } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useUserContext } from "@/components/user-context";
 
-// Contexto da Sidebar
 interface SidebarContextValue {
   expanded: boolean;
   setExpanded: (expanded: boolean) => void;
@@ -40,7 +39,6 @@ export function useSidebar() {
   return context;
 }
 
-// Componente SidebarInset
 export function SidebarInset({
   children,
   className,
@@ -80,9 +78,8 @@ type MenuVisibilityRule = {
 
 const menuVisibilityRules: MenuVisibilityRule[] = [
   {
-    match: (user) => user.role === 1 && user.is_client === true, // Admin cliente
+    match: (user) => user.role === 1 && user.is_client === true,
     hide: [
-      // Esconder abas inteiras
       "Utilitários",
       "TimeSheet",
       "TimeFlow - Faturamento",
@@ -90,50 +87,43 @@ const menuVisibilityRules: MenuVisibilityRule[] = [
     ],
   },
   {
-    match: (user) => user.role === 2 && user.is_client === true, // Gerente cliente
+    match: (user) => user.role === 2 && user.is_client === true,
     hide: [
-      // Esconder abas inteiras
       "Utilitários",
       "TimeFlow - Faturamento",
       "Administrativo",
-      "TimeSheet", // Bloqueia toda a aba TimeSheet para gerentes clientes
+      "TimeSheet",
     ],
   },
   {
-    match: (user) => user.role === 3 && user.is_client === true, // Key-User Cliente
+    match: (user) => user.role === 3 && user.is_client === true,
     hide: [
-      // Esconder abas inteiras
       "Utilitários",
       "TimeFlow - Faturamento",
       "Administrativo",
             "TimeSheet",
       "TimeFlow - Faturamento",
-      // Esconder itens específicos da aba Administrativo
       { parent: "SmartCare - AMS", items: ["Gestão AMS"] },
       { parent: "SmartBuild - Projetos", items: ["Gestão de Projetos"] },
     ],
   },
   {
-    match: (user) => user.role === 2 && user.is_client === false, // Gerente Administrativo
+    match: (user) => user.role === 2 && user.is_client === false,
     hide: [
-      // Esconder abas inteiras
       "Utilitários",
       "Administrativo",
     ],
   },
   {
-    match: (user) => user.role === 3 && user.is_client === false, // Funcional Administrativo
+    match: (user) => user.role === 3 && user.is_client === false,
     hide: [
-      // Esconder abas inteiras
       "Utilitários",
       "TimeFlow - Faturamento",
       "Administrativo",
-      // Esconder itens específicos da aba Administrativo
       { parent: "SmartCare - AMS", items: ["Gestão AMS"] },
       { parent: "SmartBuild - Projetos", items: ["Gestão de Projetos"] },
     ],
   },
-  // Adicione mais regras conforme necessário
 ];
 
 function filterNavMain(navMain: NavItem[], user: AuthenticatedUser | null): NavItem[] {
@@ -247,26 +237,31 @@ export function AppSidebar() {
   ], []);
 
   const toggleItem = React.useCallback((url: string) => {
+    // Expande a sidebar se estiver recolhida
+    if (!expanded) {
+      setExpanded(true);
+    }
     setOpenItems(prev => 
       prev.includes(url) 
         ? prev.filter(item => item !== url)
         : [...prev, url]
     );
-  }, []);
+  }, [expanded, setExpanded]);
 
   const handleNavigation = React.useCallback((url: string, newTab: boolean) => {
+    if (!expanded) {
+      setExpanded(true);
+    }
     if (newTab) {
       window.open(url, '_blank');
     } else {
       setCurrentPath(url);
       router.push(url, { scroll: false });
     }
-  }, [router]);
+  }, [router, expanded, setExpanded]);
 
-  // Aplica regras de visibilidade
   const filteredNavMain = React.useMemo(() => filterNavMain(navMain, user), [navMain, user]);
 
-  // Separa o item Utilitários do restante do menu
   const utilitariosItem = React.useMemo(() =>
     filteredNavMain.find(item => item.title === "Utilitários"),
     [filteredNavMain]
@@ -276,7 +271,6 @@ export function AppSidebar() {
     [filteredNavMain]
   );
 
-  // Sempre deixa todas as abas abertas por padrão
   const allParentUrls = React.useMemo(() =>
     filteredNavMain.filter(item => item.url && item.items && item.items.length > 0).map(item => item.url!),
     [filteredNavMain]
@@ -285,12 +279,10 @@ export function AppSidebar() {
   const [openItems, setOpenItems] = React.useState<string[]>(allParentUrls);
   const [currentPath, setCurrentPath] = React.useState(pathname);
 
-  // Atualiza abas abertas quando muda o menu (ex: após login ou mudança de regras)
   React.useEffect(() => {
     setOpenItems(allParentUrls);
   }, [allParentUrls]);
 
-  // Exibe loading enquanto usuário está carregando
   if (loading) {
     return (
       <div className={cn(
@@ -302,47 +294,6 @@ export function AppSidebar() {
         </div>
       </div>
     );
-  }
-
-  // Componente SidebarUserCard
-  function SidebarUserCard() {
-    const { user, loading } = useUserContext();
-    if (loading) {
-      return (
-        <div className="flex items-center gap-3 p-3 border-t border-border/40 bg-background/80 animate-pulse">
-          <div className="h-10 w-10 rounded-md bg-muted" />
-          <div className="flex flex-col gap-1">
-            <div className="h-4 w-24 bg-muted rounded" />
-            <div className="h-3 w-16 bg-muted rounded" />
-          </div>
-        </div>
-      );
-    }
-    if (!user) return null;
-    const name = `${user.first_name} ${user.last_name}`.trim();
-    return (
-      <div className="flex items-center gap-3 p-3 border-t border-border/40 bg-background/80">
-        <div className="flex items-center justify-center h-10 w-10 rounded-md bg-muted text-primary font-bold text-lg">
-          {/* Avatar genérico: Iniciais do nome */}
-          {user.first_name && user.last_name
-            ? `${user.first_name[0]}${user.last_name[0]}`
-            : user.first_name?.[0] || user.last_name?.[0] || "?"}
-        </div>
-        <div className="flex flex-col">
-          <span className="font-medium text-sm text-default-foreground">{name}</span>
-          <span className="text-xs text-muted-foreground">{typeof user.role === 'string' ? user.role : roleToLabel(user.role, user.is_client)}</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Função utilitária para exibir o nome do cargo
-  function roleToLabel(role: number | string | null | undefined, is_client: boolean) {
-    if ((role === 1 || role === "1")) return "Administrador";
-    if (role === 2 || role === "2") return "Gerente";
-    if ((role === 3 || role === "3") && (is_client === true )) return "Key-User";
-    if ((role === 3 || role === "3") && (is_client === false )) return "Funcional";
-    return "Cargo Indefinido";
   }
 
   return (
@@ -378,51 +329,46 @@ export function AppSidebar() {
               transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
             }}
             >
-            {/* Light mode logo */}
-            <Image
-              src="/logo_hor.svg"
-              alt="Logo"
-              width={140}
-              height={35}
-              className="block dark:hidden"
-              style={{
-              transition: "margin-left 0.3s, opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
-              marginLeft: expanded ? 0 : -50,
-              opacity: expanded ? 1 : 0,
-              objectFit: "contain",
-              }}
-              priority
-            />
-            {/* Dark mode logo */}
-            <Image
-              src="/logo_hor_b.svg"
-              alt="Logo"
-              width={140}
-              height={35}
-              className="hidden dark:block"
-              style={{
-              transition: "margin-left 0.3s, opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
-              marginLeft: expanded ? 0 : -50,
-              opacity: expanded ? 1 : 0,
-              objectFit: "contain",
-              }}
-              priority
-            />
+            {expanded && (
+              <Image
+                src="/LOGO CLARO 1@2x.png"
+                alt="Logo"
+                width={140}
+                height={35}
+                style={{
+                  transition: "opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
+                  objectFit: "contain",
+                }}
+                priority
+              />
+            )}
+            {!expanded && (
+              <Image
+                src="/ÍCONE AZUL E LARANJA.svg"
+                alt="Ícone"
+                width={32}
+                height={32}
+                className="block"
+                style={{
+                  transition: "opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
+                  objectFit: "contain",
+                }}
+                priority
+              />
+            )}
             </div>
         </button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? (
+        {expanded && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setExpanded(!expanded)}
+          >
             <ChevronLeft className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-          <span className="sr-only">Toggle Sidebar</span>
-        </Button>
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
+        )}
       </div>
       <nav className="flex-1 space-y-1 p-2">
         {filteredNavMainWithoutUtilitarios.map((item: NavItem, idx: number) => {
@@ -431,16 +377,22 @@ export function AppSidebar() {
               <div key={`separator-${idx}`} className="my-2 border-y border-border transition-all duration-300" style={{ opacity: expanded ? 1 : 0.5, transition: 'opacity 0.3s' }} />
             );
           }
-          // Type guard: item is not a separator
           const typedItem = item as Exclude<typeof item, { type: string }>;
           return (
             <div key={typedItem.url} className="overflow-hidden">
               <button
-                onClick={() => typedItem.url && toggleItem(typedItem.url)}
+                onClick={() => {
+                  if (!expanded) {
+                    setExpanded(true);
+                  }
+                  if (typedItem.url) {
+                    toggleItem(typedItem.url);
+                  }
+                }}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   currentPath === typedItem.url
-                    ? "bg-red-500 text-accent-foreground"
+                    ? "bg-primary/80 text-accent-foreground"
                     : "hover:bg-primary hover:text-accent-foreground"
                 )}
                 style={{
@@ -482,8 +434,8 @@ export function AppSidebar() {
                           className={cn(
                             "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-normal transition-colors",
                             currentPath === subItem.url
-                              ? "bg-red-500 text-accent-foreground"
-                              : "hover:bg-primary hover:text-accent-foreground"
+                              ? "bg-primary text-accent-foreground"
+                              : "hover:bg-primary/80 hover:text-accent-foreground"
                           )}
                           style={{
                             transition: 'background 0.3s, color 0.3s',
@@ -504,12 +456,18 @@ export function AppSidebar() {
           );
         })}
       </nav>
-      {/* Utilitários fixo na base da sidebar, acima do card do usuário */}
       {utilitariosItem && (
         <div className="p-2 border-t border-border/40" style={{ marginTop: 'auto' }}>
           <div className="overflow-hidden">
             <button
-              onClick={() => utilitariosItem.url && toggleItem(utilitariosItem.url)}
+              onClick={() => {
+                if (!expanded) {
+                  setExpanded(true);
+                }
+                if (utilitariosItem.url) {
+                  toggleItem(utilitariosItem.url);
+                }
+              }}
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 currentPath === utilitariosItem.url
@@ -576,8 +534,6 @@ export function AppSidebar() {
           </div>
         </div>
       )}
-      {/* Card do usuário na parte inferior */}
-      {expanded && <SidebarUserCard />}
     </div>
   );
 }

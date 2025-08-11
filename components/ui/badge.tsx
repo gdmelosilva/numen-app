@@ -4,38 +4,40 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center text-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center text-center rounded-full border px-2.5 py-0.5 text-xs font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
           "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-[hsl(var(--secondary))] bg-[hsl(var(--secondary))]/20 text-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
-        ghost: "text-foreground hover:bg-muted",
+          "border-[hsl(var(--destructive))] bg-[hsl(var(--destructive))]/20 text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive))]/80",
+        outline: "border-[hsl(var(--foreground))] bg-[hsl(var(--foreground))]/20 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--foreground))]/80",
+        ghost: "border-[hsl(var(--muted))] bg-[hsl(var(--muted))]/20 text-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80",
         approved:
-          "border-transparent bg-approved text-approved-foreground hover:bg-approved/80",
+          "border-[hsl(var(--approved))] bg-[hsl(var(--approved))]/20 text-[hsl(var(--approved))] hover:bg-[hsl(var(--approved))]/80",
         accent:
-          "border-transparent bg-accent text-accent-foreground hover:bg-accent/80",
+          "border-[hsl(var(--accent))] bg-[hsl(var(--accent))]/20 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))]/80",
         primary:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/80",
         "primary-2":
-          "border-transparent bg-primary-2 text-primary-2-foreground hover:bg-primary-2/80",
+          "border-[hsl(var(--primary-2))] bg-[hsl(var(--primary-2))]/20 text-[hsl(var(--primary-2))] hover:bg-[hsl(var(--primary-2))]/80",
         "ticket-yellow":
-          "border-transparent bg-[hsl(var(--ticket-yellow))] text-[hsl(var(--ticket-yellow-foreground))] hover:bg-[hsl(var(--ticket-yellow))]/80",
+          "border-[hsl(var(--ticket-yellow))] bg-[hsl(var(--ticket-yellow))]/20 text-[hsl(var(--ticket-yellow))] hover:bg-[hsl(var(--ticket-yellow))]/80",
         "ticket-orange":
-          "border-transparent bg-[hsl(var(--ticket-orange))] text-[hsl(var(--ticket-orange-foreground))] hover:bg-[hsl(var(--ticket-orange))]/80",
+          "border-[hsl(var(--ticket-orange))] bg-[hsl(var(--ticket-orange))]/20 text-[hsl(var(--ticket-orange))] hover:bg-[hsl(var(--ticket-orange))]/80",
         "ticket-purple":
-          "border-transparent bg-[hsl(var(--ticket-purple))] text-[hsl(var(--ticket-purple-foreground))] hover:bg-[hsl(var(--ticket-purple))]/80",
+          "border-[hsl(var(--ticket-purple))] bg-[hsl(var(--ticket-purple))]/20 text-[hsl(var(--ticket-purple))] hover:bg-[hsl(var(--ticket-purple))]/80",
         "ticket-gray":
-          "border-transparent bg-[hsl(var(--ticket-gray))] text-[hsl(var(--ticket-gray-foreground))] hover:bg-[hsl(var(--ticket-gray))]/80",
+          "border-[hsl(var(--ticket-gray))] bg-[hsl(var(--ticket-gray))]/20 text-[hsl(var(--ticket-gray))] hover:bg-[hsl(var(--ticket-gray))]/80",
         "ticket-cyan":
-          "border-transparent bg-[hsl(var(--ticket-cyan))] text-[hsl(var(--ticket-cyan-foreground))] hover:bg-[hsl(var(--ticket-cyan))]/80",
+          "border-[hsl(var(--ticket-cyan))] bg-[hsl(var(--ticket-cyan))]/20 text-[hsl(var(--ticket-cyan))] hover:bg-[hsl(var(--ticket-cyan))]/80",
         "ticket-green":
-          "border-transparent bg-[hsl(var(--ticket-green))] text-[hsl(var(--ticket-green-foreground))] hover:bg-[hsl(var(--ticket-green))]/80",
+          "border-[hsl(var(--ticket-green))] bg-[hsl(var(--ticket-green))]/20 text-[hsl(var(--ticket-green))] hover:bg-[hsl(var(--ticket-green))]/80",
+        orange:
+          "border-[hsl(var(--orange))] bg-[hsl(var(--orange))]/20 text-[hsl(var(--orange))] hover:bg-[hsl(var(--orange))]/80",
       },
     },
     defaultVariants: {

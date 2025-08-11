@@ -2,18 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useTheme } from 'next-themes';
 import { SignUpForm } from "@/components/sign-up-form";
 import { LoginForm } from "@/components/login-form";
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
 import { ResetPasswordForm } from "@/components/reset-password-form";
 import ThemeSwitcher from "@/components/theme-switcher";
-import Image from "next/image";
 import { createClient } from '@/lib/supabase/client';
 
 export default function Home() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [currentView, setCurrentView] = useState('login');
   const [isProcessingAuth, setIsProcessingAuth] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  // useEffect para aguardar a hidratação do tema
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determina qual logo usar baseado no tema
+  const getLogoSrc = () => {
+    if (!mounted) return "/logo_p.svg"; // fallback durante hidratação
+    return theme === 'dark' ? '/logo.svg' : '/logo.png';
+  };
 
   useEffect(() => {
     const handleAuth = async () => {
@@ -30,13 +44,6 @@ export default function Home() {
       const queryToken = urlParams.get('token');
       const queryType = urlParams.get('type');
       
-      console.log('Auth tokens:', { 
-        hashAccessToken: !!hashAccessToken, 
-        hashType, 
-        queryToken: !!queryToken, 
-        queryType 
-      });
-      
       // Handle recovery from query params (direct link from email)
       if (queryToken && queryType === 'recovery') {
         try {
@@ -52,7 +59,6 @@ export default function Home() {
             return;
           }
           
-          console.log('Recovery token verified successfully');
           // Clear the query params from URL
           const url = new URL(window.location.href);
           url.searchParams.delete('token');
@@ -83,7 +89,6 @@ export default function Home() {
             return;
           }
           
-          console.log('Session established successfully');
           // Clear the hash from URL
           window.history.replaceState(null, '', window.location.pathname);
           // Redirect to update password
@@ -109,7 +114,6 @@ export default function Home() {
             return;
           }
           
-          console.log('Recovery session established successfully');
           // Clear the hash from URL
           window.history.replaceState(null, '', window.location.pathname);
           // Show reset password view
@@ -143,7 +147,7 @@ export default function Home() {
   const renderView = () => {
     switch (currentView) {
       case 'login':
-        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} onResetPassword={() => setCurrentView('reset-password')} />;
+        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} />;
       case 'forgot':
         return <ForgotPasswordForm onBack={() => setCurrentView('login')} />;
       case 'signup':
@@ -151,34 +155,21 @@ export default function Home() {
       case 'reset-password':
         return <ResetPasswordForm onBack={() => setCurrentView('login')} />;
       default:
-        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} onResetPassword={() => setCurrentView('reset-password')} />;
+        return <LoginForm onForgotPassword={() => setCurrentView('forgot')} />;
     }
   };
 
   // Show loading while processing auth
   if (isProcessingAuth) {
     return (
-      <main className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#0b0e46] to-[#07070f] px-4">
-        <Image
-          src="/bg.png"
-          alt="Background"
-          fill
-          className="object-cover pointer-events-none z-0 opacity-40"
-        />
+      <main className="relative min-h-screen flex flex-col items-center justify-center bg-themebackground px-4">
         <div className="absolute top-4 right-4 z-20">
           <ThemeSwitcher />
         </div>
         <div className="relative z-10 flex flex-col items-center space-y-12 w-full">
-          <Image
-            src="/logo.svg"
-            alt="Numen Lean Services Logo"
-            width={150}
-            height={150}
-            className="mx-auto"
-          />
-          <div className="text-white text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-            <p className="mt-2">Processando...</p>
+          <div className="text-gray-800 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
+            <p className="mt-2">Carregando...</p>
           </div>
         </div>
       </main>
@@ -186,25 +177,44 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#0b0e46] to-[#07070f] px-4">
-      <Image
+    <main className="relative min-h-screen flex flex-col items-center justify-center bg-themebackground px-4">
+      {/* <Image
         src="/bg.png"
         alt="Background"
         fill
         className="object-cover pointer-events-none z-0 opacity-40"
-      />
+      /> */}
       <div className="absolute top-4 right-4 z-20">
         <ThemeSwitcher />
       </div>
       <div className="relative z-10 flex flex-col items-center space-y-12 w-full">
         <Image
-          src="/logo.svg"
+          src={getLogoSrc()}
           alt="Numen Lean Services Logo"
           width={150}
           height={150}
           className="mx-auto"
         />
         {renderView()}
+        {/* <div className="flex items-center justify-center space-x-8 mt-8">
+          <Image
+            src="/LOGO CLARO 1@2x.png"
+            alt="Primeira imagem"
+            width={220}
+            height={420}
+          />
+          
+          <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">
+            &
+          </div>
+          
+          <Image
+            src="/logo_hor.svg"
+            alt="Segunda imagem"
+            width={220}
+            height={420}
+          />
+        </div> */}
       </div>
     </main>
   );

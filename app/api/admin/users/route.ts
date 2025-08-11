@@ -103,7 +103,7 @@ export async function GET(request: Request) {
     });
 
     if (supabaseError) {
-      console.error("Erro Supabase:", supabaseError);
+      // Error details omitted for security
       return NextResponse.json(
         { error: "Erro ao buscar usuários", details: supabaseError.message },
         { status: 500 }
@@ -119,8 +119,8 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json(usersWithPartnerDesc || []);
-  } catch (error) {
-    console.error("Erro interno:", error);
+  } catch {
+    // Error details omitted for security
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
@@ -148,34 +148,15 @@ export async function POST(request: Request) {
       isClient,
       role,
       partnerId 
-    } = await request.json();    console.log('Creating user with data:', {
-      email,
-      firstName,
-      lastName,
-      telephone,
-      isClient: Boolean(isClient),
-      role,
-      partnerId
-    });    
+    } = await request.json();     
     
-    console.log('Current user:', {
-      id: user!.id,
-      role: user!.role,
-      is_client: user!.is_client,
-      partner_id: user!.partner_id
-    });
+    // Debug info removed for security
     
     // Validar se pode criar usuário para este partner
     // Apenas admins não-clientes podem criar usuários para qualquer partner
     const isUnrestrictedAdmin = user!.role === USER_ROLES.ADMIN && !user!.is_client;
     
-    console.log('Permission check:', {
-      isAdmin: user!.role === USER_ROLES.ADMIN,
-      isClient: user!.is_client,
-      isUnrestrictedAdmin,
-      targetPartnerId: partnerId,
-      userPartnerId: user!.partner_id
-    });
+    // Permission check debug info removed for security
     
     if (!isUnrestrictedAdmin) {
       // Usuários restritos (não-admins ou admins clientes) só podem criar para seu próprio partner
@@ -211,11 +192,7 @@ export async function POST(request: Request) {
     );
 
     if (authError) {
-      console.error('Supabase auth error:', {
-        message: authError.message,
-        status: authError.status,
-        code: authError.code
-      });
+      // Auth error details omitted for security
       throw authError;
     }
 
@@ -223,12 +200,7 @@ export async function POST(request: Request) {
 
   } catch (err) {
     const error = err as Error & { status?: number; code?: string };
-    console.error('Full error details:', {
-      message: error.message,
-      status: error.status,
-      code: error.code,
-      stack: error.stack
-    });
+    // Error details omitted for security
 
     // Handle specific database errors
     let friendlyMessage = 'An unexpected error occurred.';

@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { useCallback } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -12,6 +13,7 @@ import {
   ColumnFiltersState,
   getFilteredRowModel,
   VisibilityState,
+  Updater,
 } from "@tanstack/react-table"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -39,6 +41,11 @@ interface DataTableProps<TData extends { id?: number|string }, TValue> {
   onRowClick?: (row: TData) => void
   showColumnVisibility?: boolean
   columnLabels?: Record<string, string>
+  // Props para controle externo de visibilidade das colunas
+  columnVisibility?: VisibilityState
+  onColumnVisibilityChange?: (visibility: VisibilityState) => void
+  // Props para controle de paginação
+  showPagination?: boolean
 }
 
 export function DataTable<
@@ -63,13 +70,32 @@ export function DataTable<
   onRowClick,
   showColumnVisibility = false,
   columnLabels = {},
+  columnVisibility: externalColumnVisibility,
+  onColumnVisibilityChange: externalOnColumnVisibilityChange,
+  showPagination = true,
 }: Readonly<DataTableProps<TData, TValue>>) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "projectExtId", desc: true },
   ])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
+
+  // Usar visibilidade externa se fornecida, senão usar interna
+  const columnVisibility = externalColumnVisibility ?? internalColumnVisibility;
+
+  // Função para lidar com mudanças de visibilidade que funciona com React Table
+  const handleColumnVisibilityChange = useCallback((updaterOrValue: Updater<VisibilityState>) => {
+    const newVisibility = typeof updaterOrValue === 'function' 
+      ? updaterOrValue(columnVisibility) 
+      : updaterOrValue;
+    
+    if (externalOnColumnVisibilityChange) {
+      externalOnColumnVisibilityChange(newVisibility);
+    } else {
+      setInternalColumnVisibility(newVisibility);
+    }
+  }, [columnVisibility, externalOnColumnVisibilityChange]);
 
   // Só ativa seleção se receber onSelectionChange e se as colunas incluírem a coluna 'select'
   const enableRowSelection = !!onSelectionChange && columns.some(col => col.id === "select");
@@ -78,12 +104,12 @@ export function DataTable<
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: showPagination ? getPaginationRowModel() : undefined,
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: handleColumnVisibilityChange,
     state: {
       sorting,
       columnFilters,
@@ -145,7 +171,7 @@ export function DataTable<
                     data-state={row.getIsSelected() && "selected"}
                     className={`
                       transition-colors duration-200
-                      ${onRowClick ? "cursor-pointer hover:bg-accent" : ""}
+                      ${onRowClick ? "cursor-pointer hover:bg-secondary/20" : ""}
                       ${isExpanded && hasChildren ? "bg-primary/10 dark:bg-primary/5 border-primary/20 dark:border-primary/10 shadow-sm" : ""}
                     `.trim()}
                     onClick={onRowClick ? () => onRowClick(row.original) : undefined}
@@ -192,24 +218,26 @@ export function DataTable<
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Anterior
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Próximo
-        </Button>
-      </div>
+      {showPagination && (
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Próximo
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
