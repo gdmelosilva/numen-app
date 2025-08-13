@@ -120,6 +120,26 @@ export const getColumns = (
     ),
   },
   {
+    id: "created_by",
+    accessorKey: "created_by_user",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Criado Por" />
+    ),
+    size: 160,
+    minSize: 140,
+    maxSize: 200,
+    cell: ({ row }) => {
+      const createdByUser = row.original.created_by_user;
+      if (createdByUser) {
+        const name = createdByUser.first_name && createdByUser.last_name 
+          ? `${createdByUser.first_name} ${createdByUser.last_name}`
+          : createdByUser.name || createdByUser.id;
+        return <div className="text-sm">{name}</div>;
+      }
+      return <div className="text-sm text-muted-foreground">-</div>;
+    },
+  },
+  {
     id: "priority",
     accessorKey: "priority.name",
     header: ({ column }) => (

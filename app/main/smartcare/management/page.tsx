@@ -52,12 +52,21 @@ interface ResourceUser {
   email?: string;
 }
 
+interface CreatedByUser {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
 export default function TicketManagementPage() {
   const router = useRouter();
   const { user, profile, loading: profileLoading } = useUserProfile();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [resourceUsers, setResourceUsers] = useState<ResourceUser[]>([]);
   const [resourceUsersLoading, setResourceUsersLoading] = useState(false);
+  const [createdByUsers, setCreatedByUsers] = useState<CreatedByUser[]>([]);
+  const [createdByUsersLoading, setCreatedByUsersLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [userProjectIds, setUserProjectIds] = useState<string[]>([]);
 
@@ -75,9 +84,11 @@ export default function TicketManagementPage() {
   const [partnerDialogOpen, setPartnerDialogOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
+  const [createdByDialogOpen, setCreatedByDialogOpen] = useState(false);
   const [partnerSearchTerm, setPartnerSearchTerm] = useState("");
   const [projectSearchTerm, setProjectSearchTerm] = useState("");
   const [resourceSearchTerm, setResourceSearchTerm] = useState("");
+  const [createdBySearchTerm, setCreatedBySearchTerm] = useState("");
   const [exportPopoverOpen, setExportPopoverOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
@@ -472,6 +483,79 @@ export default function TicketManagementPage() {
     }
   }, [profile]);
 
+  // Efeito para carregar usuários que criaram tickets
+  useEffect(() => {
+    async function fetchCreatedByUsers() {
+      setCreatedByUsersLoading(true);
+      try {
+        // Criar filtros básicos sem os filtros de pesquisa específicos
+        const baseFilters = await handleUserProfile({
+          external_id: "",
+          title: "",
+          description: "",
+          category_id: "",
+          type_id: "",
+          module_id: "",
+          status_id: "",
+          priority_id: "",
+          partner_id: "",
+          project_id: "",
+          created_by: "",
+          is_closed: "",
+          is_private: "",
+          created_at: "",
+          planned_end_date: "",
+          actual_end_date: "",
+          user_tickets: "",
+          resource_user_id: "",
+          ref_ticket_id: "",
+          ref_external_id: "",
+        });
+        
+        // Buscar tickets que o usuário atual pode ver
+        const queryParams = buildTicketQueryParams(baseFilters, 1, 1000);
+        const res = await fetch(`/api/smartcare?${queryParams.toString()}`);
+        if (!res.ok) throw new Error("Erro ao buscar tickets para filtrar usuários");
+        
+        let ticketsData = await res.json();
+        const visibleTickets = Array.isArray(ticketsData) ? ticketsData : (ticketsData.data || []);
+        
+        console.log('Tickets visíveis:', visibleTickets.length);
+        console.log('Primeiro ticket exemplo:', visibleTickets[0]);
+        
+        // Extrair usuários únicos que criaram tickets usando os dados que já vêm da API
+        const createdByUsersMap = new Map();
+        
+        visibleTickets.forEach((ticket: any) => {
+          const createdByUser = ticket.created_by_user;
+          if (createdByUser && createdByUser.id) {
+            createdByUsersMap.set(createdByUser.id, {
+              id: createdByUser.id,
+              first_name: createdByUser.first_name,
+              last_name: createdByUser.last_name,
+              email: createdByUser.email,
+            });
+          }
+        });
+        
+        const uniqueCreatedByUsers = Array.from(createdByUsersMap.values());
+        console.log('Usuários únicos que criaram tickets:', uniqueCreatedByUsers);
+        
+        setCreatedByUsers(uniqueCreatedByUsers);
+      } catch (error) {
+        console.error('Erro ao buscar usuários que criaram tickets:', error);
+        setCreatedByUsers([]);
+      } finally {
+        setCreatedByUsersLoading(false);
+      }
+    }
+
+    // Só buscar se o usuário estiver logado e os filtros estiverem carregados
+    if (user && profile && !profileLoading) {
+      fetchCreatedByUsers();
+    }
+  }, [user, profile, profileLoading, handleUserProfile, buildTicketQueryParams]);
+
   // Efeito para carregar projetos vinculados ao usuário administrativo
   useEffect(() => {
     async function loadUserProjects() {
@@ -676,6 +760,10 @@ export default function TicketManagementPage() {
             const user = resourceUsers.find(u => u.id === value);
             displayValue = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email : value;
             break;
+          case "created_by":
+            const createdByUser = createdByUsers.find(u => u.id === value);
+            displayValue = createdByUser ? `${createdByUser.first_name || ''} ${createdByUser.last_name || ''}`.trim() || createdByUser.email : value;
+            break;
           default:
             displayValue = value;
         }
@@ -763,6 +851,19 @@ export default function TicketManagementPage() {
       const projectDesc = (project.projectDesc || '').toLowerCase();
       const name = (project.name || '').toLowerCase();
       return projectDesc.includes(searchLower) || name.includes(searchLower);
+    });
+  };
+
+  const getFilteredCreatedByUsers = () => {
+    if (!createdBySearchTerm.trim()) {
+      return createdByUsers;
+    }
+    
+    const searchLower = createdBySearchTerm.toLowerCase().trim();
+    return createdByUsers.filter(user => {
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      return fullName.includes(searchLower) || email.includes(searchLower);
     });
   };
 
@@ -1433,6 +1534,102 @@ export default function TicketManagementPage() {
                     </div>
                   </div>
                 )}
+                {/* Filtro: Criado Por */}
+                <div className="space-y-2">
+                  <Label htmlFor="created_by">Criado Por</Label>
+                  <div className="flex gap-1">
+                    <Input
+                      id="created_by"
+                      placeholder="Selecione quem criou"
+                      value={pendingFilters.created_by ? 
+                        createdByUsers.find(u => u.id === pendingFilters.created_by)?.first_name 
+                          ? `${createdByUsers.find(u => u.id === pendingFilters.created_by)?.first_name} ${createdByUsers.find(u => u.id === pendingFilters.created_by)?.last_name}` 
+                          : createdByUsers.find(u => u.id === pendingFilters.created_by)?.email || pendingFilters.created_by
+                        : ""
+                      }
+                      disabled={true}
+                      className="cursor-pointer"
+                    />
+                    <Dialog open={createdByDialogOpen} onOpenChange={setCreatedByDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          disabled={loading || createdByUsersLoading}
+                        >
+                          <SquareMousePointer className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Selecionar Criador</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                            placeholder="Buscar por nome ou email..."
+                            value={createdBySearchTerm}
+                            onChange={(e) => setCreatedBySearchTerm(e.target.value)}
+                            className="pl-8"
+                            />
+                          </div>
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start"
+                              onClick={() => {
+                                handleFilterChange("created_by", "");
+                                setCreatedByDialogOpen(false);
+                                setCreatedBySearchTerm("");
+                              }}
+                            >
+                              Todos os criadores
+                            </Button>
+                            {createdByUsersLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              </div>
+                            ) : (
+                              getFilteredCreatedByUsers().map((user) => (
+                                <Button
+                                  key={user.id}
+                                  variant="ghost"
+                                  className="w-full justify-start h-auto p-3"
+                                  onClick={() => {
+                                    handleFilterChange("created_by", user.id);
+                                    setCreatedByDialogOpen(false);
+                                    setCreatedBySearchTerm("");
+                                  }}
+                                >
+                                  <div className="text-left">
+                                    <div className="font-medium">
+                                      {user.first_name && user.last_name ? 
+                                        `${user.first_name} ${user.last_name}` : 
+                                        user.email
+                                      }
+                                    </div>
+                                    {user.first_name && user.last_name && user.email && (
+                                      <div className="text-sm text-muted-foreground mt-1">
+                                        {user.email}
+                                      </div>
+                                    )}
+                                  </div>
+                                </Button>
+                              ))
+                            )}
+                            {!createdByUsersLoading && getFilteredCreatedByUsers().length === 0 && createdBySearchTerm && (
+                              <div className="text-center text-muted-foreground py-4">
+                                Nenhum criador encontrado
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end mt-4 gap-2">
                 <Button
@@ -1558,6 +1755,7 @@ export default function TicketManagementPage() {
             'module': 'Módulo Func.',
             'status': 'Status',
             'created_at': 'Criado em',
+            'created_by': 'Criado Por',
             'priority': 'Prioridade',
             'planned_end_date': 'Prev. Fim',
             'main_resource': 'Recurso Principal',
