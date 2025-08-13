@@ -244,7 +244,7 @@ export default function CreateTicketPage() {
       // Mensagem personalizada para usuários functional-adm
       if (profile === "functional-adm") {
         toast.success(`Chamado ${externalId || ticketId} criado com sucesso. Você foi automaticamente vinculado como responsável principal do chamado.`);
-      } else {
+      } else {  
         toast.success(`Chamado ${externalId || ticketId} criado com sucesso.`);
       }
       

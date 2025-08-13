@@ -43,6 +43,7 @@ export function ColumnVisibilityToggle<TData>({
     // Direct mappings based on the exact titles from columns.tsx
     const columnTitles: Record<string, string> = {
       // Smartcare Management columns with exact titles from DataTableColumnHeader
+      'open_ticket': 'Abrir',
       'is_private': 'Privado?',
       'external_id': 'Id. Chamado',
       'ref_external_id': 'Ref. Externa',
@@ -53,8 +54,11 @@ export function ColumnVisibilityToggle<TData>({
       'module': 'Módulo Func.',
       'status': 'Status',
       'created_at': 'Criado em',
+      'created_by': 'Criado Por',
       'priority': 'Prioridade',
       'planned_end_date': 'Prev. Fim',
+      'main_resource': 'Recurso Principal',
+      'other_resources': 'Demais Recursos',
       'resources': 'Recursos Aloc.',
       
       // Project Tickets Tab columns

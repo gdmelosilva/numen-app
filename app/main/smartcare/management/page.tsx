@@ -194,7 +194,8 @@ export default function TicketManagementPage() {
     } catch {
       // Silent error - visibilidade das colunas não é crítica
     }
-    return {};
+    // Configuração padrão: coluna "Abrir" oculta por padrão
+    return { open_ticket: false };
   }, []);
 
   // Efeito para definir automaticamente o parceiro do cliente
@@ -517,7 +518,7 @@ export default function TicketManagementPage() {
         const res = await fetch(`/api/smartcare?${queryParams.toString()}`);
         if (!res.ok) throw new Error("Erro ao buscar tickets para filtrar usuários");
         
-        let ticketsData = await res.json();
+        const ticketsData = await res.json();
         const visibleTickets = Array.isArray(ticketsData) ? ticketsData : (ticketsData.data || []);
         
         console.log('Tickets visíveis:', visibleTickets.length);
@@ -526,7 +527,7 @@ export default function TicketManagementPage() {
         // Extrair usuários únicos que criaram tickets usando os dados que já vêm da API
         const createdByUsersMap = new Map();
         
-        visibleTickets.forEach((ticket: any) => {
+        visibleTickets.forEach((ticket: { created_by_user?: { id: string; first_name?: string; last_name?: string; email?: string } }) => {
           const createdByUser = ticket.created_by_user;
           if (createdByUser && createdByUser.id) {
             createdByUsersMap.set(createdByUser.id, {
@@ -1745,6 +1746,7 @@ export default function TicketManagementPage() {
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={handleColumnVisibilityChange}
           columnLabels={{
+            'open_ticket': 'Abrir',
             'is_private': 'Privado?',
             'external_id': 'Id Chamado',
             'ref_external_id': 'Ref. Externa',

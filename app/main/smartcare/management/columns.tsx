@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import { MoreHorizontal, Users } from "lucide-react";
+import { MoreHorizontal, Users, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Ticket } from "@/types/tickets";
@@ -16,6 +16,42 @@ export const getColumns = (
   onLinkResource?: (ticket: Ticket) => void
 ): ColumnDef<Ticket>[] => {
   const allColumns: ColumnDef<Ticket>[] = [
+  {
+    id: "open_ticket",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Abrir" />
+    ),
+    size: 80,
+    minSize: 70,
+    maxSize: 90,
+    cell: ({ row }) => {
+      const ticketId = row.original.external_id || row.original.id;
+      
+      const handleOpenTicket = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Evitar que o clique da linha seja acionado
+        if (ticketId) {
+          const url = `/main/smartcare/management/${ticketId}`;
+          window.open(url, '_blank');
+        }
+      };
+
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenTicket}
+            className="h-8 w-8 p-0"
+            title="Abrir chamado em nova guia"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
+    enableSorting: false,
+    enableHiding: true,
+  },
   {
     accessorKey: "is_private",
     header: ({ column }) => (
@@ -298,8 +334,10 @@ export const getColumns = (
 
   // Filtrar colunas baseado no tipo de usuário
   if (user?.is_client) {
-    // Para clientes, remover a coluna "is_private" (índice 0)
-    return allColumns.filter((_, index) => index !== 0);
+    // Para clientes, remover a coluna "is_private"
+    return allColumns.filter((col) => 
+      !('accessorKey' in col && col.accessorKey === "is_private")
+    );
   }
 
   return allColumns;
