@@ -235,16 +235,17 @@ export default function CreateTicketPage() {
         }
       }
       
-      const ticketId = await createTicket(finalForm);
+      const ticketData = await createTicket(finalForm);
+      const externalId = ticketData?.external_id ?? ticketData?.data?.external_id;
+      const ticketId = ticketData?.id ?? ticketData?.data?.id;
       if (hasAttachments && ticketId) {
         await uploadAttachments(finalForm, ticketId, attachmentTypes);
       }
-      
       // Mensagem personalizada para usuários functional-adm
       if (profile === "functional-adm") {
-        toast.success(`Chamado ${ticketId} criado com sucesso. Você foi automaticamente vinculado como responsável principal do chamado.`);
+        toast.success(`Chamado ${externalId || ticketId} criado com sucesso. Você foi automaticamente vinculado como responsável principal do chamado.`);
       } else {
-        toast.success(`Chamado ${ticketId} criado com sucesso.`);
+        toast.success(`Chamado ${externalId || ticketId} criado com sucesso.`);
       }
       
       // Reset do formulário
