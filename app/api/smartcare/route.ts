@@ -227,20 +227,36 @@ export async function GET(req: NextRequest) {
     query = query.eq("priority_id", searchParams.get("priority_id"));
   }
   
-  // Filtro de parceiro - validar permissões
+  // Filtro de parceiro - validar permissões e aplicar agregação
   if (searchParams.get("partner_id")) {
     const requestedPartnerId = searchParams.get("partner_id");
     
-    // Para perfis de cliente, ignorar filtro manual de parceiro (já aplicado automaticamente)
     if (profile === "admin-adm" || profile === "manager-adm") {
-      // Apenas admin-adm e manager-adm podem filtrar por qualquer parceiro
+      // Admin-adm e manager-adm podem filtrar por qualquer parceiro
       query = query.eq("partner_id", requestedPartnerId);
+    } else if (profile === "functional-adm") {
+      // Functional-adm pode filtrar por parceiro, mas mantendo seus tickets alocados
+      query = query.eq("partner_id", requestedPartnerId);
+      // O filtro de securityTicketIds já foi aplicado acima, então isso é agregativo
     }
     // Para clientes, o filtro de parceiro já foi aplicado automaticamente acima
   }
   
+  // Filtro de projeto - validar permissões e aplicar agregação
   if (searchParams.get("project_id")) {
-    query = query.eq("project_id", searchParams.get("project_id"));
+    const requestedProjectId = searchParams.get("project_id");
+    
+    if (profile === "admin-adm" || profile === "manager-adm") {
+      // Admin-adm e manager-adm podem filtrar por qualquer projeto
+      query = query.eq("project_id", requestedProjectId);
+    } else if (profile === "functional-adm") {
+      // Functional-adm pode filtrar por projeto, mas mantendo seus tickets alocados
+      query = query.eq("project_id", requestedProjectId);
+      // O filtro de securityTicketIds já foi aplicado acima, então isso é agregativo
+    } else {
+      // Para clientes, permitir filtro de projeto (já têm filtro de parceiro aplicado)
+      query = query.eq("project_id", requestedProjectId);
+    }
   }
   if (searchParams.get("created_by")) {
     query = query.eq("created_by", searchParams.get("created_by"));

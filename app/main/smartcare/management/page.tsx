@@ -361,9 +361,12 @@ export default function TicketManagementPage() {
           break;
         }
         case "functional-adm": {
-          // Functional-adm: tickets onde está alocado como recurso (ticket-resource)
-          // Sempre aplicar o filtro, mesmo se não tiver tickets alocados
-          filteredQuery.user_tickets = user.id;
+          // Functional-adm: o backend já aplica automaticamente o filtro de segurança
+          // para mostrar apenas tickets onde o usuário está alocado como recurso.
+          // Não aplicamos nenhum filtro adicional no frontend, apenas preservamos
+          // os filtros manuais que o usuário escolheu (parceiro, projeto, etc.)
+          
+          // Não fazer nada aqui - deixar que o backend controle a segurança
           break;
         }
         default:
