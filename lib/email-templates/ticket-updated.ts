@@ -14,7 +14,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
     ticketExternalId,
     ticketTitle,
     projectName,
-    partnerName,
+    // partnerName,
     updatedBy,
     updateDescription,
     newStatus,
