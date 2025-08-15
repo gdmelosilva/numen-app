@@ -160,12 +160,15 @@ export async function GET(req: NextRequest) {
     `, { count: "exact" })
     .eq("type_id", 1);
 
-  // Aplicar filtros automáticos baseados no perfil ANTES dos filtros do frontend
+  // Aplicar filtros automáticos OBRIGATÓRIOS baseados no perfil
+  // Estes filtros NUNCA podem ser removidos pelo frontend
+  let securityTicketIds: string[] | null = null;
+  
   switch (profile) {
     case "admin-client":
     case "manager-client":
     case "functional-client":
-      // Clientes: apenas tickets do seu parceiro
+      // Clientes: SEMPRE filtrar apenas tickets do seu parceiro
       if (user.partner_id) {
         query = query.eq("partner_id", user.partner_id);
       } else {
@@ -176,28 +179,16 @@ export async function GET(req: NextRequest) {
       
     case "functional-adm": {
       // Functional-adm: SEMPRE filtrar apenas tickets onde está alocado como recurso
-      // Buscar ticket IDs onde o usuário é recurso
       const { data: ticketResources } = await supabase
         .from("ticket_resource")
         .select("ticket_id")
         .eq("user_id", user.id);
       
       if (ticketResources && ticketResources.length > 0) {
-        const ticketIds = ticketResources.map(tr => tr.ticket_id);
-        query = query.in("id", ticketIds);
+        securityTicketIds = ticketResources.map(tr => tr.ticket_id);
+        query = query.in("id", securityTicketIds);
       } else {
         // Se não tem tickets alocados, retornar lista vazia
-        return NextResponse.json([]);
-      }
-      break;
-    }
-    
-    case "manager-client": {
-      // Manager-client: apenas tickets do seu parceiro
-      if (user.partner_id) {
-        query = query.eq("partner_id", user.partner_id);
-      } else {
-        // Se não tem partner_id, não pode ver nenhum ticket
         return NextResponse.json([]);
       }
       break;
@@ -206,11 +197,11 @@ export async function GET(req: NextRequest) {
     case "admin-adm":
     case "manager-adm":
     default:
-      // Admin-adm e Manager-adm: acesso total, sem filtros automáticos
+      // Admin-adm e Manager-adm: acesso total, sem filtros automáticos obrigatórios
       break;
   }
 
-  // Aplicar filtros manuais do frontend (após filtros automáticos de perfil)
+  // Aplicar filtros manuais do frontend (AGREGADOS aos filtros automáticos de segurança)
   if (searchParams.get("external_id")) {
     query = query.eq("external_id", searchParams.get("external_id"));
   }
@@ -235,16 +226,19 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("priority_id")) {
     query = query.eq("priority_id", searchParams.get("priority_id"));
   }
+  
+  // Filtro de parceiro - validar permissões
   if (searchParams.get("partner_id")) {
-    // Para perfis que já têm filtro automático de parceiro, este filtro é redundante
-    // mas pode ser mantido para refinamento adicional
     const requestedPartnerId = searchParams.get("partner_id");
+    
+    // Para perfis de cliente, ignorar filtro manual de parceiro (já aplicado automaticamente)
     if (profile === "admin-adm" || profile === "manager-adm") {
       // Apenas admin-adm e manager-adm podem filtrar por qualquer parceiro
       query = query.eq("partner_id", requestedPartnerId);
     }
-    // Para clientes, o filtro de parceiro já foi aplicado automaticamente
+    // Para clientes, o filtro de parceiro já foi aplicado automaticamente acima
   }
+  
   if (searchParams.get("project_id")) {
     query = query.eq("project_id", searchParams.get("project_id"));
   }
@@ -275,12 +269,15 @@ export async function GET(req: NextRequest) {
     query = query.ilike("ref_external_id", `%${searchParams.get("ref_external_id")}%`);
   }
 
-  // Filtro manual user_tickets (adicional ao filtro automático para functional-adm)
+  // Filtro manual user_tickets - validar com filtros de segurança
   if (searchParams.get("user_tickets")) {
     const userId = searchParams.get("user_tickets");
-    // Para functional-adm, este filtro é redundante pois já foi aplicado automaticamente
-    // Para outros perfis, pode ser usado como filtro adicional
-    if (profile !== "functional-adm") {
+    
+    if (profile === "functional-adm") {
+      // Para functional-adm, o filtro de recursos já foi aplicado automaticamente
+      // Ignorar filtro manual redundante para evitar conflitos
+    } else if (profile === "admin-adm" || profile === "manager-adm") {
+      // Admin e Manager podem filtrar por qualquer usuário
       const { data: ticketResources } = await supabase
         .from("ticket_resource")
         .select("ticket_id")
@@ -294,13 +291,15 @@ export async function GET(req: NextRequest) {
         return NextResponse.json([]);
       }
     }
+    // Para clientes, ignorar este filtro (não têm permissão)
   }
 
   // Filtro por resource_user_id (para admin filtrar por usuário específico)
   if (searchParams.get("resource_user_id")) {
     const resourceUserId = searchParams.get("resource_user_id");
-    // Apenas admin-adm e manager-adm podem usar este filtro
+    
     if (profile === "admin-adm" || profile === "manager-adm") {
+      // Apenas admin-adm e manager-adm podem usar este filtro
       const { data: ticketResources } = await supabase
         .from("ticket_resource")
         .select("ticket_id")
@@ -314,6 +313,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json([]);
       }
     }
+    // Para functional-adm, este filtro seria ignorado pois eles já têm filtro de segurança aplicado
+    // Para outros perfis, ignorar este filtro (não têm permissão)
   }
 
   const { data, error } = await query;

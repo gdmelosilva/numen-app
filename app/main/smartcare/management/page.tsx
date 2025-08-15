@@ -586,8 +586,9 @@ export default function TicketManagementPage() {
     fetchTickets(pendingFilters, 1, pageSize);
   };
 
-  const handleClearFilters = () => {
-    const cleared: Filters = {
+  const handleClearFilters = async () => {
+    // Criar filtros básicos vazios
+    const clearedFilters: Filters = {
       external_id: "",
       title: "",
       description: "",
@@ -609,11 +610,15 @@ export default function TicketManagementPage() {
       ref_ticket_id: "",
       ref_external_id: "",
     };
-    setPendingFilters(cleared);
-    setFilters(cleared);
-    saveFiltersToSession(cleared);
+
+    // Aplicar filtros automáticos baseados no perfil (preservar filtros de segurança)
+    const filtersWithProfile = await handleUserProfile(clearedFilters);
+    
+    setPendingFilters(filtersWithProfile);
+    setFilters(filtersWithProfile);
+    saveFiltersToSession(filtersWithProfile);
     setCurrentPage(1); 
-    fetchTickets(cleared, 1, pageSize);
+    fetchTickets(filtersWithProfile, 1, pageSize);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
