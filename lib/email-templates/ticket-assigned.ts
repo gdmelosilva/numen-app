@@ -150,7 +150,7 @@ export function ticketAssignedTemplate(
             <div class="cta-section">
               <p>Acesse o sistema para visualizar o chamado e iniciar o atendimento:</p>
               <div style="text-align: center; margin-top: 15px;">
-                <a href="${baseUrl || '#'}/main/smartcare/management/${displayTicketId}" class="button">
+                <a href="https://numenit-ops.com/main/smartcare/management/${displayTicketId}" class="button">
                   Ver Chamado
                 </a>
               </div>
