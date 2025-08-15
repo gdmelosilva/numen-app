@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/api-auth";
 import { sendOutlookMail } from "@/lib/sendOutlookMail";
+import { generateEmailTemplate, EmailTemplateData } from "@/lib/email-templates";
 
 // ===== CONFIGURAÇÃO DE TESTE - REMOVER EM PRODUÇÃO =====
 const TEST_MODE = false; // Altere para false para desabilitar o modo de teste
@@ -259,6 +260,7 @@ async function createTicketNotification(ticketData: {
 // Função auxiliar para enviar notificação por email usando a mesma lógica de recipients
 async function notifyByEmailForTicket({
   ticketId,
+  ticketExternalId,
   ticketTitle,
   ticketDescription,
   projectId,
@@ -268,6 +270,7 @@ async function notifyByEmailForTicket({
   clientEmail,
 }: {
   ticketId: string;
+  ticketExternalId?: string;
   ticketTitle: string;
   ticketDescription: string;
   projectId: string;
@@ -347,60 +350,24 @@ async function notifyByEmailForTicket({
       return;
     }
 
-    // Preparar o conteúdo do email
+    // Preparar dados para o template de email
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const partnerName = (project.partner as any)?.partner_desc || 'N/A';
-    const subject = `EasyTime - Novo Chamado: ${ticketTitle}`;
     
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
-        <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <h2 style="color: #2563eb; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">
-            Novo Chamado de ${partnerName} 
-          </h2>
-          
-          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
-            <h3 style="color: #374151; margin-top: 0;">Detalhes do Chamado</h3>
-            <p><strong>ID do Chamado:</strong> #${ticketId}</p>
-            <p><strong>Título:</strong> ${ticketTitle}</p>
-            <p><strong>Projeto:</strong> ${project.projectName}</p>
-            <p><strong>Parceiro:</strong> ${partnerName}</p>
-            <p><strong>Criador:</strong> ${clientName} ${clientEmail ? `(${clientEmail})` : ''}</p>
-            ${categoryName ? `<p><strong>Categoria:</strong> ${categoryName}</p>` : ''}
-          </div>
+    const emailData: EmailTemplateData = {
+      ticketId,
+      ticketExternalId,
+      ticketTitle,
+      ticketDescription,
+      projectName: project.projectName,
+      partnerName,
+      clientName,
+      clientEmail,
+      categoryName: categoryName || undefined
+    };
 
-          <div style="margin: 20px 0;">
-            <h4 style="color: #374151; margin-bottom: 10px;">Descrição:</h4>
-            <div style="background-color: #f9fafb; padding: 15px; border-left: 4px solid #2563eb; border-radius: 4px;">
-              ${ticketDescription.replace(/\n/g, '<br>')}
-            </div>
-          </div>
-
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
-              📧 Este é um email automático gerado pelo sistema EasyTime.
-            </p>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const textContent = `
-Novo Chamado AMS Criado
-
-ID do Chamado: #${ticketId}
-Título: ${ticketTitle}
-Projeto: ${project.projectName}
-Parceiro: ${partnerName}
-Cliente: ${clientName} ${clientEmail ? `(${clientEmail})` : ''}
-${categoryName ? `Categoria: ${categoryName}` : ''}
-
-Descrição:
-${ticketDescription}
-
----
-Este é um email automático gerado pelo sistema EasyTime.
-    `.trim();
+    // Gerar template de email
+    const emailTemplate = generateEmailTemplate('ticket-created', emailData);
 
     // Enviar email para cada recipient
     const emailPromises = finalRecipients.map(async (user) => {
@@ -414,9 +381,9 @@ Este é um email automático gerado pelo sistema EasyTime.
       try {
         await sendOutlookMail({
           to: user.email,
-          subject,
-          text: textContent,
-          html: htmlContent,
+          subject: emailTemplate.subject,
+          text: emailTemplate.text,
+          html: emailTemplate.html,
         });
 
         console.log(`Email enviado com sucesso para ${fullName} (${user.email})`);
@@ -585,6 +552,7 @@ export async function POST(req: NextRequest) {
       // Disparar notificação para os mesmos recipients das notificações do sistema
       const emailNotificationData = {
         ticketId: ticket.id.toString(),
+        ticketExternalId: ticket.external_id,
         ticketTitle: title,
         ticketDescription: description,
         projectId: contractId.toString(),
@@ -743,6 +711,7 @@ export async function POST(req: NextRequest) {
     // Disparar notificação para os mesmos recipients das notificações do sistema
     const emailNotificationData = {
       ticketId: data.id.toString(),
+      ticketExternalId: data.external_id,
       ticketTitle: title,
       ticketDescription: description,
       projectId: contractId.toString(),

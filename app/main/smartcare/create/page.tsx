@@ -152,7 +152,7 @@ export default function CreateTicketPage() {
       throw new Error(data.error ?? "Erro ao criar chamado");
     }
     const ticketData = await ticketRes.json();
-    return ticketData?.id ?? ticketData?.data?.id;
+    return ticketData;
   }
 
   // Função auxiliar para upload de anexos
