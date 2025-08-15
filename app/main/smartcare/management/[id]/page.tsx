@@ -927,6 +927,7 @@ export default function TicketDetailsPage() {
                             userId={r.user_id} 
                             userEmail={r.user?.email || ""}
                             userName={`${r.user?.first_name || ''} ${r.user?.last_name || ''}`.trim()}
+                            ticket={ticket}
                             onSuccess={fetchResources}
                           />
                         )}
