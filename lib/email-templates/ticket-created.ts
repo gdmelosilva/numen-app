@@ -38,7 +38,7 @@ export function ticketCreatedTemplate(data: EmailTemplateData, baseUrl?: string)
               <img 
                 src="${logoUrl}" 
                 alt="EasyTime - Sistema de Gestão de Chamados" 
-                style="height: 60px; width: auto; max-width: 200px; display: block; margin: 0 auto;"
+                style="height: auto; width: auto; max-width: 200px; display: block; margin: 0 auto;"
                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
               />
               <!-- Fallback text caso a imagem não carregue -->

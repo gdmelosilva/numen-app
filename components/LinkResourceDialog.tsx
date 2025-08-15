@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { Ticket } from "@/types/tickets";
 
 interface User {
@@ -24,6 +25,7 @@ interface LinkResourceDialogProps {
 }
 
 export function LinkResourceDialog({ open, onOpenChange, ticket, onSuccess }: LinkResourceDialogProps) {
+  const { user: currentUser } = useCurrentUser();
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [searchUser, setSearchUser] = useState("");
   const [availableLoading, setAvailableLoading] = useState(false);
@@ -156,9 +158,15 @@ export function LinkResourceDialog({ open, onOpenChange, ticket, onSuccess }: Li
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           user_id: user.id, 
-          ticket_id: ticket.id, 
+          ticket_id: ticket.id,
+          ticket_external_id: ticket.external_id,
+          ticket_title: ticket.title,
+          ticket_description: ticket.description,
+          project_name: ticket.project?.projectName || 'Projeto não informado',
+          partner_name: ticket.partner?.partner_desc || 'Parceiro não informado',
           email: user.email, 
-          name: userName 
+          name: userName,
+          assigned_by: currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.email : undefined
         })
       }).catch(error => {
         console.error('Erro ao enviar e-mail:', error);
