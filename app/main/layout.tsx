@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { SidebarInset, SidebarProvider, AppSidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/TopBar";
 // import Image from "next/image";
 import "../globals.css";
-import AuthProvider from "@/components/auth-provider";
 import { UserProvider } from "@/components/user-context";
 import SidebarMarginWrapper from "@/components/sidebar/SidebarMarginWrapper";
 
@@ -19,17 +16,17 @@ export default async function MainLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  // Remoção da verificação de auth redundante - já é feita no middleware
+  // const supabase = await createClient();
+  // const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error || !user) {
-    redirect("/");
-  }
+  // if (error || !user) {
+  //   redirect("/");
+  // }
 
   return (
-    <AuthProvider>
-      <UserProvider>
-        <SidebarProvider>
+    <UserProvider>
+      <SidebarProvider>
           <div className="flex min-h-screen bg-transparent dark:bg-transparent relative">
             <div className="absolute inset-0 z-0">
               {/* <Image
@@ -53,6 +50,5 @@ export default async function MainLayout({
           </div>
         </SidebarProvider>
       </UserProvider>
-    </AuthProvider>
   );
 }

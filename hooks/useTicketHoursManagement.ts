@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useCurrentUser } from "./useCurrentUser";
+import { useUserContext } from "@/components/user-context";
 
 export interface TicketHour {
   id: string;
@@ -62,7 +62,7 @@ export interface TimesheetRow {
 export function useTicketHoursManagement() {
   const [data, setData] = useState<TimesheetRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, loading: userLoading } = useCurrentUser();
+  const { user, loading: userLoading } = useUserContext();
 
   const fetchTicketHours = useCallback(async (year?: number, month?: number, filterUserId?: string | null) => {
     if (userLoading || !user) return;

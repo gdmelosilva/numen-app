@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useCurrentUser } from "./useCurrentUser";
+import { useUserContext } from "@/components/user-context";
 import { useUserProjectHours } from "./useUserProjectHours";
 
 // Hook para verificar se o usuário pode apontar horas
 export function useCanUserLogHours(projectId?: string, contractHoursMax?: number) {
-  const { user } = useCurrentUser();
+  const { user } = useUserContext();
   const { hours: userProjectHours, loading: hoursLoading } = useUserProjectHours(user?.id, projectId);
   const [canLog, setCanLog] = useState(false);
   const [reason, setReason] = useState<string>("");
@@ -45,7 +45,7 @@ export function useCanUserLogHours(projectId?: string, contractHoursMax?: number
 // Hook para verificar se o usuário pode enviar mensagens
 // Adicione partnerId como parâmetro para validar cliente
 export function useCanUserSendMessage(projectId?: string, userInContract?: boolean | null, contractLoading?: boolean, partnerId?: string) {
-  const { user } = useCurrentUser();
+  const { user } = useUserContext();
   const [canSend, setCanSend] = useState(false);
   const [reason, setReason] = useState<string>("");
   useEffect(() => {
@@ -119,7 +119,7 @@ export function useCanUserSendMessage(projectId?: string, userInContract?: boole
 
 // Hook para verificar se o usuário está vinculado a um contrato/projeto
 export function useUserInContract(projectId?: string) {
-  const { user } = useCurrentUser();
+  const { user } = useUserContext();
   const [userInContract, setUserInContract] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);  useEffect(() => {
     if (!user?.id || !projectId) {

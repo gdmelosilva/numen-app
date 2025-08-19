@@ -197,16 +197,16 @@ export default function CreateTicketPage() {
         });
       }
 
-      // Validação - para clientes, os campos devem estar auto-preenchidos
-      if (!form.project_id || !form.partner_id) {
-        if (isClientUser) {
-          const missingFields = [];
-          if (!form.partner_id) missingFields.push("parceiro");
-          if (!form.project_id) missingFields.push("projeto");
-          setError(`Erro interno: ${missingFields.join(" e ")} não ${missingFields.length > 1 ? 'foram definidos' : 'foi definido'} automaticamente.`);
-        } else {
-          setError("Selecione o projeto e o parceiro.");
-        }
+      // Validação - projeto é obrigatório
+      if (!form.project_id) {
+        setError("Selecione o projeto.");
+        setLoading(false);
+        return;
+      }
+
+      // Validação - parceiro é obrigatório (mas pode ser auto-selecionado)
+      if (!form.partner_id) {
+        setError("Erro interno: parceiro não foi definido. Tente selecionar o projeto novamente.");
         setLoading(false);
         return;
       }
@@ -304,8 +304,8 @@ export default function CreateTicketPage() {
   let useUserProjectsOptions = {};
   let shouldUseUserProjects = false;
   
-  if (!isClientUser) {
-    // Para usuários administrativos
+  if (!isClientUser && profile !== "admin-adm") {
+    // Para usuários administrativos (exceto admin-adm)
     if (profile === "functional-adm" && user?.id) {
       // Functional-adm: apenas projetos onde está alocado
       useUserProjectsOptions = {
@@ -322,46 +322,43 @@ export default function CreateTicketPage() {
         enabled: true
       };
       shouldUseUserProjects = true;
-    } else if (profile === "admin-adm" && form.partner_id) {
-      // Admin-adm: todos os projetos do parceiro selecionado
-      useUserProjectsOptions = {
-        partnerId: form.partner_id,
-        projectType: "AMS",
-        enabled: true
-      };
-      shouldUseUserProjects = true;
     }
   }
 
   // Hook para projetos do usuário (functional/manager) ou projetos filtrados por parceiro (admin)
   const { projects: userProjects } = useUserProjects(useUserProjectsOptions);
 
-  // Hook para projetos tradicionais (clientes)
+  // Hook para projetos tradicionais (clientes e admin-adm)
   let projectOptionsParams: Record<string, string> = {};
   
   if (isClientUser && user?.partner_id) {
     // Para clientes, usar o parceiro selecionado no formulário ou o parceiro do usuário
     const partnerId = form.partner_id || String(user.partner_id);
     projectOptionsParams = { partnerId, projectType: "AMS" };
+  } else if (profile === "admin-adm") {
+    // Para admin-adm, buscar todos os projetos AMS
+    projectOptionsParams = { projectType: "AMS" };
   }
   
-  const { projects: clientProjects } = useProjectOptions(isClientUser ? { ...projectOptionsParams, user } : { user });
+  const { projects: clientProjects } = useProjectOptions((isClientUser || profile === "admin-adm") ? { ...projectOptionsParams, user } : { user });
   
   // Determinar quais projetos usar com useMemo para evitar re-renders desnecessários
   const filteredProjects = useMemo(() => {
     if (isClientUser) {
+      return clientProjects.filter((p) => p.project_type === "AMS");
+    } else if (profile === "admin-adm") {
       return clientProjects.filter((p) => p.project_type === "AMS");
     } else if (shouldUseUserProjects) {
       return userProjects;
     } else {
       return [];
     }
-  }, [isClientUser, clientProjects, shouldUseUserProjects, userProjects]);
+  }, [isClientUser, profile, clientProjects, shouldUseUserProjects, userProjects]);
 
   // Para clientes, verificar se existe projeto AMS
   const hasAMSProject = isClientUser ? filteredProjects.length > 0 : true;
 
-  // Auto-selecionar projeto AMS para clientes
+  // Auto-selecionar projeto AMS para clientes (se só tiver um)
   React.useEffect(() => {
     if (isClientUser && filteredProjects.length === 1 && !form.project_id) {
       setForm((prev) => ({ ...prev, project_id: String(filteredProjects[0].id) }));
@@ -377,6 +374,7 @@ export default function CreateTicketPage() {
         filteredProjectsCount: filteredProjects.length,
         partner_id: form.partner_id,
         project_id: form.project_id,
+        isAdminAdm: profile === "admin-adm",
         filteredProjects: filteredProjects.map(p => ({
           id: p.id,
           name: p.name,
@@ -436,8 +434,8 @@ export default function CreateTicketPage() {
                 />
               </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Campo Parceiro - apenas para admin-adm e clientes */}
-              {(profile === "admin-adm" || isClientUser) && (
+              {/* Campo Parceiro - apenas para clientes */}
+              {isClientUser && (
                 <div>
                   <label htmlFor="partner_id" className="block text-sm font-medium mb-1">
                     Parceiro <span className="text-destructive">*</span>
@@ -445,7 +443,7 @@ export default function CreateTicketPage() {
                   <Select
                     value={form.partner_id}
                     onValueChange={handlePartnerSelect}
-                    disabled={loading || isClientUser || (profile !== "admin-adm")}
+                    disabled={loading || isClientUser}
                   >
                     <SelectTrigger className="w-full" id="partner_id">
                       <SelectValue placeholder="Selecione o parceiro" className="truncate" />
@@ -471,7 +469,6 @@ export default function CreateTicketPage() {
                   onValueChange={handleProjectSelect}
                   disabled={
                     loading ||
-                    (profile === "admin-adm" && !form.partner_id) ||
                     (isClientUser && filteredProjects.length <= 1) ||
                     filteredProjects.length === 0
                   }
