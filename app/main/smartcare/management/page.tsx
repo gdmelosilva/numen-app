@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -85,10 +86,22 @@ export default function TicketManagementPage() {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
   const [createdByDialogOpen, setCreatedByDialogOpen] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [moduleDialogOpen, setModuleDialogOpen] = useState(false);
+  const [priorityDialogOpen, setPriorityDialogOpen] = useState(false);
+  const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
+  const [selectedPriorityIds, setSelectedPriorityIds] = useState<string[]>([]);
   const [partnerSearchTerm, setPartnerSearchTerm] = useState("");
   const [projectSearchTerm, setProjectSearchTerm] = useState("");
   const [resourceSearchTerm, setResourceSearchTerm] = useState("");
   const [createdBySearchTerm, setCreatedBySearchTerm] = useState("");
+  const [statusSearchTerm, setStatusSearchTerm] = useState("");
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  const [moduleSearchTerm, setModuleSearchTerm] = useState("");
+  const [prioritySearchTerm, setPrioritySearchTerm] = useState("");
   const [exportPopoverOpen, setExportPopoverOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
@@ -578,8 +591,140 @@ export default function TicketManagementPage() {
     loadUserProjects();
   }, [user, profile, fetchUserProjects]);
 
+  // Sincronizar status selecionados com o filtro atual
+  useEffect(() => {
+    if (pendingFilters.status_id) {
+      const statusIds = pendingFilters.status_id.split(',').filter(Boolean);
+      setSelectedStatusIds(statusIds);
+    } else {
+      setSelectedStatusIds([]);
+    }
+  }, [pendingFilters.status_id]);
+
+  // Sincronizar categorias selecionadas com o filtro atual
+  useEffect(() => {
+    if (pendingFilters.category_id) {
+      const categoryIds = pendingFilters.category_id.split(',').filter(Boolean);
+      setSelectedCategoryIds(categoryIds);
+    } else {
+      setSelectedCategoryIds([]);
+    }
+  }, [pendingFilters.category_id]);
+
+  // Sincronizar módulos selecionados com o filtro atual
+  useEffect(() => {
+    if (pendingFilters.module_id) {
+      const moduleIds = pendingFilters.module_id.split(',').filter(Boolean);
+      setSelectedModuleIds(moduleIds);
+    } else {
+      setSelectedModuleIds([]);
+    }
+  }, [pendingFilters.module_id]);
+
+  // Sincronizar prioridades selecionadas com o filtro atual
+  useEffect(() => {
+    if (pendingFilters.priority_id) {
+      const priorityIds = pendingFilters.priority_id.split(',').filter(Boolean);
+      setSelectedPriorityIds(priorityIds);
+    } else {
+      setSelectedPriorityIds([]);
+    }
+  }, [pendingFilters.priority_id]);
+
   const handleFilterChange = (key: keyof Filters, value: string) => {
     setPendingFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleStatusToggle = (statusId: string) => {
+    const updatedStatusIds = selectedStatusIds.includes(statusId)
+      ? selectedStatusIds.filter(id => id !== statusId)
+      : [...selectedStatusIds, statusId];
+    
+    setSelectedStatusIds(updatedStatusIds);
+    
+    // Atualizar o filtro com os status selecionados
+    const statusFilter = updatedStatusIds.length > 0 ? updatedStatusIds.join(',') : '';
+    handleFilterChange('status_id', statusFilter);
+  };
+
+  const handleSelectAllStatuses = () => {
+    const allStatusIds = ticketStatuses.map(status => String(status.id));
+    setSelectedStatusIds(allStatusIds);
+    handleFilterChange('status_id', allStatusIds.join(','));
+  };
+
+  const handleClearAllStatuses = () => {
+    setSelectedStatusIds([]);
+    handleFilterChange('status_id', '');
+  };
+
+  // Funções para categoria
+  const handleCategoryToggle = (categoryId: string) => {
+    const updatedCategoryIds = selectedCategoryIds.includes(categoryId)
+      ? selectedCategoryIds.filter(id => id !== categoryId)
+      : [...selectedCategoryIds, categoryId];
+    
+    setSelectedCategoryIds(updatedCategoryIds);
+    
+    const categoryFilter = updatedCategoryIds.length > 0 ? updatedCategoryIds.join(',') : '';
+    handleFilterChange('category_id', categoryFilter);
+  };
+
+  const handleSelectAllCategories = () => {
+    const allCategoryIds = categories.map(category => String(category.id));
+    setSelectedCategoryIds(allCategoryIds);
+    handleFilterChange('category_id', allCategoryIds.join(','));
+  };
+
+  const handleClearAllCategories = () => {
+    setSelectedCategoryIds([]);
+    handleFilterChange('category_id', '');
+  };
+
+  // Funções para módulo
+  const handleModuleToggle = (moduleId: string) => {
+    const updatedModuleIds = selectedModuleIds.includes(moduleId)
+      ? selectedModuleIds.filter(id => id !== moduleId)
+      : [...selectedModuleIds, moduleId];
+    
+    setSelectedModuleIds(updatedModuleIds);
+    
+    const moduleFilter = updatedModuleIds.length > 0 ? updatedModuleIds.join(',') : '';
+    handleFilterChange('module_id', moduleFilter);
+  };
+
+  const handleSelectAllModules = () => {
+    const allModuleIds = modules.map(module => String(module.id));
+    setSelectedModuleIds(allModuleIds);
+    handleFilterChange('module_id', allModuleIds.join(','));
+  };
+
+  const handleClearAllModules = () => {
+    setSelectedModuleIds([]);
+    handleFilterChange('module_id', '');
+  };
+
+  // Funções para prioridade
+  const handlePriorityToggle = (priorityId: string) => {
+    const updatedPriorityIds = selectedPriorityIds.includes(priorityId)
+      ? selectedPriorityIds.filter(id => id !== priorityId)
+      : [...selectedPriorityIds, priorityId];
+    
+    setSelectedPriorityIds(updatedPriorityIds);
+    
+    const priorityFilter = updatedPriorityIds.length > 0 ? updatedPriorityIds.join(',') : '';
+    handleFilterChange('priority_id', priorityFilter);
+  };
+
+  const handleSelectAllPriorities = () => {
+    const allPriorityIds = priorities.map(priority => String(priority.id));
+    setSelectedPriorityIds(allPriorityIds);
+    handleFilterChange('priority_id', allPriorityIds.join(','));
+  };
+
+  const handleClearAllPriorities = () => {
+    setSelectedPriorityIds([]);
+    handleFilterChange('priority_id', '');
   };
 
   const handleSearch = () => {
@@ -746,24 +891,86 @@ export default function TicketManagementPage() {
             displayValue = project?.projectDesc || project?.name || value;
             break;
           case "category_id":
-            const category = categories.find(c => c.id === value);
-            displayValue = category?.name || value;
+            if (value && value.includes(',')) {
+              // Múltiplas categorias selecionadas
+              const categoryIds = value.split(',').filter(Boolean);
+              const categoryNames = categoryIds
+                .map(id => categories.find(c => String(c.id) === id)?.name)
+                .filter(Boolean);
+              displayValue = categoryNames.length > 0 
+                ? categoryNames.length === 1 
+                  ? categoryNames[0] 
+                  : `${categoryNames.length} categorias`
+                : value;
+            } else if (value) {
+              // Categoria única
+              const category = categories.find(c => String(c.id) === value);
+              displayValue = category?.name || value;
+            } else {
+              displayValue = value || "";
+            }
             break;
           case "type_id":
             const type = types.find(t => t.id === value);
             displayValue = type?.name || value;
             break;
           case "module_id":
-            const moduleItem = modules.find(m => m.id === value);
-            displayValue = moduleItem?.name || value;
+            if (value && value.includes(',')) {
+              // Múltiplos módulos selecionados
+              const moduleIds = value.split(',').filter(Boolean);
+              const moduleNames = moduleIds
+                .map(id => modules.find(m => String(m.id) === id)?.name)
+                .filter(Boolean);
+              displayValue = moduleNames.length > 0 
+                ? moduleNames.length === 1 
+                  ? moduleNames[0] 
+                  : `${moduleNames.length} módulos`
+                : value;
+            } else if (value) {
+              // Módulo único
+              const moduleItem = modules.find(m => String(m.id) === value);
+              displayValue = moduleItem?.name || value;
+            } else {
+              displayValue = value || "";
+            }
             break;
           case "status_id":
-            const status = ticketStatuses.find(s => String(s.id) === value);
-            displayValue = status?.name || value;
+            if (value && value.includes(',')) {
+              // Múltiplos status selecionados
+              const statusIds = value.split(',').filter(Boolean);
+              const statusNames = statusIds
+                .map(id => ticketStatuses.find(s => String(s.id) === id)?.name)
+                .filter(Boolean);
+              displayValue = statusNames.length > 0 
+                ? statusNames.length === 1 
+                  ? statusNames[0] 
+                  : `${statusNames.length} status`
+                : value;
+            } else {
+              // Status único
+              const status = ticketStatuses.find(s => String(s.id) === value);
+              displayValue = status?.name || value;
+            }
             break;
           case "priority_id":
-            const priority = priorities.find(p => p.id === value);
-            displayValue = priority?.name || value;
+            if (value && value.includes(',')) {
+              // Múltiplas prioridades selecionadas
+              const priorityIds = value.split(',').filter(Boolean);
+              const priorityNames = priorityIds
+                .map(id => priorities.find(p => String(p.id) === id)?.name)
+                .filter(Boolean);
+              displayValue = priorityNames.length > 0 
+                ? priorityNames.length === 1 
+                  ? priorityNames[0] 
+                  : `${priorityNames.length} prioridades`
+                : value;
+            } else if (value) {
+              // Prioridade única
+              const priority = priorities.find(p => String(p.id) === value);
+              displayValue = priority?.name || value;
+            } else {
+              displayValue = value || "";
+            }
             break;
           case "resource_user_id":
             const user = resourceUsers.find(u => u.id === value);
@@ -873,6 +1080,54 @@ export default function TicketManagementPage() {
       const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
       const email = (user.email || '').toLowerCase();
       return fullName.includes(searchLower) || email.includes(searchLower);
+    });
+  };
+
+  const getFilteredStatuses = () => {
+    if (!statusSearchTerm.trim()) {
+      return ticketStatuses;
+    }
+    
+    const searchLower = statusSearchTerm.toLowerCase().trim();
+    return ticketStatuses.filter(status => {
+      const name = (status.name || '').toLowerCase();
+      return name.includes(searchLower);
+    });
+  };
+
+  const getFilteredCategories = () => {
+    if (!categorySearchTerm.trim()) {
+      return categories;
+    }
+    
+    const searchLower = categorySearchTerm.toLowerCase().trim();
+    return categories.filter(category => {
+      const name = (category.name || '').toLowerCase();
+      return name.includes(searchLower);
+    });
+  };
+
+  const getFilteredModules = () => {
+    if (!moduleSearchTerm.trim()) {
+      return modules;
+    }
+    
+    const searchLower = moduleSearchTerm.toLowerCase().trim();
+    return modules.filter(module => {
+      const name = (module.name || '').toLowerCase();
+      return name.includes(searchLower);
+    });
+  };
+
+  const getFilteredPriorities = () => {
+    if (!prioritySearchTerm.trim()) {
+      return priorities;
+    }
+    
+    const searchLower = prioritySearchTerm.toLowerCase().trim();
+    return priorities.filter(priority => {
+      const name = (priority.name || '').toLowerCase();
+      return name.includes(searchLower);
     });
   };
 
@@ -1092,23 +1347,107 @@ export default function TicketManagementPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category_id">Categoria</Label>
-                  <Select
-                    value={pendingFilters.category_id || "all"}
-                    onValueChange={(value) => handleFilterChange("category_id", value === "all" ? "" : value)}
-                    disabled={loading || optionsLoading}
-                  >
-                    <SelectTrigger className="w-full max-w-full">
-                      <SelectValue placeholder={optionsLoading ? "Carregando..." : "Selecione uma categoria"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as categorias</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1">
+                    <Input
+                      id="category_id"
+                      placeholder="Selecione categorias"
+                      value={selectedCategoryIds.length > 0 ? 
+                        selectedCategoryIds.length === 1 
+                          ? categories.find(c => String(c.id) === selectedCategoryIds[0])?.name || ""
+                          : `${selectedCategoryIds.length} categorias selecionadas`
+                        : ""
+                      }
+                      disabled={true}
+                      className="cursor-pointer"
+                    />
+                    <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          disabled={loading || optionsLoading}
+                        >
+                          <SquareMousePointer className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Selecionar Categorias</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Buscar categoria..."
+                              value={categorySearchTerm}
+                              onChange={(e) => setCategorySearchTerm(e.target.value)}
+                              className="pl-8"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleSelectAllCategories}
+                            >
+                              Selecionar Todos
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleClearAllCategories}
+                            >
+                              Limpar Todos
+                            </Button>
+                          </div>
+                          <div className="space-y-1 max-h-80 overflow-y-auto">
+                            {optionsLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              </div>
+                            ) : (
+                              getFilteredCategories().map((category) => (
+                                <div
+                                  key={category.id}
+                                  className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 ${
+                                    selectedCategoryIds.includes(String(category.id)) 
+                                      ? 'bg-primary/10 border border-primary/20' 
+                                      : 'border border-transparent'
+                                  }`}
+                                  onClick={() => handleCategoryToggle(String(category.id))}
+                                >
+                                  <Checkbox
+                                    checked={selectedCategoryIds.includes(String(category.id))}
+                                    onCheckedChange={() => handleCategoryToggle(String(category.id))}
+                                  />
+                                  <span className="flex-1">{category.name}</span>
+                                </div>
+                              ))
+                            )}
+                            {!optionsLoading && getFilteredCategories().length === 0 && categorySearchTerm && (
+                              <div className="text-center text-muted-foreground py-4">
+                                Nenhuma categoria encontrada
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2 border-t">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setCategoryDialogOpen(false);
+                                setCategorySearchTerm("");
+                              }}
+                            >
+                              Fechar
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
                 {/* <div className="space-y-2">
                   <Label htmlFor="type_id">Tipo</Label>
@@ -1132,63 +1471,315 @@ export default function TicketManagementPage() {
                 </div> */}
                 <div className="space-y-2">
                   <Label htmlFor="module_id">Módulo</Label>
-                  <Select
-                    value={pendingFilters.module_id || "all"}
-                    onValueChange={(value) => handleFilterChange("module_id", value === "all" ? "" : value)}
-                    disabled={loading || optionsLoading}
-                  >
-                    <SelectTrigger className="w-full max-w-full">
-                      <SelectValue placeholder={optionsLoading ? "Carregando..." : "Selecione um módulo"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os módulos</SelectItem>
-                      {modules.map((module) => (
-                        <SelectItem key={module.id} value={module.id}>
-                          {module.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1">
+                    <Input
+                      id="module_id"
+                      placeholder="Selecione módulos"
+                      value={selectedModuleIds.length > 0 ? 
+                        selectedModuleIds.length === 1 
+                          ? modules.find(m => String(m.id) === selectedModuleIds[0])?.name || ""
+                          : `${selectedModuleIds.length} módulos selecionados`
+                        : ""
+                      }
+                      disabled={true}
+                      className="cursor-pointer"
+                    />
+                    <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          disabled={loading || optionsLoading}
+                        >
+                          <SquareMousePointer className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Selecionar Módulos</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Buscar módulo..."
+                              value={moduleSearchTerm}
+                              onChange={(e) => setModuleSearchTerm(e.target.value)}
+                              className="pl-8"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleSelectAllModules}
+                            >
+                              Selecionar Todos
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleClearAllModules}
+                            >
+                              Limpar Todos
+                            </Button>
+                          </div>
+                          <div className="space-y-1 max-h-80 overflow-y-auto">
+                            {optionsLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              </div>
+                            ) : (
+                              getFilteredModules().map((module) => (
+                                <div
+                                  key={module.id}
+                                  className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 ${
+                                    selectedModuleIds.includes(String(module.id)) 
+                                      ? 'bg-primary/10 border border-primary/20' 
+                                      : 'border border-transparent'
+                                  }`}
+                                  onClick={() => handleModuleToggle(String(module.id))}
+                                >
+                                  <Checkbox
+                                    checked={selectedModuleIds.includes(String(module.id))}
+                                    onCheckedChange={() => handleModuleToggle(String(module.id))}
+                                  />
+                                  <span className="flex-1">{module.name}</span>
+                                </div>
+                              ))
+                            )}
+                            {!optionsLoading && getFilteredModules().length === 0 && moduleSearchTerm && (
+                              <div className="text-center text-muted-foreground py-4">
+                                Nenhum módulo encontrado
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2 border-t">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setModuleDialogOpen(false);
+                                setModuleSearchTerm("");
+                              }}
+                            >
+                              Fechar
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status_id">Status</Label>
-                  <Select
-                    value={pendingFilters.status_id || "all"}
-                    onValueChange={(value) => handleFilterChange("status_id", value === "all" ? "" : value)}
-                    disabled={loading || statusesLoading}
-                  >
-                    <SelectTrigger className="w-full max-w-full">
-                      <SelectValue placeholder={statusesLoading ? "Carregando..." : "Selecione um status"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os status</SelectItem>
-                      {ticketStatuses.map((status) => (
-                        <SelectItem key={status.id} value={String(status.id)}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1">
+                    <Input
+                      id="status_id"
+                      placeholder="Selecione status"
+                      value={selectedStatusIds.length > 0 ? 
+                        selectedStatusIds.length === 1 
+                          ? ticketStatuses.find(s => String(s.id) === selectedStatusIds[0])?.name || ""
+                          : `${selectedStatusIds.length} status selecionados`
+                        : ""
+                      }
+                      disabled={true}
+                      className="cursor-pointer"
+                    />
+                    <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          disabled={loading || statusesLoading}
+                        >
+                          <SquareMousePointer className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Selecionar Status</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Buscar status..."
+                              value={statusSearchTerm}
+                              onChange={(e) => setStatusSearchTerm(e.target.value)}
+                              className="pl-8"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleSelectAllStatuses}
+                            >
+                              Selecionar Todos
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleClearAllStatuses}
+                            >
+                              Limpar Todos
+                            </Button>
+                          </div>
+                          <div className="space-y-1 max-h-80 overflow-y-auto">
+                            {statusesLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              </div>
+                            ) : (
+                              getFilteredStatuses().map((status) => (
+                                <div
+                                  key={status.id}
+                                  className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 ${
+                                    selectedStatusIds.includes(String(status.id)) 
+                                      ? 'bg-primary/10 border border-primary/20' 
+                                      : 'border border-transparent'
+                                  }`}
+                                  onClick={() => handleStatusToggle(String(status.id))}
+                                >
+                                  <Checkbox
+                                    checked={selectedStatusIds.includes(String(status.id))}
+                                    onCheckedChange={() => handleStatusToggle(String(status.id))}
+                                  />
+                                  <span className="flex-1">{status.name}</span>
+                                </div>
+                              ))
+                            )}
+                            {!statusesLoading && getFilteredStatuses().length === 0 && statusSearchTerm && (
+                              <div className="text-center text-muted-foreground py-4">
+                                Nenhum status encontrado
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2 border-t">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setStatusDialogOpen(false);
+                                setStatusSearchTerm("");
+                              }}
+                            >
+                              Fechar
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="priority_id">Prioridade</Label>
-                  <Select
-                    value={pendingFilters.priority_id || "all"}
-                    onValueChange={(value) => handleFilterChange("priority_id", value === "all" ? "" : value)}
-                    disabled={loading || optionsLoading}
-                  >
-                    <SelectTrigger className="w-full max-w-full">
-                      <SelectValue placeholder={optionsLoading ? "Carregando..." : "Selecione uma prioridade"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as prioridades</SelectItem>
-                      {priorities.map((priority) => (
-                        <SelectItem key={priority.id} value={priority.id}>
-                          {priority.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1">
+                    <Input
+                      id="priority_id"
+                      placeholder="Selecione prioridades"
+                      value={selectedPriorityIds.length > 0 ? 
+                        selectedPriorityIds.length === 1 
+                          ? priorities.find(p => String(p.id) === selectedPriorityIds[0])?.name || ""
+                          : `${selectedPriorityIds.length} prioridades selecionadas`
+                        : ""
+                      }
+                      disabled={true}
+                      className="cursor-pointer"
+                    />
+                    <Dialog open={priorityDialogOpen} onOpenChange={setPriorityDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          disabled={loading || optionsLoading}
+                        >
+                          <SquareMousePointer className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Selecionar Prioridades</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Buscar prioridade..."
+                              value={prioritySearchTerm}
+                              onChange={(e) => setPrioritySearchTerm(e.target.value)}
+                              className="pl-8"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleSelectAllPriorities}
+                            >
+                              Selecionar Todos
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleClearAllPriorities}
+                            >
+                              Limpar Todos
+                            </Button>
+                          </div>
+                          <div className="space-y-1 max-h-80 overflow-y-auto">
+                            {optionsLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              </div>
+                            ) : (
+                              getFilteredPriorities().map((priority) => (
+                                <div
+                                  key={priority.id}
+                                  className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 ${
+                                    selectedPriorityIds.includes(String(priority.id)) 
+                                      ? 'bg-primary/10 border border-primary/20' 
+                                      : 'border border-transparent'
+                                  }`}
+                                  onClick={() => handlePriorityToggle(String(priority.id))}
+                                >
+                                  <Checkbox
+                                    checked={selectedPriorityIds.includes(String(priority.id))}
+                                    onCheckedChange={() => handlePriorityToggle(String(priority.id))}
+                                  />
+                                  <span className="flex-1">{priority.name}</span>
+                                </div>
+                              ))
+                            )}
+                            {!optionsLoading && getFilteredPriorities().length === 0 && prioritySearchTerm && (
+                              <div className="text-center text-muted-foreground py-4">
+                                Nenhuma prioridade encontrada
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2 border-t">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setPriorityDialogOpen(false);
+                                setPrioritySearchTerm("");
+                              }}
+                            >
+                              Fechar
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="partner_id">Parceiro</Label>

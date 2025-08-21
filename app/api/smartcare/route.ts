@@ -212,19 +212,67 @@ export async function GET(req: NextRequest) {
     query = query.ilike("description", `%${searchParams.get("description")}%`);
   }
   if (searchParams.get("category_id")) {
-    query = query.eq("category_id", searchParams.get("category_id"));
+    const categoryIds = searchParams.get("category_id");
+    if (categoryIds) {
+      // Verificar se há múltiplas categorias separadas por vírgula
+      if (categoryIds.includes(',')) {
+        const categoryIdArray = categoryIds.split(',').filter(Boolean).map(id => id.trim());
+        if (categoryIdArray.length > 0) {
+          query = query.in("category_id", categoryIdArray);
+        }
+      } else {
+        // Categoria única
+        query = query.eq("category_id", categoryIds);
+      }
+    }
   }
   if (searchParams.get("type_id")) {
     query = query.eq("type_id", searchParams.get("type_id"));
   }
   if (searchParams.get("module_id")) {
-    query = query.eq("module_id", searchParams.get("module_id"));
+    const moduleIds = searchParams.get("module_id");
+    if (moduleIds) {
+      // Verificar se há múltiplos módulos separados por vírgula
+      if (moduleIds.includes(',')) {
+        const moduleIdArray = moduleIds.split(',').filter(Boolean).map(id => id.trim());
+        if (moduleIdArray.length > 0) {
+          query = query.in("module_id", moduleIdArray);
+        }
+      } else {
+        // Módulo único
+        query = query.eq("module_id", moduleIds);
+      }
+    }
   }
   if (searchParams.get("status_id")) {
-    query = query.eq("status_id", searchParams.get("status_id"));
+    const statusIds = searchParams.get("status_id");
+    if (statusIds) {
+      // Verificar se há múltiplos status separados por vírgula
+      if (statusIds.includes(',')) {
+        const statusIdArray = statusIds.split(',').filter(Boolean).map(id => id.trim());
+        if (statusIdArray.length > 0) {
+          query = query.in("status_id", statusIdArray);
+        }
+      } else {
+        // Status único
+        query = query.eq("status_id", statusIds);
+      }
+    }
   }
   if (searchParams.get("priority_id")) {
-    query = query.eq("priority_id", searchParams.get("priority_id"));
+    const priorityIds = searchParams.get("priority_id");
+    if (priorityIds) {
+      // Verificar se há múltiplas prioridades separadas por vírgula
+      if (priorityIds.includes(',')) {
+        const priorityIdArray = priorityIds.split(',').filter(Boolean).map(id => id.trim());
+        if (priorityIdArray.length > 0) {
+          query = query.in("priority_id", priorityIdArray);
+        }
+      } else {
+        // Prioridade única
+        query = query.eq("priority_id", priorityIds);
+      }
+    }
   }
   
   // Filtro de parceiro - validar permissões e aplicar agregação
