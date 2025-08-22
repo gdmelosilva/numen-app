@@ -385,7 +385,7 @@ export async function POST(req: NextRequest) {
     const { error: ticketUpdateError } = await supabase
       .from("ticket")
       .update({ 
-        status_id: 3, // "Enc. para o Atendente"
+        status_id: 13, // "Enc. para o Atendente"
         updated_by: user.id 
       })
       .eq("id", ticket_id);
