@@ -137,11 +137,14 @@ export function LinkResourceDialog({ open, onOpenChange, ticket, onSuccess }: Li
       });
 
       // 3. Atualizar status do ticket para "Em Atendimento" (status_id: 3)
-      await fetch("/api/tickets", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticket_id: ticket.id, status_id: "3" })
-      });
+      // Somente se o status atual for 1 (ex.: "Aberto"). Caso seja diferente de 1, não alterar.
+      if (ticket.status_id === 1) {
+        await fetch("/api/tickets", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticket_id: ticket.id, status_id: "3" })
+        });
+      }
 
       // Fechar dialog e atualizar lista
       onOpenChange(false);

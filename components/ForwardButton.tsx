@@ -15,12 +15,14 @@ export function ForwardButton({ ticketId, userId, userEmail, userName, ticket, o
   const { user: currentUser } = useCurrentUser();
   const handleForward = async () => {
     try {
-      // Atualiza status do ticket
-      await fetch("/api/tickets", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticket_id: ticketId, status_id: "3" })
-      });
+      // Atualiza status do ticket para "Em Atendimento" (3) somente se o status atual for 1
+      if (ticket?.status_id === 1) {
+        await fetch("/api/tickets", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticket_id: ticketId, status_id: "3" })
+        });
+      }
       
       // Torna usuário responsável pelo ticket
       await fetch("/api/ticket-resources", {
