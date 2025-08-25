@@ -311,6 +311,7 @@ export function exportTimesheetReport(
       project?: { projectName: string };
       ticket_id?: string;
       ticket_title?: string;
+      ticket_external_id?: string;
       appoint_start?: string;
       appoint_end?: string;
     }>;
@@ -347,7 +348,7 @@ export function exportTimesheetReport(
         exportData.push({
           Data: formattedDate,
           Projeto: child.project?.projectName || '-',
-          'ID Ticket': child.ticket_id || '-',
+          'ID Ticket': child.ticket_external_id || '-',
           'Título Ticket': child.ticket_title || '-',
           'Horas': formattedHours,
           'Hora Inicial': child.appoint_start || '-',
