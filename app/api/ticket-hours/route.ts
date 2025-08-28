@@ -141,7 +141,16 @@ export async function GET(req: NextRequest) {
         *, 
         project:project_id(projectName, projectDesc),
         user:user_id(first_name, last_name),
-        ticket:ticket_id(title, type_id, external_id, project_id)
+        ticket:ticket_id(
+          title, 
+          type_id, 
+          external_id, 
+          project_id,
+          ref_external_id,
+          status:status_id(name),
+          module:module_id(name),
+          category:category_id(name)
+        )
       `);
     
     // Por padrão, filtrar registros não deletados

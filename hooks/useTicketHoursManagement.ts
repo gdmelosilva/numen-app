@@ -33,6 +33,10 @@ export interface TicketHour {
     title: string;
     type_id: number;
     external_id: string;
+    ref_external_id?: string;
+    status?: { name: string };
+    module?: { name: string };
+    category?: { name: string };
   };
 }
 
@@ -115,7 +119,15 @@ export function useTicketHoursManagement() {
         user_name: row.user ? `${row.user.first_name} ${row.user.last_name}` : undefined,
         ticket_title: row.ticket ? row.ticket.title : undefined,
         ticket_type_id: row.ticket ? row.ticket.type_id : undefined,
-        ticket_external_id: row.ticket ? row.ticket.external_id : undefined
+        ticket_external_id: row.ticket ? row.ticket.external_id : undefined,
+        // Adicionar as novas informações do ticket
+        ticket: row.ticket ? {
+          ...row.ticket,
+          ref_external_id: row.ticket.ref_external_id,
+          status: row.ticket.status,
+          module: row.ticket.module,
+          category: row.ticket.category
+        } : undefined
       }));
       
       // Agrupa apenas por appoint_date e is_approved (todos os usuários juntos por data)
@@ -161,6 +173,8 @@ export function useTicketHoursManagement() {
           appoint_start: user.is_client ? undefined : row.appoint_start, // Não incluir para clientes
           appoint_end: user.is_client ? undefined : row.appoint_end, // Não incluir para clientes
           user_id: user.is_client ? undefined : row.user_id, // Incluir user_id para não-clientes
+          // Incluir as informações completas do ticket
+          ticket: row.ticket
         });
       });
       

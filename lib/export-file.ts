@@ -314,6 +314,12 @@ export function exportTimesheetReport(
       ticket_external_id?: string;
       appoint_start?: string;
       appoint_end?: string;
+      ticket?: {
+        status?: { name: string };
+        ref_external_id?: string;
+        module?: { name: string };
+        category?: { name: string };
+      };
     }>;
   }>, 
   filename: string = "relatorio-horas-apontamento",
@@ -327,11 +333,15 @@ export function exportTimesheetReport(
     Projeto: string;
     'ID Ticket': string;
     'Título Ticket': string;
-    'Horas': string;
+    'Horas': number;
     'Hora Inicial': string;
     'Hora Final': string;
     'Usuário': string;
     'Status': string;
+    'Status do Ticket': string;
+    'Identificação Externa': string;
+    'Módulo': string;
+    'Categoria Chamado': string;
   }> = [];
 
   data.forEach(row => {
@@ -341,20 +351,23 @@ export function exportTimesheetReport(
         const date = new Date(child.appoint_date);
         const formattedDate = date.toLocaleDateString('pt-BR');
         
-        // Converter minutos para horas
+        // Converter minutos para horas (como número)
         const hours = (child.total_minutes || 0) / 60;
-        const formattedHours = hours.toFixed(2).replace('.', ',');
         
         exportData.push({
           Data: formattedDate,
           Projeto: child.project?.projectName || '-',
           'ID Ticket': child.ticket_external_id || '-',
           'Título Ticket': child.ticket_title || '-',
-          'Horas': formattedHours,
+          'Horas': Number(hours.toFixed(2)),
           'Hora Inicial': child.appoint_start || '-',
           'Hora Final': child.appoint_end || '-',
           'Usuário': child.user_name || '-',
-          'Status': child.is_approved ? 'Aprovado' : 'Pendente'
+          'Status': child.is_approved ? 'Aprovado' : 'Pendente',
+          'Status do Ticket': child.ticket?.status?.name || '-',
+          'Identificação Externa': child.ticket?.ref_external_id || '-',
+          'Módulo': child.ticket?.module?.name || '-',
+          'Categoria Chamado': child.ticket?.category?.name || '-'
         });
       });
     }

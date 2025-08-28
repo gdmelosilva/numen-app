@@ -129,7 +129,9 @@ const TimeSheetManagementPage = () => {
 					ticket_type_id: child.ticket_type_id,
 					ticket_external_id: child.ticket_external_id,
 					appoint_start: parseUTCTimeAsLocal(child.appoint_start),
-					appoint_end: parseUTCTimeAsLocal(child.appoint_end)
+					appoint_end: parseUTCTimeAsLocal(child.appoint_end),
+					// Adicionar o objeto ticket completo para a função de export
+					ticket: child.ticket
 				}))
 		}))
 		.filter(row => row.children && row.children.length > 0); // Remover dias sem registros válidos
