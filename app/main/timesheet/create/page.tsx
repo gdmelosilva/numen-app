@@ -238,6 +238,16 @@ const TimeSheetCreatePage = () => {
       return
     }
 
+    // Validar se as datas não são anteriores a 01/09/2025
+    const minimumDate = new Date('2025-09-01')
+    const startDate = new Date(formData.startDate)
+    const endDate = new Date(formData.endDate)
+    
+    if (startDate < minimumDate || endDate < minimumDate) {
+      toast.error('Não é permitido apontar horas em datas anteriores a 01/09/2025')
+      return
+    }
+
     const startDateTime = new Date(`${formData.startDate}T${formData.startTime}:00`)
     const endDateTime = new Date(`${formData.startDate}T${formData.endTime}:00`)
     const minutes = Math.round((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60))
@@ -414,6 +424,7 @@ const TimeSheetCreatePage = () => {
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 className="pl-10"
+                min="2025-09-01"
               />
               <CalendarIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             </div>
@@ -429,6 +440,7 @@ const TimeSheetCreatePage = () => {
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 className="pl-10"
+                min="2025-09-01"
               />
               <CalendarIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             </div>

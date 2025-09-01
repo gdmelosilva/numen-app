@@ -39,6 +39,16 @@ const TicketHourDialogButton: React.FC<TicketHourDialogButtonProps> = ({ onSave,
 
   function handleSave() {
     if (!appointStart || !appointEnd) return;
+    
+    // Validar se a data não é anterior a 01/09/2025
+    const selectedDate = new Date(appointDate);
+    const minimumDate = new Date('2025-09-01');
+    
+    if (selectedDate < minimumDate) {
+      alert('Não é permitido apontar horas em datas anteriores a 01/09/2025.');
+      return;
+    }
+    
     const minutes = getMinutesBetween(appointStart, appointEnd);
     if (minutes <= 0) return;
     onSave({
@@ -69,6 +79,7 @@ const TicketHourDialogButton: React.FC<TicketHourDialogButtonProps> = ({ onSave,
                 type="date"
                 value={appointDate}
                 onChange={e => setAppointDate(e.target.value)}
+                min="2025-09-01"
               />
             </div>
             <div>

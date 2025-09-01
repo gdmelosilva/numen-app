@@ -44,7 +44,19 @@ export async function POST(req: NextRequest) {
 
     if (!userData.is_active) {
       return NextResponse.json({ error: "Usuário está suspenso/inativo e não pode apontar horas." }, { status: 403 });
-    }    // 2. Verificar se o usuário está vinculado ao projeto
+    }
+
+    // 2. Verificar se a data de apontamento não é anterior a 01/09/2025
+    const appointDate = new Date(appoint_date);
+    const minimumDate = new Date('2025-09-01T00:00:00Z');
+    
+    if (appointDate < minimumDate) {
+      return NextResponse.json({ 
+        error: "Não é permitido apontar horas em datas anteriores a 01/09/2025." 
+      }, { status: 400 });
+    }
+
+    // 3. Verificar se o usuário está vinculado ao projeto
     const { data: projectResources, error: projectResourcesError } = await supabase
       .from('project_resources')
       .select('user_id, is_suspended')
@@ -64,7 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Usuário está suspenso neste projeto e não pode apontar horas." }, { status: 403 });
     }
 
-    // 3. Verificar se as horas do contrato foram extrapoladas
+    // 4. Verificar se as horas do contrato foram extrapoladas
     const { data: contractData, error: contractError } = await supabase
       .from('project')
       .select('hours_max')
