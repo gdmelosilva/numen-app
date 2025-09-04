@@ -8,120 +8,49 @@ const TEST_MODE = false; // Altere para false para desabilitar o modo de teste
 const TEST_EMAIL = "guilherme.rocha@numenit.com"; // Substitua pelo seu email para testes
 // ========================================================
 
-// Helper reutilizável para identificar quem deve receber notificações/emails
-async function getRecipientsForTicket({
+// Helper reutilizável para identificar quem deve receber notificações/emails de atualização
+async function getRecipientsForTicketUpdate({
+  ticketId,
   projectId,
-  moduleId,
-  categoryName,
 }: {
+  ticketId: string;
   projectId: string;
-  moduleId: number;
-  categoryName: string | null;
 }): Promise<string[]> {
   const supabase = await createClient();
   const recipients = new Set<string>(); // Usar Set para evitar duplicatas
-  const isIncident = categoryName === 'Incidente';
 
-  console.log('DEBUG: Buscando recipients para:', { projectId, moduleId, categoryName, isIncident });
+  console.log('DEBUG: Buscando recipients para atualização do ticket:', { ticketId, projectId });
 
-  // 1. Buscar gerentes administrativos do projeto
-  const { data: projectResources, error: resourceError } = await supabase
-    .from('project_resources')
-    .select(`
-      user_id,
-      user_functional,
-      user!inner(
-        id,
-        email,
-        first_name,
-        last_name,
-        is_client,
-        role
-      )
-    `)
-    .eq('project_id', projectId)
-    .eq('user_functional', 3)
-    .eq('is_suspended', false);
+  // 1. Buscar todos os gerentes do cliente específico (via projeto)
+  const { data: projectData, error: projectError } = await supabase
+    .from('project')
+    .select('partnerId')
+    .eq('id', projectId)
+    .single();
 
-  if (resourceError) {
-    console.error('Erro ao buscar recursos do projeto para recipients:', resourceError);
-  } else {
-    projectResources?.forEach(resource => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const user = (resource.user as any);
-      if (user && !user.is_client) {
-        recipients.add(user.id);
-        console.log(`📨 Adicionado gerente administrativo: ${user.first_name} ${user.last_name} (${user.email})`);
-      }
-    });
-  }
+  if (projectError) {
+    console.error('Erro ao buscar projeto para obter partnerId:', projectError);
+  } else if (projectData?.partnerId) {
+    // Buscar todos os gerentes (managers) do cliente/parceiro
+    const { data: clientManagers, error: managersError } = await supabase
+      .from('user')
+      .select('id, email, first_name, last_name, role')
+      .eq('partner_id', projectData.partnerId)
+      .eq('role', 'manager')
+      .eq('is_active', true)
+      .not('email', 'is', null);
 
-  // 2. Buscar usuários funcionais do módulo específico
-  const { data: moduleResources, error: moduleError } = await supabase
-    .from('module_resources')
-    .select(`
-      user_id,
-      user!inner(
-        id,
-        email,
-        first_name,
-        last_name,
-        is_client,
-        role
-      )
-    `)
-    .eq('module_id', moduleId)
-    .eq('is_suspended', false);
-
-  if (moduleError) {
-    console.error('Erro ao buscar recursos do módulo para recipients:', moduleError);
-  } else {
-    moduleResources?.forEach(resource => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const user = (resource.user as any);
-      if (user && !user.is_client) {
-        recipients.add(user.id);
-        console.log(`📨 Adicionado usuário funcional do módulo: ${user.first_name} ${user.last_name} (${user.email})`);
-      }
-    });
-  }
-
-  // 3. Para incidentes, incluir usuários funcionais de TODOS os módulos do projeto
-  if (isIncident) {
-    const { data: allModulesUsers, error: allModulesError } = await supabase
-      .from('module_resources')
-      .select(`
-        user_id,
-        user!inner(
-          id,
-          email,
-          first_name,
-          last_name,
-          is_client,
-          role
-        ),
-        modules!inner(
-          project_id
-        )
-      `)
-      .eq('modules.project_id', projectId)
-      .eq('is_suspended', false);
-
-    if (allModulesError) {
-      console.error('Erro ao buscar todos os usuários funcionais para incidente:', allModulesError);
+    if (managersError) {
+      console.error('Erro ao buscar gerentes do cliente:', managersError);
     } else {
-      allModulesUsers?.forEach(resource => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const user = (resource.user as any);
-        if (user && !user.is_client) {
-          recipients.add(user.id);
-          console.log(`📨 Adicionado usuário funcional (incidente): ${user.first_name} ${user.last_name} (${user.email})`);
-        }
+      clientManagers?.forEach(manager => {
+        recipients.add(manager.id);
+        console.log(`📨 Adicionado gerente do cliente: ${manager.first_name} ${manager.last_name} (${manager.email})`);
       });
     }
   }
 
-  // 4. Buscar recursos vinculados ao ticket (ticket_resources)
+  // 2. Buscar funcionais diretamente atrelados ao chamado (ticket_resources)
   const { data: ticketResources, error: ticketResourceError } = await supabase
     .from('ticket_resources')
     .select(`
@@ -135,18 +64,18 @@ async function getRecipientsForTicket({
         role
       )
     `)
-    .eq('ticket_id', projectId) // Assumindo que estamos buscando por ticket
+    .eq('ticket_id', ticketId)
     .eq('is_suspended', false);
 
   if (ticketResourceError) {
-    console.error('Erro ao buscar recursos do ticket para recipients:', ticketResourceError);
+    console.error('Erro ao buscar recursos atrelados ao ticket:', ticketResourceError);
   } else {
     ticketResources?.forEach(resource => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const user = (resource.user as any);
-      if (user) {
+      if (user && !user.is_client) { // Apenas funcionais
         recipients.add(user.id);
-        console.log(`📨 Adicionado recurso do ticket: ${user.first_name} ${user.last_name} (${user.email})`);
+        console.log(`📨 Adicionado funcional atrelado ao ticket: ${user.first_name} ${user.last_name} (${user.email})`);
       }
     });
   }
@@ -162,8 +91,6 @@ async function notifyTicketStatusUpdate({
   ticketExternalId,
   ticketTitle,
   projectId,
-  moduleId,
-  categoryName,
   updatedByUserId,
   newStatus,
   previousStatus,
@@ -173,8 +100,6 @@ async function notifyTicketStatusUpdate({
   ticketExternalId?: string;
   ticketTitle: string;
   projectId: string;
-  moduleId: number;
-  categoryName: string | null;
   updatedByUserId: string;
   newStatus: string;
   previousStatus: string;
@@ -185,11 +110,10 @@ async function notifyTicketStatusUpdate({
     
     const supabase = await createClient();
 
-    // Buscar recipients (mesmo sistema usado para criação de tickets)
-    const recipientUserIds = await getRecipientsForTicket({
+    // Buscar recipients (gerentes do cliente e funcionais atrelados ao chamado)
+    const recipientUserIds = await getRecipientsForTicketUpdate({
+      ticketId,
       projectId,
-      moduleId,
-      categoryName,
     });
 
     if (recipientUserIds.length === 0) {
@@ -419,8 +343,6 @@ export async function PUT(req: NextRequest) {
         ticketExternalId: currentTicket.external_id,
         ticketTitle: currentTicket.title,
         projectId: currentTicket.project_id,
-        moduleId: currentTicket.module_id,
-        categoryName: categoryStr,
         updatedByUserId: user.id,
         newStatus: newStatusName,
         previousStatus: previousStatusName,
