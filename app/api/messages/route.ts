@@ -38,7 +38,7 @@ async function getRecipientsForTicketUpdate({
       .from('user')
       .select('id, email, first_name, last_name, role')
       .eq('partner_id', projectData.partnerId)
-      .eq('role', 'manager')
+      .eq('role', '2')
       .eq('is_active', true)
       .not('email', 'is', null);
 
@@ -52,9 +52,9 @@ async function getRecipientsForTicketUpdate({
     }
   }
 
-  // 2. Buscar funcionais diretamente atrelados ao chamado (ticket_resources)
+  // 2. Buscar funcionais diretamente atrelados ao chamado (ticket_resource)
   const { data: ticketResources, error: ticketResourceError } = await supabase
-    .from('ticket_resources')
+    .from('ticket_resource')
     .select(`
       user_id,
       user!inner(
@@ -66,8 +66,7 @@ async function getRecipientsForTicketUpdate({
         role
       )
     `)
-    .eq('ticket_id', ticketId)
-    .eq('is_suspended', false);
+    .eq('ticket_id', ticketId);
 
   if (ticketResourceError) {
     console.error('Erro ao buscar recursos atrelados ao ticket:', ticketResourceError);
