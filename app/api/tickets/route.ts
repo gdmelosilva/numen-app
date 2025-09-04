@@ -4,7 +4,7 @@ import { generateEmailTemplate, TicketUpdatedTemplateData } from "@/lib/email-te
 import { sendOutlookMail } from "@/lib/sendOutlookMail";
 
 // ===== CONFIGURAÇÃO DE TESTE - REMOVER EM PRODUÇÃO =====
-const TEST_MODE = true; // Altere para false para desabilitar o modo de teste
+const TEST_MODE = false; // Altere para false para desabilitar o modo de teste
 const TEST_EMAIL = "guilherme.rocha@numenit.com"; // Substitua pelo seu email para testes
 // ========================================================
 
