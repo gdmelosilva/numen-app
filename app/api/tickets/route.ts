@@ -334,8 +334,8 @@ export async function PUT(req: NextRequest) {
 
     // Se o status mudou, enviar email de notificação
     if (statusChanged && previousStatusName && newStatusName) {
-      const categoryName = currentTicket.category as { name: string } | { name: string }[] | null;
-      const categoryStr = Array.isArray(categoryName) ? categoryName[0]?.name : categoryName?.name || null;
+      // const categoryName = currentTicket.category as { name: string } | { name: string }[] | null;
+      // const categoryStr = Array.isArray(categoryName) ? categoryName[0]?.name : categoryName?.name || null;
 
       // Disparar notificação por email de forma assíncrona
       notifyTicketStatusUpdate({

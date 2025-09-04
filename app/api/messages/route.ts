@@ -691,8 +691,8 @@ export async function POST(req: NextRequest) {
 
           if (previousStatusName && newStatusName) {
             // Extrair nome da categoria corretamente
-            const categoryData = currentTicket.category as { name: string } | { name: string }[] | null;
-            const categoryStr = Array.isArray(categoryData) ? categoryData[0]?.name : categoryData?.name || null;
+            // const categoryData = currentTicket.category as { name: string } | { name: string }[] | null;
+            // const categoryStr = Array.isArray(categoryData) ? categoryData[0]?.name : categoryData?.name || null;
 
             // Usar a mesma função de envio de e-mail do tickets/route.ts
             sendTicketUpdateEmail({
