@@ -2,6 +2,340 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { Message } from "@/types/messages";
 import { authenticateRequest } from "@/lib/api-auth";
+import { generateEmailTemplate, TicketUpdatedTemplateData } from "@/lib/email-templates";
+import { sendOutlookMail } from "@/lib/sendOutlookMail";
+
+// ===== CONFIGURAÇÃO DE TESTE - REMOVER EM PRODUÇÃO =====
+const TEST_MODE = false; // Altere para false para desabilitar o modo de teste
+const TEST_EMAIL = "guilherme.rocha@numenit.com"; // Substitua pelo seu email para testes
+// ========================================================
+
+// Helper reutilizável para identificar quem deve receber notificações/emails
+async function getRecipientsForTicket({
+  projectId,
+  moduleId,
+  categoryName,
+}: {
+  projectId: string;
+  moduleId: number;
+  categoryName: string | null;
+}): Promise<string[]> {
+  const supabase = await createClient();
+  const recipients = new Set<string>(); // Usar Set para evitar duplicatas
+  const isIncident = categoryName === 'Incidente';
+
+  console.log('DEBUG: Buscando recipients para:', { projectId, moduleId, categoryName, isIncident });
+
+  // 1. Buscar gerentes administrativos do projeto
+  const { data: projectResources, error: resourceError } = await supabase
+    .from('project_resources')
+    .select(`
+      user_id,
+      user_functional,
+      user!inner(
+        id,
+        email,
+        first_name,
+        last_name,
+        is_client,
+        role
+      )
+    `)
+    .eq('project_id', projectId)
+    .eq('user_functional', 3)
+    .eq('is_suspended', false);
+
+  if (resourceError) {
+    console.error('Erro ao buscar recursos do projeto para recipients:', resourceError);
+  } else {
+    projectResources?.forEach(resource => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const user = (resource.user as any);
+      if (user && !user.is_client) {
+        recipients.add(user.id);
+        console.log(`📨 Adicionado gerente administrativo: ${user.first_name} ${user.last_name} (${user.email})`);
+      }
+    });
+  }
+
+  // 2. Buscar usuários funcionais do módulo específico
+  const { data: moduleResources, error: moduleError } = await supabase
+    .from('module_resources')
+    .select(`
+      user_id,
+      user!inner(
+        id,
+        email,
+        first_name,
+        last_name,
+        is_client,
+        role
+      )
+    `)
+    .eq('module_id', moduleId)
+    .eq('is_suspended', false);
+
+  if (moduleError) {
+    console.error('Erro ao buscar recursos do módulo para recipients:', moduleError);
+  } else {
+    moduleResources?.forEach(resource => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const user = (resource.user as any);
+      if (user && !user.is_client) {
+        recipients.add(user.id);
+        console.log(`📨 Adicionado usuário funcional do módulo: ${user.first_name} ${user.last_name} (${user.email})`);
+      }
+    });
+  }
+
+  // 3. Para incidentes, incluir usuários funcionais de TODOS os módulos do projeto
+  if (isIncident) {
+    const { data: allModulesUsers, error: allModulesError } = await supabase
+      .from('module_resources')
+      .select(`
+        user_id,
+        user!inner(
+          id,
+          email,
+          first_name,
+          last_name,
+          is_client,
+          role
+        ),
+        modules!inner(
+          project_id
+        )
+      `)
+      .eq('modules.project_id', projectId)
+      .eq('is_suspended', false);
+
+    if (allModulesError) {
+      console.error('Erro ao buscar todos os usuários funcionais para incidente:', allModulesError);
+    } else {
+      allModulesUsers?.forEach(resource => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const user = (resource.user as any);
+        if (user && !user.is_client) {
+          recipients.add(user.id);
+          console.log(`📨 Adicionado usuário funcional (incidente): ${user.first_name} ${user.last_name} (${user.email})`);
+        }
+      });
+    }
+  }
+
+  // 4. Buscar recursos vinculados ao ticket (ticket_resources)
+  const { data: ticketResources, error: ticketResourceError } = await supabase
+    .from('ticket_resources')
+    .select(`
+      user_id,
+      user!inner(
+        id,
+        email,
+        first_name,
+        last_name,
+        is_client,
+        role
+      )
+    `)
+    .eq('ticket_id', projectId) // Assumindo que estamos buscando por ticket
+    .eq('is_suspended', false);
+
+  if (ticketResourceError) {
+    console.error('Erro ao buscar recursos do ticket para recipients:', ticketResourceError);
+  } else {
+    ticketResources?.forEach(resource => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const user = (resource.user as any);
+      if (user) {
+        recipients.add(user.id);
+        console.log(`📨 Adicionado recurso do ticket: ${user.first_name} ${user.last_name} (${user.email})`);
+      }
+    });
+  }
+
+  const recipientIds = Array.from(recipients);
+  console.log(`📊 Total de recipients únicos encontrados: ${recipientIds.length}`);
+  return recipientIds;
+}
+
+// Função para enviar email de atualização de status
+async function sendTicketUpdateEmail({
+  ticketId,
+  ticketExternalId,
+  ticketTitle,
+  projectId,
+  moduleId,
+  categoryName,
+  updatedByUserId,
+  newStatus,
+  previousStatus,
+  updateDescription,
+}: {
+  ticketId: string;
+  ticketExternalId?: string;
+  ticketTitle: string;
+  projectId: string;
+  moduleId: number;
+  categoryName: string | null;
+  updatedByUserId: string;
+  newStatus: string;
+  previousStatus: string;
+  updateDescription: string;
+}) {
+  try {
+    console.log('DEBUG: Iniciando envio de emails para atualização do ticket:', ticketId);
+    
+    const supabase = await createClient();
+
+    // Buscar recipients (mesmo sistema usado para criação de tickets)
+    const recipientUserIds = await getRecipientsForTicket({
+      projectId,
+      moduleId,
+      categoryName,
+    });
+
+    if (recipientUserIds.length === 0) {
+      console.warn(`Nenhum recipient encontrado para envio de email do ticket ${ticketId}`);
+      return;
+    }
+
+    // Buscar dados completos dos usuários (email, nome, etc.) filtrando apenas ativos
+    const { data: recipientUsers, error: usersError } = await supabase
+      .from('user')
+      .select('id, email, first_name, last_name, is_active')
+      .in('id', recipientUserIds)
+      .eq('is_active', true)
+      .not('email', 'is', null);
+
+    if (usersError) {
+      console.error('Erro ao buscar dados dos recipients para email:', usersError);
+      return;
+    }
+
+    if (!recipientUsers || recipientUsers.length === 0) {
+      console.warn(`Nenhum usuário ativo com email encontrado para o ticket ${ticketId}`);
+      return;
+    }
+
+    // ===== MODO DE TESTE - ENVIAR APENAS PARA UM EMAIL =====
+    let finalRecipients = recipientUsers;
+    if (TEST_MODE && TEST_EMAIL) {
+      console.log(`🧪 MODO DE TESTE ATIVADO: Enviando email apenas para ${TEST_EMAIL}`);
+      console.log(`📧 Recipients originais: ${recipientUsers.length} usuários`);
+      console.log(`📋 Lista original:`, recipientUsers.map(u => `${u.first_name} ${u.last_name} (${u.email})`));
+      
+      // Criar um recipient fictício com o email de teste
+      finalRecipients = [{
+        id: 'test-user',
+        email: TEST_EMAIL,
+        first_name: 'Teste',
+        last_name: 'Desenvolvimento',
+        is_active: true
+      }];
+      
+      console.log(`✅ Redirecionando todos os emails para: ${TEST_EMAIL}`);
+    }
+    // =====================================================
+
+    // Buscar informações do projeto e usuário que fez a atualização
+    const [projectResult, updatedByResult] = await Promise.all([
+      supabase
+        .from('project')
+        .select(`
+          projectName,
+          partnerId,
+          partner:partnerId ( partner_desc )
+        `)
+        .eq('id', projectId)
+        .single(),
+      supabase
+        .from('user')
+        .select('first_name, last_name')
+        .eq('id', updatedByUserId)
+        .single()
+    ]);
+
+    if (projectResult.error || !projectResult.data) {
+      console.error('Erro ao buscar projeto para email:', projectResult.error);
+      return;
+    }
+
+    if (updatedByResult.error || !updatedByResult.data) {
+      console.error('Erro ao buscar usuário que atualizou:', updatedByResult.error);
+      return;
+    }
+
+    const project = projectResult.data;
+    const updatedByUser = updatedByResult.data;
+    
+    // Preparar dados para o template de email
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const partnerName = (project.partner as any)?.partner_desc || 'N/A';
+    const updatedByName = `${updatedByUser.first_name || ''} ${updatedByUser.last_name || ''}`.trim() || 'Sistema';
+    
+    const emailData: TicketUpdatedTemplateData = {
+      ticketId,
+      ticketExternalId,
+      ticketTitle,
+      ticketDescription: updateDescription,
+      projectName: project.projectName,
+      partnerName,
+      clientName: updatedByName,
+      clientEmail: '',
+      updatedBy: updatedByName,
+      updateDescription,
+      newStatus,
+      previousStatus,
+    };
+
+    // Gerar template de email
+    const emailTemplate = generateEmailTemplate('ticket-updated', emailData);
+
+    // Enviar email para cada recipient
+    const emailPromises = finalRecipients.map(async (user) => {
+      if (!user.email) {
+        console.warn(`Usuário ${user.first_name} ${user.last_name} não possui email cadastrado`);
+        return { success: false, user: `${user.first_name} ${user.last_name}`, error: 'Email não cadastrado' };
+      }
+
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+
+      try {
+        await sendOutlookMail({
+          to: user.email,
+          subject: emailTemplate.subject,
+          text: emailTemplate.text,
+          html: emailTemplate.html,
+        });
+
+        console.log(`Email enviado com sucesso para ${fullName} (${user.email})`);
+        return { success: true, user: fullName, email: user.email };
+      } catch (error) {
+        console.error(`Erro ao enviar email para ${fullName}:`, error);
+        return { success: false, user: fullName, error: error instanceof Error ? error.message : 'Erro desconhecido' };
+      }
+    });
+
+    const results = await Promise.all(emailPromises);
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+
+    console.log(`Emails processados para ticket ${ticketId}: ${successful.length} enviados, ${failed.length} falharam`);
+    console.log(`Recipients encontrados: ${recipientUserIds.length}, com email válido: ${recipientUsers.length}`);
+    
+    if (TEST_MODE) {
+      console.log(`🧪 MODO DE TESTE: Email redirecionado para ${TEST_EMAIL}`);
+      console.log(`📊 Estatísticas originais: ${recipientUserIds.length} recipients, ${recipientUsers.length} com email válido`);
+    }
+    
+    if (failed.length > 0) {
+      console.error('Falhas no envio de email:', failed);
+    }
+
+  } catch (error) {
+    console.error('Erro ao processar notificação de email para atualização do ticket:', error);
+  }
+}
 
 // Função auxiliar para buscar recipients de notificação quando status é alterado
 async function getNotificationRecipients(ticketId: string): Promise<string[]> {
@@ -378,27 +712,82 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Se o usuário é cliente, alterar automaticamente o status do ticket para "Enc. para o Atendente" (id = 3)
+  // Se o usuário é cliente, alterar automaticamente o status do ticket para "Enc. para o Atendente" (id = 13)
   // Esta funcionalidade garante que sempre que um cliente enviar uma mensagem, 
   // o chamado será automaticamente direcionado para o atendente responsável
   if (user.is_client) {
-    const { error: ticketUpdateError } = await supabase
+    // Buscar o status atual para comparar
+    const { data: currentTicket, error: currentTicketError } = await supabase
       .from("ticket")
-      .update({ 
-        status_id: 13, // "Enc. para o Atendente"
-        updated_by: user.id 
-      })
-      .eq("id", ticket_id);
+      .select(`
+        id,
+        external_id,
+        title,
+        project_id,
+        module_id,
+        status_id,
+        status:fk_status(name),
+        category:fk_category(name)
+      `)
+      .eq("id", ticket_id)
+      .single();
 
-    if (ticketUpdateError) {
-      console.error("[POST /api/messages] Erro ao atualizar status do ticket:", ticketUpdateError);
-      // Não falhamos a criação da mensagem por causa do erro de atualização do status
-      // Apenas logamos o erro para análise posterior
-    } else {
-      // Se a atualização do status foi bem-sucedida, criar notificação
-      createStatusChangeNotification(ticket_id, user.id).catch(error => {
-        console.error("Erro ao criar notificação de alteração de status:", error);
-      });
+    if (!currentTicketError && currentTicket) {
+      const previousStatusId = currentTicket.status_id;
+      const newStatusId = 13; // "Enc. para o Atendente"
+
+      const { error: ticketUpdateError } = await supabase
+        .from("ticket")
+        .update({ 
+          status_id: newStatusId,
+          updated_by: user.id 
+        })
+        .eq("id", ticket_id);
+
+      if (ticketUpdateError) {
+        console.error("[POST /api/messages] Erro ao atualizar status do ticket:", ticketUpdateError);
+        // Não falhamos a criação da mensagem por causa do erro de atualização do status
+        // Apenas logamos o erro para análise posterior
+      } else {
+        // Se a atualização do status foi bem-sucedida, criar notificação
+        createStatusChangeNotification(ticket_id, user.id).catch(error => {
+          console.error("Erro ao criar notificação de alteração de status:", error);
+        });
+
+        // Se o status mudou, enviar e-mail de notificação
+        if (previousStatusId !== newStatusId) {
+          // Buscar nomes dos status
+          const [previousStatusResult, newStatusResult] = await Promise.all([
+            supabase.from('ticket_status').select('name').eq('id', previousStatusId).single(),
+            supabase.from('ticket_status').select('name').eq('id', newStatusId).single()
+          ]);
+
+          const previousStatusName = previousStatusResult.data?.name || '';
+          const newStatusName = newStatusResult.data?.name || '';
+
+          if (previousStatusName && newStatusName) {
+            // Extrair nome da categoria corretamente
+            const categoryData = currentTicket.category as { name: string } | { name: string }[] | null;
+            const categoryStr = Array.isArray(categoryData) ? categoryData[0]?.name : categoryData?.name || null;
+
+            // Usar a mesma função de envio de e-mail do tickets/route.ts
+            sendTicketUpdateEmail({
+              ticketId: currentTicket.id,
+              ticketExternalId: currentTicket.external_id,
+              ticketTitle: currentTicket.title,
+              projectId: currentTicket.project_id,
+              moduleId: currentTicket.module_id,
+              categoryName: categoryStr,
+              updatedByUserId: user.id,
+              newStatus: newStatusName,
+              previousStatus: previousStatusName,
+              updateDescription: `Cliente enviou uma nova mensagem. Status alterado automaticamente de "${previousStatusName}" para "${newStatusName}".`,
+            }).catch((error: unknown) => {
+              console.error('Erro ao enviar email de atualização do ticket:', error);
+            });
+          }
+        }
+      }
     }
   }
 
