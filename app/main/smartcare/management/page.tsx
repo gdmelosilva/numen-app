@@ -1253,7 +1253,7 @@ export default function TicketManagementPage() {
       </div>
       {/* Card de filtros: expandido ou resumo */}
       {filtersCollapsed ? (
-        <Card className="shadow-sm border-gray-200 border-[1px]">
+  <Card className="w-full">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -1305,7 +1305,7 @@ export default function TicketManagementPage() {
             filtersCollapsed ? " collapsed" : ""
           }`}
         >
-          <Card className="shadow-sm border-gray-200 border-[1px]">
+          <Card className="w-full">
             <CardContent className="pt-6 relative">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-2">

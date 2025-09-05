@@ -164,7 +164,7 @@ export default function AMSAdminPage() {
                 </Card>
             ) : (
                 <div>
-                    <Card className="shadow-sm border-gray-200 border-[1px]">
+                        <Card className="w-full">
                         <CardContent className="pt-6 relative">
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 <div className="space-y-2">
