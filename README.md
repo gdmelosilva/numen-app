@@ -87,8 +87,8 @@ Este projeto é um sistema de gestão de contratos, parceiros, usuários, chamad
 - [ ] Encerrar sessão automaticamente após 1h (depende do plano Supabase)
 - [ ] Revisar adição de roles
 - [ ] Validações de registro
-- [ ] Verificar visão do cliente nas abas
-
+- [ ] Verificar visão do cliente nas abas 
+- [ ] 
 ---
 
 ## Como rodar o projeto
