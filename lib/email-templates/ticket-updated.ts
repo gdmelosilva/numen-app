@@ -108,7 +108,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
 • Projeto: ${projectName}
 • Atualizado por: ${updatedBy}${newStatus && previousStatus ? `\n• Status: ${previousStatus} → ${newStatus}` : ''}
 
-📝 DESCRIÇÃO DA ATUALIZAÇÃO:
+📝 DESCRIÇÃO:
 ${updateDescription}
 
 ═══════════════════════════════════════
