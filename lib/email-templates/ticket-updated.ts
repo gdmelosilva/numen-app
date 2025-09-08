@@ -26,15 +26,15 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
   return {
     subject: `EasyTime - Chamado Atualizado: ${ticketTitle}`,
     
-    html: `
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
-        <title>Chamado Atualizado - EasyTime</title>
-        <style>
+        html: `
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+                <title>Chamado Atualizado - EasyTime</title>
+                <style>
           /* Reset e estilos base para compatibilidade com clientes de email */
           * {
             margin: 0;
@@ -107,7 +107,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                           
                           <tr>
                               <td align="center" style="padding: 0; margin: 0px;">
-                                  <img src="/public/mailing/ATUALIZAÇÃO 2 EMAIL HEAD - Updated.png" 
+                                  <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20HEAD%20-%20Updated.png" 
                                   alt="EasyTime - Header" 
                                   class="header-image"
                                   style="width: 680px; max-width: 100%; height: auto; display: block; border: 0;">
@@ -120,7 +120,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                                       <tr>
                                           <td class="content-wrapper" style="padding: 40px 50px; padding-bottom: 20px;">
                                               <div style="display: flex; align-items: center; gap: 10px;">
-                                                  <img src="/public/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px;">
+                                                  <img src="https://numenit-ops.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px;">
                                                   <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
                                                       Dados da Atualização
                                                   </h2>            
@@ -182,7 +182,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                                           <!-- Descrição da atualização -->
                                           <div style="margin-bottom: 30px;">
                                               <div style="display: flex; align-items: center; gap: 10px;">
-                                                  <img src="/public/icons/msg.svg" alt="Message Icon" style="width: 18px; height: auto; margin-bottom: 20px;">
+                                                  <img src="https://numenit-ops.com/icons/msg.svg" alt="Message Icon" style="width: 18px; height: auto; margin-bottom: 20px;">
                                                   <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
                                                       Descrição do Chamado:
                                                   </h2>            
@@ -198,7 +198,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                                           <!-- Botão de ação (opcional) -->
                                           <div style="margin-bottom: 30px; text-align: center;">
                                               <a href="#" style="display: flex; align-items: center; justify-content: center; height: 48px; width: 200px; padding: 12px 30px; background-color: #074799; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 6px; margin: 0 auto;">
-                                              <img src="/public/ÍCONE AZUL E LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
+                                              <img src="https://numenit-ops.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
                                                   <span style="margin: 0;">Ver Chamado</span>
                                               </a>
                                           </div>                                    
@@ -226,7 +226,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                   <!-- Footer com imagem -->
                   <tr>
                       <td align="center" style="padding: 0;">
-                          <img src="/public/mailing/ATUALIZAÇÃO 2 EMAIL BOTTOM - Updated.png" 
+                          <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20BOTTOM%20-%20Updated.png" 
                           alt="EasyTime - Footer" 
                           class="footer-image"
                           style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin: 0px;">
