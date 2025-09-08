@@ -222,7 +222,7 @@ export function useNotifications() {
         // Polling for notifications...
         fetchNotifications();
         fetchUnreadCount();
-      }, 30000); // Poll a cada 30 segundos
+      }, 60000); // Poll a cada 60 segundos
     };
 
     // Iniciar polling após 5 segundos se real-time não conectar

@@ -9,6 +9,7 @@ import { useUserContext } from "@/components/user-context";
 
 export function TopBar() {
   const { user, loading } = useUserContext();
+  const isDev = process.env.NODE_ENV === "development";
 
   // Função utilitária para exibir o nome do cargo
   function roleToLabel(role: number | string | null | undefined, is_client: boolean) {
@@ -73,7 +74,7 @@ export function TopBar() {
         
         {/* Controles de ação - com estilos customizados para o fundo primary */}
         <div className="flex items-center gap-2">
-          <NotificationPopover />
+          {!isDev && <NotificationPopover />}
           <div className="[&>button]:text-primary-foreground [&>button:hover]:bg-primary-foreground/10 [&>button:hover]:text-primary-foreground [&_svg]:text-primary-foreground">
             <ThemeSwitcher />
           </div>
