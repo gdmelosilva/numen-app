@@ -152,7 +152,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                                                           Projeto:
                                                       </span>
                                                       <span style="color: #374151;">
-                                                          ${projectName}
+                                                          ${projectName}    
                                                       </span>
                                                   </div>
                                                   
