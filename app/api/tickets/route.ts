@@ -406,6 +406,7 @@ export async function GET(req: NextRequest) {
         priority_id,
         module_id,
         category_id,
+  type_id,
         created_at,
         planned_end_date,
         actual_end_date,
@@ -421,6 +422,7 @@ export async function GET(req: NextRequest) {
         category:fk_category ( id, name ),
         module:fk_module ( id, name ),
         priority:fk_priority ( id, name ),
+  type:fk_type ( id, name ),
         created_by_user:created_by ( id, first_name, last_name, email )
       `)
       .in('project_id', projectIds)

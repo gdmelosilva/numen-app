@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download, SquareMousePointer, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -19,9 +19,11 @@ import { LinkResourceDialog } from "@/components/LinkResourceDialog";
 import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 import { usePartnerOptions } from "@/hooks/usePartnerOptions";
 import { useProjectOptions } from "@/hooks/useProjectOptions";
+import { TicketQuickViewDialog } from "@/components/TicketQuickViewDialog";
 import { getCategoryOptions, getPriorityOptions, getModuleOptions } from "@/hooks/useOptions";
 import { exportTicketsToExcel } from "@/lib/export-file";
 import type { VisibilityState } from "@tanstack/react-table";
+import { toast } from "sonner";
 
 interface Filters {
   external_id: string;
@@ -134,6 +136,9 @@ export default function AmsPoolPage() {
   // Estados para o dialog de vinculação de recursos
   const [linkResourceDialogOpen, setLinkResourceDialogOpen] = useState(false);
   const [selectedTicketForLinking, setSelectedTicketForLinking] = useState<Ticket | null>(null);
+  // Confirmação de auto-vínculo (Vincular-se)
+  const [confirmLinkOpen, setConfirmLinkOpen] = useState(false);
+  const [linkingSelf, setLinkingSelf] = useState(false);
 
   // Estados para paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -143,6 +148,10 @@ export default function AmsPoolPage() {
 
   // Estado para controlar visibilidade das colunas
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // Dialog de visualização rápida do ticket
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [quickViewTicket, setQuickViewTicket] = useState<Ticket | null>(null);
 
   // Função para salvar filtros no sessionStorage
   const saveFiltersToSession = useCallback((filtersToSave: Filters) => {
@@ -1129,11 +1138,85 @@ export default function AmsPoolPage() {
   };
 
   const handleRowClick = (ticket: Ticket) => {
-    const ticketId = ticket.external_id || ticket.id;
-    if (ticketId) {
-      router.push(`/main/smartcare/management/${ticketId}`);
-    }
+    // Abrir o dialog de visualização rápida em vez de navegar
+    setQuickViewTicket(ticket);
+    setQuickViewOpen(true);
   };
+
+  // Abrir o dialog de vínculo a partir do QuickView
+  const handleLinkSelfFromQuickView = useCallback((ticket: Ticket) => {
+    setSelectedTicketForLinking(ticket);
+    setConfirmLinkOpen(true);
+  }, []);
+
+  const handleConfirmLinkSelf = useCallback(async () => {
+    if (!selectedTicketForLinking || !user?.id) return;
+    const t = selectedTicketForLinking;
+    const userId = user.id;
+    const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Você';
+
+    const linkingToast = toast.loading(`Vinculando ${userName} ao chamado ${t.external_id || t.id}...`);
+    setLinkingSelf(true);
+    try {
+      // 1) Vincular usuário ao ticket
+      await fetch("/api/ticket-resources/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket_id: t.id, user_id: userId }),
+      });
+
+      // 2) Definir como responsável principal
+      await fetch("/api/ticket-resources", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, ticket_id: t.id, is_main: true }),
+      });
+
+      // 3) Atualizar status para "Em Atendimento" (3) se estava 1
+      if (t.status_id === 1) {
+        await fetch("/api/tickets", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticket_id: t.id, status_id: "3" }),
+        });
+      }
+
+      // 4) Atualizar lista
+      await fetchTickets(filters, currentPage, pageSize);
+
+      // 5) Notificação por e-mail (não bloqueante)
+      fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          ticket_id: t.id,
+          ticket_external_id: t.external_id,
+          ticket_title: t.title,
+          ticket_description: t.description,
+          project_name: t.project?.projectName || 'Projeto não informado',
+          partner_name: t.partner?.partner_desc || 'Parceiro não informado',
+          email: user.email,
+          name: userName,
+          assigned_by: userName,
+        }),
+      }).catch(() => {/* opcional: silenciar erro de email */});
+
+      toast.success("Vinculado com sucesso!", { id: linkingToast });
+      // Fechar diálogos e navegar para a página de detalhes
+      setConfirmLinkOpen(false);
+      setQuickViewOpen(false);
+      setQuickViewTicket(null);
+      const targetId = (t as unknown as { external_id?: string | number }).external_id ?? t.id;
+      if (targetId) {
+        router.push(`/main/smartcare/management/${targetId}`);
+      }
+  } catch {
+      toast.error("Erro ao vincular você ao chamado.", { id: linkingToast });
+    } finally {
+      setLinkingSelf(false);
+    }
+  }, [selectedTicketForLinking, user, fetchTickets, filters, currentPage, pageSize, router]);
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
@@ -2375,6 +2458,38 @@ export default function AmsPoolPage() {
         onOpenChange={setLinkResourceDialogOpen}
         ticket={selectedTicketForLinking}
         onSuccess={handleLinkResourceSuccess}
+      />
+
+      {/* Confirmação de auto-vínculo (Vincular-se) */}
+      <Dialog open={confirmLinkOpen} onOpenChange={setConfirmLinkOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Vinculação</DialogTitle>
+            <DialogDescription>
+              Deseja se vincular ao chamado {selectedTicketForLinking?.external_id || selectedTicketForLinking?.id}?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmLinkOpen(false)} disabled={linkingSelf}>
+              Cancelar
+            </Button>
+            <Button variant="colored2" onClick={handleConfirmLinkSelf} disabled={linkingSelf}>
+              {linkingSelf ? "Vinculando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick view do chamado ao clicar na linha */}
+      <TicketQuickViewDialog
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
+        ticket={quickViewTicket}
+        onLinkSelf={handleLinkSelfFromQuickView}
+        onOpenFullPage={(t) => {
+          const targetId = (t as unknown as { external_id?: string | number }).external_id ?? t.id;
+          if (targetId) router.push(`/main/smartcare/management/${targetId}`);
+        }}
       />
     </div>
   );
