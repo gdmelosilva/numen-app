@@ -120,7 +120,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                                       <tr>
                                           <td class="content-wrapper" style="padding: 40px 50px; padding-bottom: 20px;">
                                               <div style="display: flex; align-items: center; gap: 10px;">
-                                                  <img src="https://numenit-ops.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px;">
+                                                  <img src="https://numenit-ops.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px;margin-right: 10px;">
                                                   <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
                                                       Dados da Atualização
                                                   </h2>            
@@ -171,8 +171,8 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                                                           Status:
                                                       </span>
                                                       <span style="color: #374151; font-weight: bold;">
-                                                          <span style="color: #dc2626;">${previousStatus}</span> → 
-                                                          <span style="color: #16a34a;">${newStatus}</span>
+                                                          <span style="color: #374151;">${previousStatus}</span> → 
+                                                          <span style="color: #dc7e26ff;">${newStatus}</span>
                                                       </span>
                                                   </div>
                                                   ` : ''}
@@ -182,9 +182,9 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                                           <!-- Descrição da atualização -->
                                           <div style="margin-bottom: 30px;">
                                               <div style="display: flex; align-items: center; gap: 10px;">
-                                                  <img src="https://numenit-ops.com/icons/msg.svg" alt="Message Icon" style="width: 18px; height: auto; margin-bottom: 20px;">
+                                                  <img src="https://numenit-ops.com/icons/msg.svg" alt="Message Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
                                                   <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
-                                                      Descrição do Chamado:
+                                                      Última Mensagem:
                                                   </h2>            
                                               </div>
                                               

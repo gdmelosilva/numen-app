@@ -10,6 +10,23 @@ const TEST_MODE = false; // Altere para false para desabilitar o modo de teste
 const TEST_EMAIL = "guilherme.rocha@numenit.com"; // Substitua pelo seu email para testes
 // ========================================================
 
+// Helper para buscar a última mensagem não privada do ticket
+async function getLastPublicMessage(ticketId: string): Promise<string | null> {
+  const supabase = await createClient();
+  
+  const { data: lastMessage } = await supabase
+    .from('message')
+    .select('body')
+    .eq('ticket_id', ticketId)
+    .eq('is_private', false)
+    .eq('is_system', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  return lastMessage?.body || null;
+}
+
 // Helper reutilizável para identificar quem deve receber notificações/emails de atualização
 async function getRecipientsForTicketUpdate({
   ticketId,
@@ -693,6 +710,10 @@ export async function POST(req: NextRequest) {
             // const categoryData = currentTicket.category as { name: string } | { name: string }[] | null;
             // const categoryStr = Array.isArray(categoryData) ? categoryData[0]?.name : categoryData?.name || null;
 
+            // Buscar a última mensagem não privada do ticket para usar como updateDescription
+            const lastMessageBody = await getLastPublicMessage(currentTicket.id);
+            const updateDescription = lastMessageBody || `Cliente enviou uma nova mensagem. Status alterado automaticamente de "${previousStatusName}" para "${newStatusName}".`;
+
             // Usar a mesma função de envio de e-mail do tickets/route.ts
             sendTicketUpdateEmail({
               ticketId: currentTicket.id,
@@ -702,7 +723,7 @@ export async function POST(req: NextRequest) {
               updatedByUserId: user.id,
               newStatus: newStatusName,
               previousStatus: previousStatusName,
-              updateDescription: `Cliente enviou uma nova mensagem. Status alterado automaticamente de "${previousStatusName}" para "${newStatusName}".`,
+              updateDescription,
             }).catch((error: unknown) => {
               console.error('Erro ao enviar email de atualização do ticket:', error);
             });
