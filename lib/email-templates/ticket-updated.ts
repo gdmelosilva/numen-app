@@ -197,7 +197,7 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
                                           
                                           <!-- Botão de ação (opcional) -->
                                           <div style="margin-bottom: 30px; text-align: center;">
-                                              <a href="#" style="display: flex; align-items: center; justify-content: center; height: 48px; width: 200px; padding: 12px 30px; background-color: #074799; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 6px; margin: 0 auto;">
+                                              <a href="https://numenit-ops.com/main/smartcare/management/${displayId}" style="display: flex; align-items: center; justify-content: center; height: 48px; width: 200px; padding: 12px 30px; background-color: #074799; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 6px; margin: 0 auto;">
                                               <img src="https://numenit-ops.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
                                                   <span style="margin: 0;">Ver Chamado</span>
                                               </a>
