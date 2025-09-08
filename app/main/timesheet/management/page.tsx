@@ -101,7 +101,7 @@ const TimeSheetManagementPage = () => {
 
 	// Converte os dados do hook para o formato esperado pelas colunas e ordena por data
 	const tableData = data
-		.sort((a, b) => a.appoint_date.getTime() - b.appoint_date.getTime())
+		.sort((a, b) => new Date(a.appoint_date).getTime() - new Date(b.appoint_date).getTime())
 		.map(row => ({
 			id: row.id,
 			appoint_date: row.appoint_date,
@@ -128,8 +128,8 @@ const TimeSheetManagementPage = () => {
 					ticket_title: child.ticket_title,
 					ticket_type_id: child.ticket_type_id,
 					ticket_external_id: child.ticket_external_id,
-					appoint_start: parseUTCTimeAsLocal(child.appoint_start),
-					appoint_end: parseUTCTimeAsLocal(child.appoint_end),
+					appoint_start: child.appoint_start,
+					appoint_end: child.appoint_end,
 					// Adicionar o objeto ticket completo para a função de export
 					ticket: child.ticket
 				}))

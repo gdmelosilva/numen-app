@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { UserFilterDialog } from '@/components/UserFilterDialog'
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 
 interface TimesheetSidebarProps {
   year: number;
@@ -44,6 +46,21 @@ export const TimesheetSidebar: React.FC<TimesheetSidebarProps> = ({
   showUserFilter = false,
   isClient = false,
 }) => {
+  const [clientDate, setClientDate] = useState<string>("");
+
+  useEffect(() => {
+    if (lastUpdate) {
+      const dateObj = new Date(lastUpdate);
+      if (!isNaN(dateObj.getTime())) {
+        setClientDate(format(dateObj, "dd/MM/yyyy | HH:mm", { locale: ptBR }));
+      } else {
+        setClientDate("-");
+      }
+    } else {
+      setClientDate("-");
+    }
+  }, [lastUpdate]);
+
   return (
     <aside className="w-80 p-4 flex flex-col gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-xl shadow border-0">
       <div className="flex items-center gap-2 mb-2">
@@ -93,7 +110,7 @@ export const TimesheetSidebar: React.FC<TimesheetSidebarProps> = ({
         </div>
       </Card>
       <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-        Última atualização: {lastUpdate}
+        Última atualização: <span>{clientDate || "-"}</span>
       </div>
       <CardContent className="flex flex-col gap-2 p-0">
         {!isClient && (

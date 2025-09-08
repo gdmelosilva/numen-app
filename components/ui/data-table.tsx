@@ -75,7 +75,7 @@ export function DataTable<
   showPagination = true,
 }: Readonly<DataTableProps<TData, TValue>>) {
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "projectExtId", desc: true },
+    // { id: "projectExtId", desc: true },
   ])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({})
