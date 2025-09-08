@@ -359,3 +359,83 @@ export async function PUT(req: NextRequest) {
     );
   }
 }
+
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const partnerId = searchParams.get('partnerId') || searchParams.get('partner_id');
+
+    if (!partnerId) {
+      return NextResponse.json({ success: false, error: 'partnerId é obrigatório' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+
+    // (Opcional) exigir autenticação, mantendo padrão do PUT
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    // Buscar projetos do parceiro
+    const { data: projects, error: projectErr } = await supabase
+      .from('project')
+      .select('id')
+      .eq('partnerId', partnerId);
+
+    if (projectErr) {
+      return NextResponse.json({ success: false, error: projectErr.message }, { status: 500 });
+    }
+
+    const projectIds = (projects ?? []).map(p => p.id);
+    if (projectIds.length === 0) {
+      return NextResponse.json({ success: true, tickets: [] });
+    }
+
+    // Tickets com status == 1 nesses projetos
+    const { data: tickets, error } = await supabase
+      .from('ticket')
+      .select(`
+        id,
+        external_id,
+        title,
+        description,
+        project_id,
+        status_id,
+        priority_id,
+        module_id,
+        category_id,
+        created_at,
+        planned_end_date,
+        actual_end_date,
+        project:project_id (
+          id,
+          projectDesc:projectName,
+          partnerId,
+          partner:partnerId (
+            partner_desc
+          )
+        ),
+        status:fk_status ( id, name ),
+        category:fk_category ( id, name ),
+        module:fk_module ( id, name ),
+        priority:fk_priority ( id, name ),
+        created_by_user:created_by ( id, first_name, last_name, email )
+      `)
+      .in('project_id', projectIds)
+      .eq('status_id', 1)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, tickets });
+  } catch (e) {
+    return NextResponse.json(
+      { success: false, error: 'Erro ao buscar tickets do parceiro com status 1', details: e instanceof Error ? e.message : String(e) },
+      { status: 500 }
+    );
+  }
+}

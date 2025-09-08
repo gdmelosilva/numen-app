@@ -139,8 +139,8 @@ export function DataTable<
           <ColumnVisibilityToggle table={table} columnLabels={columnLabels} />
         </div>
       )}
-      <div className="rounded-md border bg-card shadow-md">
-        <Table>
+      <div className="rounded-md border bg-card shadow-md overflow-x-auto">
+        <Table className="min-w-max">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
