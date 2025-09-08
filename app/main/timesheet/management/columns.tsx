@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import { format } from "date-fns";
+import { format, toDate } from "date-fns";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 import { AuthenticatedUser } from "@/lib/api-auth";
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -86,12 +86,12 @@ export const getColumns = (): ColumnDef<TimesheetRow>[] => {
         ),
         cell: ({ getValue }) => {
             const date = getValue() as string;
-            const parseUTCDateAsLocal = (utcDateString: string) => {
-                const datePart = utcDateString.split('T')[0];
-                const [year, month, day] = datePart.split('-').map(Number);
-                return new Date(year, month - 1, day);
-            };
-            return <span>{format(parseUTCDateAsLocal(date), "dd/MM/yyyy")}</span>;
+            // const parseUTCDateAsLocal = (utcDateString: string) => {
+            //     const datePart = utcDateString.split('T')[0];
+            //     const [year, month, day] = datePart.split('-').map(Number);
+            //     return new Date(year, month - 1, day);
+            // };
+            return <span>{format(toDate(date), "dd/MM/yyyy")}</span>;
         },
     },
     {
