@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/api-auth";
-import { sendOutlookMail } from "@/lib/sendOutlookMail";
+import { sendOutlookMail } from "@/lib/send-mail";
 import { generateEmailTemplate, EmailTemplateData } from "@/lib/email-templates";
 
 // ===== CONFIGURAÇÃO DE TESTE - REMOVER EM PRODUÇÃO =====

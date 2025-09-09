@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendOutlookMail } from '@/lib/sendOutlookMail';
+import { sendOutlookMail } from '@/lib/send-mail';
 import { createClient } from '@/lib/supabase/server';
 import { authenticateRequest } from '@/lib/api-auth';
 

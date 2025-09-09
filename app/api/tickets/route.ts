@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateEmailTemplate, TicketUpdatedTemplateData } from "@/lib/email-templates";
-import { sendOutlookMail } from "@/lib/sendOutlookMail";
+import { sendOutlookMail } from "@/lib/send-mail";
 
 // ===== CONFIGURAÇÃO DE TESTE - REMOVER EM PRODUÇÃO =====
 const TEST_MODE = false; // Altere para false para desabilitar o modo de teste
