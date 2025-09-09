@@ -26,6 +26,7 @@ import { getCategoryOptions, getPriorityOptions } from "@/hooks/useOptions";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ParalizarChamadoButton from "@/components/ButtonParalizarChamado";
+import DesparalizarChamadoButton from "@/components/ButtonDesparalizarChamado";
 import SolicitarEncerramentoButton from "@/components/ButtonSolicitarEncerramento";
 
 // Define o tipo correto para o recurso retornado pelo backend
@@ -105,11 +106,29 @@ export default function TicketDetailsPage() {
   const [selectedValue, setSelectedValue] = useState<string>("");
   const [updatingField, setUpdatingField] = useState(false);
 
-  // Estados para ações do cliente (paralisar/solicitar encerramento)
-  const [confirmOpen, setConfirmOpen] = useState<null | { action: "pause" | "close"; title: string }>(null);
+  // Estados para ações do cliente (paralisar/desparalisar/solicitar encerramento)
+  type ClientAction = "pause" | "unpause" | "close";
+  const [confirmOpen, setConfirmOpen] = useState<null | { action: ClientAction; title: string }>(null);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   // Status IDs fixos solicitados: 14 = Paralizado pelo Solicitante, 4 = Finalizado
+
+  // Helper: resolve target status for action
+  const resolveTargetStatus = useCallback(async (action: ClientAction) => {
+    if (action === "pause") return { id: 14, label: "Paralizado pelo Solicitante" } as const;
+    if (action === "close") return { id: 4, label: "Finalizado" } as const;
+    // unpause/reactivar: status fixo 1
+    return { id: 1, label: "Ag. Atendimento" } as const;
+  }, []);
+
+  // Helper: build default message body for action
+  const buildMsgBody = useCallback((action: ClientAction, reasonText: string) => {
+    const trimmed = reasonText?.trim();
+    if (trimmed) return trimmed;
+    if (action === "pause") return "Cliente solicitou paralisação do chamado.";
+    if (action === "unpause") return "Cliente solicitou retomada do chamado.";
+    return "Cliente solicitou encerramento do chamado.";
+  }, []);
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
   const mapMessageBackendToFrontend = useCallback((msg: Record<string, unknown>): Message => ({
@@ -503,23 +522,18 @@ export default function TicketDetailsPage() {
 
   // Ações: Paralisar / Solicitar Encerramento
   const doChangeStatus = useCallback(
-    async (action: "pause" | "close") => {
+    async (action: ClientAction) => {
       if (!ticket) return;
       setSubmitting(true);
       try {
-        // IDs definidos pelo produto
-        const target = action === "pause"
-          ? { id: 14, label: "Paralizado pelo Solicitante" }
-          : { id: 4, label: "Finalizado" };
+        const target = await resolveTargetStatus(action);
 
         // Verifica se haverá mudança de status
         const currentStatusId = ticket.status_id != null ? Number(ticket.status_id) : null;
         const willUpdateStatus = currentStatusId !== target.id;
 
         // Corpo padrão da mensagem
-        const msgBody = (reason?.trim()) || (action === "pause"
-          ? "Cliente solicitou paralisação do chamado."
-          : "Cliente solicitou encerramento do chamado.");
+        const msgBody = buildMsgBody(action, reason);
 
         // 1) Cria a mensagem seguindo o fluxo do MessageForm
         const msgRes = await fetch(`/api/messages`, {
@@ -564,7 +578,7 @@ export default function TicketDetailsPage() {
         setSubmitting(false);
       }
     },
-    [ticket, reason, refreshTicketData, activeTab, fetchResources, refreshMessages]
+  [ticket, reason, refreshTicketData, activeTab, fetchResources, refreshMessages, resolveTargetStatus, buildMsgBody]
   );
 
   // Ordena mensagens da mais nova para a mais antiga
@@ -720,24 +734,45 @@ export default function TicketDetailsPage() {
         </TabsList>
         {currentUser?.is_client && !isCloseRequested && !isFinalized && (
           <div className="flex items-center gap-2">
-            {!isPausedByRequester && (
-              <ParalizarChamadoButton
-                onClick={() => {
-                  setConfirmOpen({ action: "pause", title: "Paralisar Chamado" });
-                  setReason("");
-                }}
-                disabled={isFinalized}
-                loading={submitting}
-              />
+            {isPausedByRequester ? (
+              <>
+                <DesparalizarChamadoButton
+                  onClick={() => {
+                    setConfirmOpen({ action: "unpause", title: "Desparalisar Chamado" });
+                    setReason("");
+                  }}
+                  disabled={isFinalized}
+                  loading={submitting}
+                />
+                <SolicitarEncerramentoButton
+                  onClick={() => {
+                    setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
+                    setReason("");
+                  }}
+                  disabled={isFinalized}
+                  loading={submitting}
+                />
+              </>
+            ) : (
+              <>
+                <ParalizarChamadoButton
+                  onClick={() => {
+                    setConfirmOpen({ action: "pause", title: "Paralisar Chamado" });
+                    setReason("");
+                  }}
+                  disabled={isFinalized}
+                  loading={submitting}
+                />
+                <SolicitarEncerramentoButton
+                  onClick={() => {
+                    setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
+                    setReason("");
+                  }}
+                  disabled={isFinalized}
+                  loading={submitting}
+                />
+              </>
             )}
-            <SolicitarEncerramentoButton
-              onClick={() => {
-                setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
-                setReason("");
-              }}
-              disabled={isFinalized}
-              loading={submitting}
-            />
           </div>
         )}
       </div>
