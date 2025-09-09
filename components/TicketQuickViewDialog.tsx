@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { ColoredBadge } from "@/components/ui/colored-badge";
-import { Badge } from "@/components/ui/badge";
 import type { Ticket } from "@/types/tickets";
 import { MessageCard } from "@/components/message-card";
 
@@ -30,7 +29,6 @@ export function TicketQuickViewDialog({
   onOpenChange,
   ticket,
   onLinkSelf,
-  onOpenFullPage,
 }: Readonly<Props>) {
   const t = ticket;
 
@@ -139,17 +137,6 @@ export function TicketQuickViewDialog({
                 {t.title || "-"}
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {onOpenFullPage && (
-                  <Button
-                    variant="outline"
-                    className="hidden sm:inline-flex"
-                    onClick={() => {
-                      if (t) onOpenFullPage(t);
-                    }}
-                  >
-                    Abrir página completa
-                  </Button>
-                )}
                 <Button
                   variant="colored2"
                   onClick={() => {
@@ -215,20 +202,32 @@ export function TicketQuickViewDialog({
                   <div>
                     <div className="text-xs text-muted-foreground">Categoria</div>
                     <div className="text-sm">
-                      {t.category?.name ? <Badge variant="outline">{t.category.name}</Badge> : "-"}
+                      {t.category?.name ? (
+                        <ColoredBadge type="ticket_type" value={t.category.name} />
+                      ) : (
+                        "-"
+                      )}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">Módulo</div>
                     <div className="text-sm">
-                      {t.module?.name ? <Badge variant="outline">{t.module.name}</Badge> : "-"}
+                      {t.module?.name ? (
+                        <ColoredBadge type="module" value={t.module.name} />
+                      ) : (
+                        "-"
+                      )}
                     </div>
                   </div>
                   {/* Linha 4 */}
                   <div>
                     <div className="text-xs text-muted-foreground">Tipo</div>
                     <div className="text-sm">
-                      {t.type?.name ? <Badge variant="outline">{t.type.name}</Badge> : "-"}
+                      {t.type?.name ? (
+                        <ColoredBadge type="ticket_type" value={t.type.name} />
+                      ) : (
+                        "-"
+                      )}
                     </div>
                   </div>
                   <div>

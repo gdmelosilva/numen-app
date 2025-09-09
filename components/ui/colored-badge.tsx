@@ -175,7 +175,7 @@ type ValueType = string | boolean | { name: string; color?: string; id?: number 
 
 export interface ColoredBadgeProps {
   value: ValueType;
-  type: "project_type" | "status" | "boolean" | "project_status" | "user_role" | "is_client" | "priority" | "ticket_type" | "ticket_status" | "suspended" | "comp_adm";
+  type: "project_type" | "status" | "boolean" | "project_status" | "user_role" | "is_client" | "priority" | "ticket_type" | "ticket_status" | "suspended" | "comp_adm" | "module";
   statusColor?: string; // para status que vem com cor
   className?: string;
 }
@@ -358,6 +358,8 @@ export function ColoredBadge({ value, type, statusColor, className }: Readonly<C
       return renderTicketPriorityBadge(value, className);
     case "ticket_type":
       return renderTicketTypeBadge(value, className);
+    case "module":
+      return <Badge variant="outline" className={className}>{String(value)}</Badge>;
     case "suspended":
       return renderSuspendedBadge(value);
     case "comp_adm":
