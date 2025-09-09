@@ -28,6 +28,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import ParalizarChamadoButton from "@/components/ButtonParalizarChamado";
 import DesparalizarChamadoButton from "@/components/ButtonDesparalizarChamado";
 import SolicitarEncerramentoButton from "@/components/ButtonSolicitarEncerramento";
+import { Rating as Stars, RatingButton as Star } from "@/components/ui/RatingButton";
+import { Textarea } from "@/components/ui/textarea";
 
 // Define o tipo correto para o recurso retornado pelo backend
 interface TicketResource {
@@ -111,12 +113,16 @@ export default function TicketDetailsPage() {
   const [confirmOpen, setConfirmOpen] = useState<null | { action: ClientAction; title: string }>(null);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  // Status IDs fixos solicitados: 14 = Paralizado pelo Solicitante, 4 = Finalizado
+  const [ratingSystem, setRatingSystem] = useState<number>(0);
+  const [ratingManager, setRatingManager] = useState<number>(0);
+  const [ratingFunctional, setRatingFunctional] = useState<number>(0);
+  const [ratingService, setRatingService] = useState<number>(0);
+  // Status IDs fixos solicitados: 14 = Paralizado pelo Solicitante, 9 = Enc. para Encerramento
 
   // Helper: resolve target status for action
   const resolveTargetStatus = useCallback(async (action: ClientAction) => {
     if (action === "pause") return { id: 14, label: "Paralizado pelo Solicitante" } as const;
-    if (action === "close") return { id: 4, label: "Finalizado" } as const;
+    if (action === "close") return { id: 9, label: "Enc. para Encerramento" } as const;
     // unpause/reactivar: status fixo 1
     return { id: 1, label: "Ag. Atendimento" } as const;
   }, []);
@@ -124,10 +130,13 @@ export default function TicketDetailsPage() {
   // Helper: build default message body for action
   const buildMsgBody = useCallback((action: ClientAction, reasonText: string) => {
     const trimmed = reasonText?.trim();
-    if (trimmed) return trimmed;
-    if (action === "pause") return "Cliente solicitou paralisação do chamado.";
-    if (action === "unpause") return "Cliente solicitou retomada do chamado.";
-    return "Cliente solicitou encerramento do chamado.";
+    let base = trimmed || "";
+    if (!base) {
+      if (action === "pause") base = "Cliente solicitou paralisação do chamado.";
+      else if (action === "unpause") base = "Cliente solicitou retomada do chamado.";
+      else base = "Cliente solicitou encerramento do chamado.";
+    }
+    return base;
   }, []);
 
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
@@ -521,6 +530,61 @@ export default function TicketDetailsPage() {
   };
 
   // Ações: Paralisar / Solicitar Encerramento
+  async function postMessageForAction(ticketId: string, body: string, statusId: number): Promise<void> {
+    const msgRes = await fetch(`/api/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body, is_private: false, status_id: statusId, ticket_id: ticketId }),
+    });
+    if (!msgRes.ok) {
+      const errData = await msgRes.json().catch(() => ({}));
+      throw new Error(errData.error ?? "Erro ao criar mensagem");
+    }
+  }
+
+  async function updateTicketStatusIfChanged(ticketId: string, currentStatusId: number | null, targetStatusId: number): Promise<boolean> {
+    if (currentStatusId === targetStatusId) return false;
+    const updRes = await fetch(`/api/tickets`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket_id: ticketId, status_id: targetStatusId }),
+    });
+    if (!updRes.ok) {
+      const errTicket = await updRes.json().catch(() => ({}));
+      throw new Error(errTicket.error ?? "Erro ao atualizar status do ticket");
+    }
+    return true;
+  }
+
+  async function sendFeedbackForClose(ticketId: string, ratings: { system?: number; manager?: number; functional?: number; service?: number }, commentText: string): Promise<void> {
+    try {
+      const payload: Record<string, unknown> = { ticket_id: ticketId };
+      if (ratings.system && ratings.system > 0) payload.fb_system = ratings.system;
+      if (ratings.manager && ratings.manager > 0) payload.fb_manager = ratings.manager;
+      if (ratings.functional && ratings.functional > 0) payload.fb_functional = ratings.functional;
+      if (ratings.service && ratings.service > 0) payload.fb_service = ratings.service;
+      const trimmed = commentText?.trim();
+      if (trimmed) payload.comment = trimmed;
+      // Se nenhum campo além do ticket_id foi informado, não envia feedback
+      if (Object.keys(payload).length <= 1) return;
+
+      const fbRes = await fetch(`/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!fbRes.ok) {
+        const fbErr = await fbRes.json().catch(() => ({} as { error?: string }));
+  console.warn("Falha ao enviar feedback:", fbErr);
+  const extra = fbErr && typeof fbErr.error === 'string' && fbErr.error ? `: ${fbErr.error}` : '';
+  toast.warning(`Chamado encerrado, mas o feedback não pôde ser enviado${extra}.`);
+      }
+    } catch (err) {
+      console.warn("Erro ao enviar feedback:", err);
+      toast.warning("Chamado encerrado, mas o feedback não pôde ser enviado.");
+    }
+  }
+
   const doChangeStatus = useCallback(
     async (action: ClientAction) => {
       if (!ticket) return;
@@ -528,40 +592,21 @@ export default function TicketDetailsPage() {
       try {
         const target = await resolveTargetStatus(action);
 
-        // Verifica se haverá mudança de status
         const currentStatusId = ticket.status_id != null ? Number(ticket.status_id) : null;
-        const willUpdateStatus = currentStatusId !== target.id;
-
-        // Corpo padrão da mensagem
-        const msgBody = buildMsgBody(action, reason);
-
-        // 1) Cria a mensagem seguindo o fluxo do MessageForm
-        const msgRes = await fetch(`/api/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            body: msgBody,
-            is_private: false,
-            status_id: target.id,
-            ticket_id: ticket.id,
-          }),
-        });
-        if (!msgRes.ok) {
-          const errData = await msgRes.json().catch(() => ({}));
-          throw new Error(errData.error ?? "Erro ao criar mensagem");
-        }
-
-        // 2) Atualiza o ticket somente se o status mudou
-        if (willUpdateStatus) {
-          const updRes = await fetch(`/api/tickets`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ticket_id: ticket.id, status_id: target.id }),
-          });
-          if (!updRes.ok) {
-            const errTicket = await updRes.json().catch(() => ({}));
-            throw new Error(errTicket.error ?? "Erro ao atualizar status do ticket");
-          }
+        const msgBody = action === "close" ? "Iniciado processo de encerramento de chamado pelo cliente" : buildMsgBody(action, reason);
+        await postMessageForAction(ticket.id, msgBody, target.id);
+        await updateTicketStatusIfChanged(ticket.id, currentStatusId, target.id);
+        if (action === "close") {
+          await sendFeedbackForClose(
+            ticket.id,
+            {
+              system: ratingSystem,
+              manager: ratingManager,
+              functional: ratingFunctional,
+              service: ratingService,
+            },
+            reason
+          );
         }
 
         toast.success(`Status atualizado: ${target.label}`);
@@ -571,6 +616,10 @@ export default function TicketDetailsPage() {
         await fetchResources();
         setConfirmOpen(null);
         setReason("");
+        setRatingSystem(0);
+        setRatingManager(0);
+        setRatingFunctional(0);
+        setRatingService(0);
       } catch (e) {
         console.error(e);
         toast.error("Não foi possível atualizar o status");
@@ -578,7 +627,7 @@ export default function TicketDetailsPage() {
         setSubmitting(false);
       }
     },
-  [ticket, reason, refreshTicketData, activeTab, fetchResources, refreshMessages, resolveTargetStatus, buildMsgBody]
+  [ticket, reason, refreshTicketData, activeTab, fetchResources, refreshMessages, resolveTargetStatus, buildMsgBody, ratingSystem, ratingManager, ratingFunctional, ratingService]
   );
 
   // Ordena mensagens da mais nova para a mais antiga
@@ -744,9 +793,13 @@ export default function TicketDetailsPage() {
                   disabled={isFinalized}
                   loading={submitting}
                 />
-                <SolicitarEncerramentoButton
+        <SolicitarEncerramentoButton
                   onClick={() => {
-                    setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
+          setRatingSystem(0);
+          setRatingManager(0);
+          setRatingFunctional(0);
+          setRatingService(0);
+          setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
                     setReason("");
                   }}
                   disabled={isFinalized}
@@ -763,9 +816,13 @@ export default function TicketDetailsPage() {
                   disabled={isFinalized}
                   loading={submitting}
                 />
-                <SolicitarEncerramentoButton
+        <SolicitarEncerramentoButton
                   onClick={() => {
-                    setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
+          setRatingSystem(0);
+          setRatingManager(0);
+          setRatingFunctional(0);
+          setRatingService(0);
+          setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
                     setReason("");
                   }}
                   disabled={isFinalized}
@@ -1490,21 +1547,86 @@ export default function TicketDetailsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de confirmação para ações do cliente */}
-      <Dialog open={!!confirmOpen} onOpenChange={(o) => !o && setConfirmOpen(null)}>
-        <DialogContent className="max-w-md">
+    {/* Dialog de confirmação para ações do cliente */}
+  <Dialog open={!!confirmOpen} onOpenChange={(o) => { if (!o) { setConfirmOpen(null); setReason(""); setRatingSystem(0); setRatingManager(0); setRatingFunctional(0); setRatingService(0); } }}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{confirmOpen?.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Confirme a ação e, se quiser, informe um motivo/observação para registrar no histórico e na notificação.
-            </div>
-            <Input
-              placeholder="Motivo (opcional)"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            />
+            {confirmOpen?.action === "close" && (
+                <div className="pt-2 space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-muted-foreground min-w-[260px]">
+                        Como você avalia a ferramenta para o atendimento deste chamado?
+                      </div>
+                      <Stars value={ratingSystem} onValueChange={setRatingSystem} className="gap-1">
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                      </Stars>
+                    </div>
+                    <Separator className="my-2" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-muted-foreground min-w-[260px]">
+                        Como você avalia o atendimento do seu Gerente de Contas neste chamado?
+                      </div>
+                      <Stars value={ratingManager} onValueChange={setRatingManager} className="gap-1">
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                      </Stars>
+                    </div>
+                    <Separator className="my-2" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-muted-foreground min-w-[260px]">
+                        Como você avalia o atendimento do(s) Atendente(s) neste chamado?
+                      </div>
+                      <Stars value={ratingFunctional} onValueChange={setRatingFunctional} className="gap-1">
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                      </Stars>
+                    </div>
+                    <Separator className="my-2" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-muted-foreground min-w-[260px]">
+                        Como você avalia o tempo de atendimento deste chamado?
+                      </div>
+                      <Stars value={ratingService} onValueChange={setRatingService} className="gap-1">
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                      </Stars>
+                    </div>
+                    <Separator className="my-2" />
+                  </div>
+                    <div className="text-sm text-muted-foreground">
+                      Compartilhe suas impressões, elogios ou sugestões sobre o atendimento. Sua opinião é muito importante para nós!
+                    </div>
+                  <Textarea
+                    placeholder="Escreva aqui..."
+                    className="min-h-32"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(null)} disabled={submitting}>
