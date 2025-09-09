@@ -700,7 +700,7 @@ export default function TicketDetailsPage() {
       : "";
   const isPausedByRequester = statusId === 14 || /parali\w*\s*pelo\s*solicitante/i.test(statusName) || /parali\w*/i.test(statusName);
   const isCloseRequested = /solicitad\w*\s*encerramento/i.test(statusName);
-  const isFinalized = statusId === 4 || isTicketFinalized(ticket);
+  const isFinalized = statusId === 9 || isTicketFinalized(ticket);
 
   // Função utilitária para montar o nome do criador do ticket, igual ao padrão das mensagens
   function getTicketCreatorName(ticket: Ticket): string {
