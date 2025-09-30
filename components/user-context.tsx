@@ -8,6 +8,8 @@ interface UserContextValue {
   user: AuthenticatedUser | null;
   loading: boolean;
   setUser: (user: AuthenticatedUser | null) => void;
+  isProfileDialogOpen: boolean;
+  setProfileDialogOpen: (open: boolean) => void;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -15,6 +17,7 @@ const UserContext = createContext<UserContextValue | undefined>(undefined);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isProfileDialogOpen, setProfileDialogOpen] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -45,7 +48,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, loading, setUser }}>
+    <UserContext.Provider value={{ user, loading, setUser, isProfileDialogOpen, setProfileDialogOpen }}>
       {children}
     </UserContext.Provider>
   );
