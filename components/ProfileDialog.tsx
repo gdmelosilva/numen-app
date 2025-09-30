@@ -8,7 +8,7 @@ import { ColoredBadge } from "@/components/ui/colored-badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUserContext } from "@/components/user-context";
-import { User, Mail, Building2, Edit, Phone } from "lucide-react";
+import { User, Mail, Building2, Edit, Phone, Key } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
@@ -141,6 +141,13 @@ export default function ProfileDialog() {
     setEditForm({ first_name: '', last_name: '', tel_contact: '' });
   };
 
+  // Fechar dialog e resetar estado
+  const handleDialogClose = () => {
+    setIsEditing(false);
+    setEditForm({ first_name: '', last_name: '', tel_contact: '' });
+    setProfileDialogOpen(false);
+  };
+
   // Salvar edição
   const handleEditSave = async () => {
     if (!user) return;
@@ -175,8 +182,16 @@ export default function ProfileDialog() {
     }
   };
 
+  // Alterar senha
+  const handleChangePassword = () => {
+    // Fechar o dialog atual
+    setProfileDialogOpen(false);
+    // Redirecionar para a página de alteração de senha
+    window.location.href = '/auth/update-password';
+  };
+
   return (
-    <Dialog open={isProfileDialogOpen} onOpenChange={setProfileDialogOpen}>
+    <Dialog open={isProfileDialogOpen} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -298,8 +313,14 @@ export default function ProfileDialog() {
             <Separator />
 
             {/* Ações */}
-            <div className="flex justify-end gap-2">
-              {isEditing ? (
+            <div className="flex justify-between items-center">
+              <Button variant="outline" size="sm" onClick={handleChangePassword}>
+                <Key className="h-4 w-4 mr-2" />
+                Alterar Senha
+              </Button>
+              
+              <div className="flex gap-2">
+                {isEditing ? (
                 <>
                   <Button 
                     variant="outline" 
@@ -322,12 +343,13 @@ export default function ProfileDialog() {
                   <Button 
                     variant="secondary" 
                     size="sm" 
-                    onClick={() => setProfileDialogOpen(false)}
+                    onClick={handleDialogClose}
                   >
                     Fechar
                   </Button>
                 </>
               )}
+              </div>
             </div>
           </div>
         )}
