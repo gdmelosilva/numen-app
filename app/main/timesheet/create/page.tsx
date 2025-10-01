@@ -239,7 +239,7 @@ const TimeSheetCreatePage = () => {
     }
 
     // Validar se as datas não são anteriores a 01/09/2025
-    const minimumDate = new Date('2025-09-01')
+    const minimumDate = new Date('2025-10-01')
     const startDate = new Date(formData.startDate)
     const endDate = new Date(formData.endDate)
     
@@ -424,7 +424,7 @@ const TimeSheetCreatePage = () => {
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 className="pl-10"
-                min="2025-09-01"
+                min="2025-10-01"
               />
               <CalendarIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             </div>
@@ -440,7 +440,7 @@ const TimeSheetCreatePage = () => {
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 className="pl-10"
-                min="2025-09-01"
+                min="2025-10-01"
               />
               <CalendarIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             </div>

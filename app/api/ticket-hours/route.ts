@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Verificar se a data de apontamento não é anterior a 01/09/2025
     const appointDate = new Date(appoint_date);
-    const minimumDate = new Date('2025-09-01T00:00:00Z');
+    const minimumDate = new Date('2025-10-01T00:00:00Z');
     
     if (appointDate < minimumDate) {
       return NextResponse.json({ 
