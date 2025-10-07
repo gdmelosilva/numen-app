@@ -23,6 +23,7 @@ interface ApiSlaRule {
 }
 
 interface Regra {
+  id?: number; // ID da regra SLA existente (para deletar)
   ticket_category_id: string;
   groupId: number;
   priority_id: string;
@@ -74,6 +75,7 @@ export function SlaByStatusDialog({
   const [dataLoaded, setDataLoaded] = useState(false);
   const [rulesLoaded, setRulesLoaded] = useState(false);
   const [allDataReady, setAllDataReady] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Carregar prioridades e categorias
   useEffect(() => {
@@ -124,6 +126,7 @@ export function SlaByStatusDialog({
         if (existingRules && existingRules.length > 0) {
           // Converter dados do servidor para formato do componente
           const convertedRows: Regra[] = existingRules.map((rule: SlaRule) => ({
+            id: rule.id, // Incluir o ID para permitir exclusão
             ticket_category_id: rule.ticket_category_id?.toString() || '',
             groupId: rule.status_id || 0,
             priority_id: rule.priority_id?.toString() || '',
@@ -152,7 +155,7 @@ export function SlaByStatusDialog({
     };
     
     loadExistingRules();
-  }, [open, projectId, weekdayId, dataLoaded]);
+  }, [open, projectId, weekdayId, dataLoaded]); // Remover selectedCategory para evitar loops
 
   // Definir categoria inicial - apenas como fallback se não há dados carregados
   useEffect(() => {
@@ -192,6 +195,7 @@ export function SlaByStatusDialog({
       setRulesLoaded(false);
       setAllDataReady(false);
       setLoading(true);
+      setSaving(false);
     }
   }, [open]);
 
@@ -272,6 +276,8 @@ export function SlaByStatusDialog({
   };
 
   const handleSave = async () => {
+    if (saving) return; // Prevenir múltiplos cliques
+    
     // Validação simples
     for (const r of rows) {
       if (!r.sla_hours || r.sla_hours <= 0) {
@@ -282,19 +288,60 @@ export function SlaByStatusDialog({
       }
     }
     
-    // Converter para formato da API antes de salvar
-    const apiFormatRules = rows.map(r => ({
-      project_id: projectId!,
-      ticket_category_id: parseInt(r.ticket_category_id),
-      priority_id: parseInt(r.priority_id),
-      status_id: r.groupId,
-      weekday_id: weekdayId!,
-      sla_hours: r.sla_hours,
-      warning: r.warning
-    }));
+    setSaving(true);
     
-    await onSave(apiFormatRules);
-    onOpenChange(false);
+    try {
+      // 1. Primeiro, buscar todas as regras existentes para este projeto/dia
+      const params = new URLSearchParams({
+        project_id: projectId!,
+        weekday_id: weekdayId!.toString()
+      });
+      
+      const existingResponse = await fetch(`/api/sla-rules?${params}`);
+      const { data: existingRules = [] } = existingResponse.ok ? await existingResponse.json() : { data: [] };
+      
+      // 2. Identificar regras que foram removidas (existem no banco mas não estão nos rows atuais)
+      const currentRuleIds = rows.filter(r => r.id).map(r => r.id);
+      const rulesToDelete = existingRules.filter((rule: SlaRule) => 
+        rule.project_id === projectId &&
+        rule.weekday_id === weekdayId &&
+        !currentRuleIds.includes(rule.id)
+      );
+      
+      // 3. Deletar regras removidas
+      const deletePromises = rulesToDelete.map(async (rule: SlaRule) => {
+        const response = await fetch(`/api/sla-rules/${rule.id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Erro ao deletar regra SLA');
+        }
+      });
+      
+      // 4. Converter regras atuais para formato da API
+      const apiFormatRules = rows.map(r => ({
+        project_id: projectId!,
+        ticket_category_id: parseInt(r.ticket_category_id),
+        priority_id: parseInt(r.priority_id),
+        status_id: r.groupId,
+        weekday_id: weekdayId!,
+        sla_hours: r.sla_hours,
+        warning: r.warning
+      }));
+      
+      // 5. Aguardar exclusões e então salvar regras atuais
+      await Promise.all(deletePromises);
+      await onSave(apiFormatRules);
+      
+      onOpenChange(false);
+      
+    } catch (error) {
+      throw error; // Re-throw para que o componente pai possa tratar
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading || !dataLoaded || !rulesLoaded || !allDataReady) {
@@ -488,8 +535,25 @@ export function SlaByStatusDialog({
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" className="hover:bg-destructive hover:text-destructive-foreground" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave}>Salvar</Button>
+          <Button 
+            variant="outline" 
+            className="hover:bg-destructive hover:text-destructive-foreground" 
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSave}
+            disabled={saving}
+            className="min-w-20"
+          >
+            {saving ? (
+              <div className="w-4 h-4 border-2 border-gray-200 border-t-primary rounded-full animate-spin" />
+            ) : (
+              "Salvar"
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
