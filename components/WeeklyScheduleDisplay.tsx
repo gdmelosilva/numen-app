@@ -7,21 +7,26 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Plus } from "lucide-react";
 
 interface WeeklyScheduleDisplayProps {
-  onAddSla: (dayName: string) => void;
+  onAddSla?: (dayName: string) => void;
   disabled?: boolean;
 }
 
 const WEEK_DAYS = [
-  { name: "Domingo", color: "border-l-blue-500", active: false, start: "--:--", end: "--:--" },
-  { name: "Segunda-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00" },
-  { name: "Terça-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00" },
-  { name: "Quarta-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00" },
-  { name: "Quinta-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00" },
-  { name: "Sexta-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00" },
-  { name: "Sábado", color: "border-l-blue-500", active: false, start: "--:--", end: "--:--" },
+  { name: "Domingo", color: "border-l-blue-500", active: false, start: "--:--", end: "--:--", weekdayId: 0 },
+  { name: "Segunda-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00", weekdayId: 1 },
+  { name: "Terça-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00", weekdayId: 2 },
+  { name: "Quarta-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00", weekdayId: 3 },
+  { name: "Quinta-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00", weekdayId: 4 },
+  { name: "Sexta-feira", color: "border-l-green-500", active: true, start: "08:00", end: "18:00", weekdayId: 5 },
+  { name: "Sábado", color: "border-l-blue-500", active: false, start: "--:--", end: "--:--", weekdayId: 6 },
 ];
 
 export function WeeklyScheduleDisplay({ onAddSla, disabled = false }: WeeklyScheduleDisplayProps) {
+  const handleDayClick = (day: string) => {
+    // Apenas chama o callback - deixa o componente pai gerenciar o dialog
+    onAddSla?.(day);
+  };
+
   return (
     <TooltipProvider>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
@@ -36,7 +41,7 @@ export function WeeklyScheduleDisplay({ onAddSla, disabled = false }: WeeklySche
                       size="sm"
                       variant="ghost"
                       className="h-6 w-6 p-0"
-                      onClick={() => onAddSla(day.name)}
+                      onClick={() => handleDayClick(day.name)}
                       disabled={disabled}
                     >
                       <Plus className="h-3 w-3" />

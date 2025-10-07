@@ -9,6 +9,18 @@ import { Plus, X } from "lucide-react";
 import { useTicketStatuses } from "@/hooks/useTicketStatuses";
 import { getPriorityOptions, getCategoryOptions } from "@/hooks/useOptions";
 import { ColoredBadge } from "@/components/ui/colored-badge";
+import { SlaRule } from "@/types/sla_rules";
+import LoadingSpinner from "@/components/LoadingSpinner";
+
+interface ApiSlaRule {
+  project_id: string;
+  ticket_category_id: number;
+  priority_id: number;
+  status_id: number;
+  weekday_id: number;
+  sla_hours: number;
+  warning: boolean;
+}
 
 interface Regra {
   ticket_category_id: string;
@@ -41,11 +53,15 @@ export function SlaByStatusDialog({
   onOpenChange,
   onSave,
   selectedDay,
+  projectId,
+  weekdayId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onSave: (regras: Regra[]) => Promise<void> | void;
+  onSave: (regras: ApiSlaRule[]) => Promise<void> | void;
   selectedDay?: string;
+  projectId?: string;
+  weekdayId?: number;
 }) {
   // Buscar status e prioridades
   const { statuses } = useTicketStatuses();
@@ -55,12 +71,21 @@ export function SlaByStatusDialog({
   const [rows, setRows] = useState<Regra[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [rulesLoaded, setRulesLoaded] = useState(false);
+  const [allDataReady, setAllDataReady] = useState(false);
 
   // Carregar prioridades e categorias
   useEffect(() => {
     const loadData = async () => {
+      if (!open) return;
+      
       try {
         setLoading(true);
+        setDataLoaded(false);
+        setRulesLoaded(false);
+        setAllDataReady(false);
+        
         const [priorityOptions, categoryOptions] = await Promise.all([
           getPriorityOptions(),
           getCategoryOptions(true) // true para AMS
@@ -68,22 +93,107 @@ export function SlaByStatusDialog({
         
         setPriorities(priorityOptions);
         setCategories(categoryOptions);
+        setDataLoaded(true);
         
-        // Definir a primeira categoria como selecionada
-        if (categoryOptions.length > 0 && !selectedCategory) {
-          setSelectedCategory(categoryOptions[0].id);
-        }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
-      } finally {
-        setLoading(false);
       }
     };
     
     if (open) {
       loadData();
     }
-  }, [open, selectedCategory]);
+  }, [open]);
+
+  // Carregar dados existentes do servidor (após carregar categorias/prioridades)
+  useEffect(() => {
+    const loadExistingRules = async () => {
+      if (!projectId || weekdayId === undefined || !open || !dataLoaded) return;
+      
+      try {
+        const params = new URLSearchParams({
+          project_id: projectId,
+          weekday_id: weekdayId.toString()
+        });
+        
+        const response = await fetch(`/api/sla-rules?${params}`);
+        if (!response.ok) throw new Error('Erro ao carregar regras');
+        
+        const { data: existingRules } = await response.json();
+        
+        if (existingRules && existingRules.length > 0) {
+          // Converter dados do servidor para formato do componente
+          const convertedRows: Regra[] = existingRules.map((rule: SlaRule) => ({
+            ticket_category_id: rule.ticket_category_id?.toString() || '',
+            groupId: rule.status_id || 0,
+            priority_id: rule.priority_id?.toString() || '',
+            sla_hours: rule.sla_hours || 8,
+            warning: rule.warning || false,
+          }));
+          
+          setRows(convertedRows);
+          
+          // Definir categoria baseada nos dados carregados - primeira categoria encontrada
+          if (convertedRows.length > 0 && !selectedCategory) {
+            const firstCategoryId = convertedRows[0].ticket_category_id;
+            setSelectedCategory(firstCategoryId);
+          }
+        } else {
+          setRows([]);
+        }
+      } catch {
+        // Erro silencioso - pode ser tratado pela UI se necessário
+      } finally {
+        setRulesLoaded(true);
+        setLoading(false);
+        // Marcar que todos os dados estão prontos
+        setAllDataReady(true);
+      }
+    };
+    
+    loadExistingRules();
+  }, [open, projectId, weekdayId, dataLoaded]);
+
+  // Definir categoria inicial - apenas como fallback se não há dados carregados
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategory && allDataReady) {
+      if (rows.length > 0) {
+        // Se há dados carregados, usar a primeira categoria dos dados
+        const firstCategoryId = rows[0].ticket_category_id;
+        setSelectedCategory(firstCategoryId);
+      } else {
+        // Se não há dados, usar a primeira categoria disponível
+        const firstAvailableCategory = categories[0].id.toString();
+        setSelectedCategory(firstAvailableCategory);
+      }
+    }
+  }, [categories, rows, selectedCategory, allDataReady]);
+
+  // Atualizar grupos selecionados quando trocar de categoria
+  useEffect(() => {
+    if (selectedCategory) {
+      const existingGroups = rows
+        .filter(r => r.ticket_category_id === selectedCategory)
+        .map(r => r.groupId);
+      
+      setSelectedGroupIds(existingGroups);
+    } else {
+      setSelectedGroupIds([]);
+    }
+  }, [selectedCategory, rows]);
+
+  // Reset estados quando fechar
+  useEffect(() => {
+    if (!open) {
+      setSelectedGroupIds([]);
+      setRows([]);
+      setSelectedCategory("");
+      setDataLoaded(false);
+      setRulesLoaded(false);
+      setAllDataReady(false);
+      setLoading(true);
+    }
+  }, [open]);
 
   // Obter grupos únicos dos status
   const availableGroups = useMemo(() => {
@@ -96,60 +206,29 @@ export function SlaByStatusDialog({
       }));
   }, [statuses]);
 
-  // Add/remove group - versão simples
+  // Add/remove group
   const toggleGroup = (groupId: number, checked: boolean) => {
-    setSelectedGroupIds(prev => {
-      if (checked) {
-        return [...prev, groupId];
-      } else {
-        return prev.filter(id => id !== groupId);
-      }
-    });
-  };
-
-  // Keep rows in sync with selectedGroupIds - versão simples
-  useEffect(() => {
-    if (!selectedCategory || priorities.length === 0) return;
-    
-    setRows(prev => {
-      // Manter rows existentes da categoria atual que ainda estão selecionadas
-      const existingRows = prev.filter(r => 
-        r.ticket_category_id === selectedCategory && selectedGroupIds.includes(r.groupId)
-      );
+    if (checked) {
+      // Adicionar grupo e criar nova row
+      setSelectedGroupIds(prev => [...prev, groupId]);
       
-      // Adicionar novas rows para grupos que não existem
-      const neededGroups = selectedGroupIds.filter(groupId => 
-        !existingRows.some(r => r.groupId === groupId)
-      );
-      
-      const newRows = neededGroups.map<Regra>(groupId => {
+      if (selectedCategory && priorities.length > 0) {
         const defaultPriority = priorities[0];
-        return {
+        const newRow: Regra = {
           ticket_category_id: selectedCategory,
           groupId,
-          priority_id: defaultPriority?.id || '',
+          priority_id: defaultPriority?.id.toString() || '',
           sla_hours: defaultPriority ? getDefaultTempo(defaultPriority.name) : 8,
           warning: false,
         };
-      });
-      
-      // Manter rows de outras categorias
-      const otherCategoryRows = prev.filter(r => r.ticket_category_id !== selectedCategory);
-      
-      return [...otherCategoryRows, ...existingRows, ...newRows];
-    });
-  }, [selectedGroupIds, selectedCategory, priorities]);
-
-  // Limpar grupos selecionados ao trocar categoria
-  useEffect(() => {
-    if (selectedCategory) {
-      // Obter grupos já existentes para esta categoria
-      const existingGroups = rows
-        .filter(r => r.ticket_category_id === selectedCategory)
-        .map(r => r.groupId);
-      setSelectedGroupIds(existingGroups);
+        setRows(prev => [...prev, newRow]);
+      }
+    } else {
+      // Remover grupo e row correspondente
+      setSelectedGroupIds(prev => prev.filter(id => id !== groupId));
+      setRows(prev => prev.filter(r => !(r.ticket_category_id === selectedCategory && r.groupId === groupId)));
     }
-  }, [selectedCategory]);
+  };
 
   const updateRow = (idx: number, patch: Partial<Regra>) => {
     setRows(prev => {
@@ -157,7 +236,7 @@ export function SlaByStatusDialog({
       copy[idx] = { ...copy[idx], ...patch };
       // Auto-default tempo quando priority muda
       if (patch.priority_id) {
-        const priority = priorities.find(p => p.id === patch.priority_id);
+        const priority = priorities.find(p => p.id.toString() === patch.priority_id);
         if (priority) {
           copy[idx].sla_hours = getDefaultTempo(priority.name);
         }
@@ -168,8 +247,21 @@ export function SlaByStatusDialog({
 
   const removeRow = (idx: number) => {
     const r = rows[idx];
-    setSelectedGroupIds(prev => prev.filter(id => id !== r.groupId));
+    if (r.ticket_category_id === selectedCategory) {
+      setSelectedGroupIds(prev => prev.filter(id => id !== r.groupId));
+    }
     setRows(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // Handler para mudança de categoria
+  const handleCategoryChange = (newCategoryId: string) => {
+    // Só permitir mudança se os dados estão carregados
+    if (!allDataReady) return;
+    
+    setSelectedCategory(newCategoryId);
+    
+    // Os grupos selecionados serão atualizados automaticamente pelo useEffect
+    // que observa mudanças em selectedCategory e rows
   };
 
   // Obter regras da categoria ativa
@@ -189,19 +281,31 @@ export function SlaByStatusDialog({
         throw new Error("Prioridade deve ser selecionada.");
       }
     }
-    await onSave(rows);
+    
+    // Converter para formato da API antes de salvar
+    const apiFormatRules = rows.map(r => ({
+      project_id: projectId!,
+      ticket_category_id: parseInt(r.ticket_category_id),
+      priority_id: parseInt(r.priority_id),
+      status_id: r.groupId,
+      weekday_id: weekdayId!,
+      sla_hours: r.sla_hours,
+      warning: r.warning
+    }));
+    
+    await onSave(apiFormatRules);
     onOpenChange(false);
   };
 
-  if (loading) {
+  if (loading || !dataLoaded || !rulesLoaded || !allDataReady) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Carregando...</DialogTitle>
+            <DialogTitle>Carregando Regras SLA</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">Carregando categorias e prioridades...</div>
+            <LoadingSpinner size="lg" />
           </div>
         </DialogContent>
       </Dialog>
@@ -228,6 +332,22 @@ export function SlaByStatusDialog({
     );
   }
 
+  // Aguardar categoria ser definida antes de renderizar conteúdo
+  if (!selectedCategory && allDataReady) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Preparando Interface</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner size="md" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   const currentRows = getCurrentCategoryRows(selectedCategory);
   const selectedCategoryName = categories.find(c => c.id === selectedCategory)?.name || '';
 
@@ -244,13 +364,16 @@ export function SlaByStatusDialog({
           {/* Seletor de Categoria */}
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium">Categoria:</label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select 
+              value={selectedCategory} 
+              onValueChange={handleCategoryChange}
+            >
               <SelectTrigger className="w-64">
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
+                  <SelectItem key={category.id} value={category.id.toString()}>
                     {category.name}
                   </SelectItem>
                 ))}
@@ -328,7 +451,7 @@ export function SlaByStatusDialog({
                       </SelectTrigger>
                       <SelectContent>
                         {priorities.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
