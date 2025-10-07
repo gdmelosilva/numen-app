@@ -11,6 +11,7 @@ import { getPriorityOptions, getCategoryOptions } from "@/hooks/useOptions";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 import { SlaRule } from "@/types/sla_rules";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { ButtonSpinner } from "@/components/ui/button-spinner";
 
 interface ApiSlaRule {
   project_id: string;
@@ -543,17 +544,12 @@ export function SlaByStatusDialog({
           >
             Cancelar
           </Button>
-          <Button 
+          <ButtonSpinner 
             onClick={handleSave}
-            disabled={saving}
-            className="min-w-20"
+            loading={saving}
           >
-            {saving ? (
-              <div className="w-4 h-4 border-2 border-gray-200 border-t-primary rounded-full animate-spin" />
-            ) : (
-              "Salvar"
-            )}
-          </Button>
+            Salvar
+          </ButtonSpinner>
         </div>
       </DialogContent>
     </Dialog>

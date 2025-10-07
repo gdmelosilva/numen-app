@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ButtonSpinner } from "@/components/ui/button-spinner";
 import { Separator } from "@/components/ui/separator";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ export default function ProfileDialog() {
   const { isProfileDialogOpen, setProfileDialogOpen } = useUserContext();
   const [user, setUser] = React.useState<ExtendedUser | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({
     first_name: '',
@@ -138,20 +140,24 @@ export default function ProfileDialog() {
   // Cancelar edição
   const handleEditCancel = () => {
     setIsEditing(false);
+    setSaving(false);
     setEditForm({ first_name: '', last_name: '', tel_contact: '' });
   };
 
   // Fechar dialog e resetar estado
   const handleDialogClose = () => {
     setIsEditing(false);
+    setSaving(false);
     setEditForm({ first_name: '', last_name: '', tel_contact: '' });
     setProfileDialogOpen(false);
   };
 
   // Salvar edição
   const handleEditSave = async () => {
-    if (!user) return;
+    if (!user || saving) return;
 
+    setSaving(true);
+    
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -179,6 +185,8 @@ export default function ProfileDialog() {
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating user:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -326,13 +334,18 @@ export default function ProfileDialog() {
                     variant="outline" 
                     size="sm" 
                     onClick={handleEditCancel}
+                    disabled={saving}
                     className="hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
                   >
                     Cancelar
                   </Button>
-                  <Button size="sm" onClick={handleEditSave}>
+                  <ButtonSpinner 
+                    size="sm" 
+                    onClick={handleEditSave}
+                    loading={saving}
+                  >
                     Salvar
-                  </Button>
+                  </ButtonSpinner>
                 </>
               ) : (
                 <>
