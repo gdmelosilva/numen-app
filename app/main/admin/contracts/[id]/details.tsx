@@ -2,16 +2,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { CircleDollarSignIcon, Info, Pencil, Plus } from "lucide-react";
+import { CircleDollarSignIcon, Info, Pencil } from "lucide-react";
 import type { Contract } from "@/types/contracts";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import ProjectUsersTab from "./users/ProjectUsersTab";
 import { toast } from "sonner";
+import { SlaByStatusDialog } from "@/components/SlaByStatusDialog";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { WeeklyScheduleDisplay } from "@/components/WeeklyScheduleDisplay";
 
 interface ProjectDetailsTabProps {
   project: Contract;
@@ -87,14 +88,8 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
   const [error, setError] = useState<string | null>(null);
   
   // SLA Dialog state
-  const [slaDialogOpen, setSlaDialogOpen] = useState(false);
+  const [slaByStatusDialogOpen, setSlaByStatusDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string>("");
-  const [slaForm, setSlaForm] = useState({
-    tipo_chamado: "",
-    grupo_status: "",
-    tempo_retorno: "",
-    sinalizacao: false
-  });
 
   // Garante que o valor do status está sempre sincronizado com as opções
   useEffect(() => {
@@ -232,29 +227,20 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
   };
 
   // SLA Dialog functions
-  const handleOpenSlaDialog = (day: string) => {
-    setSelectedDay(day);
-    setSlaDialogOpen(true);
+  const handleOpenSlaDialog = (dayName: string) => {
+    setSelectedDay(dayName);
+    setSlaByStatusDialogOpen(true);
   };
 
-  const handleSlaFormChange = (field: string, value: string | boolean) => {
-    setSlaForm(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSaveSla = () => {
-    // TODO: Implement SLA saving logic
-    console.log("Saving SLA for", selectedDay, slaForm);
-    toast.success(`SLA adicionado para ${selectedDay}`);
-    setSlaDialogOpen(false);
-    setSlaForm({
-      tipo_chamado: "",
-      grupo_status: "",
-      tempo_retorno: "",
-      sinalizacao: false
-    });
+  const handleSaveSlaByStatus = async (regras: { statusId: string; priority: string; tempoRetornoHoras: number; sinalizacao: boolean }[]) => {
+    try {
+      // TODO: Implement SLA saving logic
+      console.log("Saving SLA rules:", regras);
+      toast.success("Regras SLA salvas com sucesso!");
+    } catch (error) {
+      console.error("Error saving SLA rules:", error);
+      toast.error("Erro ao salvar regras SLA");
+    }
   };
 
   return (
@@ -412,224 +398,10 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
           </h2>
         </div>
         <CardContent className="pt-4">
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-            {/* Domingo */}
-            <Card className="border-l-4 border-l-blue-500">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-sm">Domingo</h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleOpenSlaDialog("Domingo")}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Adicionar SLA</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <div>Início: --:--</div>
-                  <div>Fim: --:--</div>
-                  <div className="pt-1">
-                    <Badge variant="outline" className="text-xs">Inativo</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Segunda-feira */}
-            <Card className="border-l-4 border-l-green-500">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-sm">Segunda</h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleOpenSlaDialog("Segunda-feira")}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Adicionar SLA</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <div>Início: 08:00</div>
-                  <div>Fim: 18:00</div>
-                  <div className="pt-1">
-                    <Badge variant="secondary" className="text-xs">Ativo</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Terça-feira */}
-            <Card className="border-l-4 border-l-green-500">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-sm">Terça</h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleOpenSlaDialog("Terça-feira")}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Adicionar SLA</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <div>Início: 08:00</div>
-                  <div>Fim: 18:00</div>
-                  <div className="pt-1">
-                    <Badge variant="secondary" className="text-xs">Ativo</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quarta-feira */}
-            <Card className="border-l-4 border-l-green-500">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-sm">Quarta</h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleOpenSlaDialog("Quarta-feira")}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Adicionar SLA</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <div>Início: 08:00</div>
-                  <div>Fim: 18:00</div>
-                  <div className="pt-1">
-                    <Badge variant="secondary" className="text-xs">Ativo</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quinta-feira */}
-            <Card className="border-l-4 border-l-green-500">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-sm">Quinta</h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleOpenSlaDialog("Quinta-feira")}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Adicionar SLA</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <div>Início: 08:00</div>
-                  <div>Fim: 18:00</div>
-                  <div className="pt-1">
-                    <Badge variant="secondary" className="text-xs">Ativo</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Sexta-feira */}
-            <Card className="border-l-4 border-l-green-500">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-sm">Sexta</h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleOpenSlaDialog("Sexta-feira")}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Adicionar SLA</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <div>Início: 08:00</div>
-                  <div>Fim: 18:00</div>
-                  <div className="pt-1">
-                    <Badge variant="secondary" className="text-xs">Ativo</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Sábado */}
-            <Card className="border-l-4 border-l-blue-500">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-sm">Sábado</h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleOpenSlaDialog("Sábado")}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Adicionar SLA</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <div>Início: --:--</div>
-                  <div>Fim: --:--</div>
-                  <div className="pt-1">
-                    <Badge variant="outline" className="text-xs">Inativo</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <WeeklyScheduleDisplay 
+            onAddSla={handleOpenSlaDialog}
+            disabled={isClosed}
+          />
         </CardContent>
       </Card>
       
@@ -688,79 +460,13 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
         </div>
       </Card>
 
-      {/* SLA Dialog */}
-      <Dialog open={slaDialogOpen} onOpenChange={setSlaDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Adicionar SLA - {selectedDay}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="tipo_chamado">Tipo de Chamado</Label>
-              <Select 
-                value={slaForm.tipo_chamado} 
-                onValueChange={(value) => handleSlaFormChange("tipo_chamado", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo de chamado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="incidente">Incidente</SelectItem>
-                  <SelectItem value="requisicao">Requisição</SelectItem>
-                  <SelectItem value="mudanca">Mudança</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="grupo_status">Grupo de Status</Label>
-              <Select 
-                value={slaForm.grupo_status} 
-                onValueChange={(value) => handleSlaFormChange("grupo_status", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o grupo de status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="critico">Crítico</SelectItem>
-                  <SelectItem value="alto">Alto</SelectItem>
-                  <SelectItem value="medio">Médio</SelectItem>
-                  <SelectItem value="baixo">Baixo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tempo_retorno">Tempo Retorno (em horas)</Label>
-              <Input
-                id="tempo_retorno"
-                type="number"
-                value={slaForm.tempo_retorno}
-                onChange={(e) => handleSlaFormChange("tempo_retorno", e.target.value)}
-                placeholder="Ex: 2"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="sinalizacao"
-                checked={slaForm.sinalizacao}
-                onCheckedChange={(checked) => handleSlaFormChange("sinalizacao", checked as boolean)}
-              />
-              <Label htmlFor="sinalizacao">Sinalização</Label>
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={() => setSlaDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSaveSla}>
-                Adicionar SLA
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* SlaByStatusDialog */}
+      <SlaByStatusDialog
+        open={slaByStatusDialogOpen}
+        onOpenChange={setSlaByStatusDialogOpen}
+        onSave={handleSaveSlaByStatus}
+        selectedDay={selectedDay}
+      />
     </TooltipProvider>
   );
 }
