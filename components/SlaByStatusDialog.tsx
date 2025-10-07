@@ -7,38 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Plus, X } from "lucide-react";
 import { useTicketStatuses } from "@/hooks/useTicketStatuses";
+import { getPriorityOptions, getCategoryOptions } from "@/hooks/useOptions";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 
-type Priority = "critico" | "alto" | "medio" | "baixo";
-
 interface Regra {
+  ticket_category_id: string;
   groupId: number;
-  priority: Priority;
-  tempoRetornoHoras: number;
-  sinalizacao: boolean;
+  priority_id: string;
+  sla_hours: number;
+  warning: boolean;
 }
-
-// Mapeamento de priority para tipos do ColoredBadge
-const PRIORITY_TO_LABEL: Record<Priority, string> = {
-  critico: "Crítica",
-  alto: "Alta", 
-  medio: "Média",
-  baixo: "Baixa",
-};
-
-const PRIORITIES: { value: Priority; label: string }[] = [
-  { value: "critico", label: "Crítico" },
-  { value: "alto", label: "Alto" },
-  { value: "medio", label: "Médio" },
-  { value: "baixo", label: "Baixo" },
-];
-
-const DEFAULTS: Record<Priority, number> = {
-  critico: 2,
-  alto: 4,
-  medio: 8,
-  baixo: 24,
-};
 
 // Mapeamento dos grupos
 const GROUP_LABELS: Record<number, string> = {
@@ -48,9 +26,15 @@ const GROUP_LABELS: Record<number, string> = {
   4: "Em Desenvolvimento",
 };
 
-function getDefaultTempo(p: Priority) {
-  return DEFAULTS[p] ?? 8;
-}
+// Tempo padrão baseado no nome da prioridade (fallback)
+const getDefaultTempo = (priorityName: string) => {
+  const name = priorityName.toLowerCase();
+  if (name.includes('crítica') || name.includes('critica')) return 2;
+  if (name.includes('alto') || name.includes('alta')) return 4;
+  if (name.includes('médio') || name.includes('medio')) return 8;
+  if (name.includes('baixo') || name.includes('baixa')) return 24;
+  return 8; // padrão
+};
 
 export function SlaByStatusDialog({
   open,
@@ -63,10 +47,43 @@ export function SlaByStatusDialog({
   onSave: (regras: Regra[]) => Promise<void> | void;
   selectedDay?: string;
 }) {
-  // Buscar apenas status internos (padrão)
+  // Buscar status e prioridades
   const { statuses } = useTicketStatuses();
+  const [priorities, setPriorities] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; description: string }[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [rows, setRows] = useState<Regra[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  // Carregar prioridades e categorias
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [priorityOptions, categoryOptions] = await Promise.all([
+          getPriorityOptions(),
+          getCategoryOptions(true) // true para AMS
+        ]);
+        
+        setPriorities(priorityOptions);
+        setCategories(categoryOptions);
+        
+        // Definir a primeira categoria como selecionada
+        if (categoryOptions.length > 0 && !selectedCategory) {
+          setSelectedCategory(categoryOptions[0].id);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (open) {
+      loadData();
+    }
+  }, [open, selectedCategory]);
 
   // Obter grupos únicos dos status
   const availableGroups = useMemo(() => {
@@ -79,39 +96,71 @@ export function SlaByStatusDialog({
       }));
   }, [statuses]);
 
-  // Add/remove group
+  // Add/remove group - versão simples
   const toggleGroup = (groupId: number, checked: boolean) => {
     setSelectedGroupIds(prev => {
-      const cur = new Set(prev);
-      if (checked) cur.add(groupId); else cur.delete(groupId);
-      return Array.from(cur);
+      if (checked) {
+        return [...prev, groupId];
+      } else {
+        return prev.filter(id => id !== groupId);
+      }
     });
   };
 
-  // Keep rows in sync with selectedGroupIds
+  // Keep rows in sync with selectedGroupIds - versão simples
   useEffect(() => {
+    if (!selectedCategory || priorities.length === 0) return;
+    
     setRows(prev => {
-      const keep = prev.filter(r => selectedGroupIds.includes(r.groupId));
-      const needed = selectedGroupIds
-        .filter(groupId => !keep.some(r => r.groupId === groupId))
-        .map<Regra>(groupId => ({
+      // Manter rows existentes da categoria atual que ainda estão selecionadas
+      const existingRows = prev.filter(r => 
+        r.ticket_category_id === selectedCategory && selectedGroupIds.includes(r.groupId)
+      );
+      
+      // Adicionar novas rows para grupos que não existem
+      const neededGroups = selectedGroupIds.filter(groupId => 
+        !existingRows.some(r => r.groupId === groupId)
+      );
+      
+      const newRows = neededGroups.map<Regra>(groupId => {
+        const defaultPriority = priorities[0];
+        return {
+          ticket_category_id: selectedCategory,
           groupId,
-          priority: "medio",
-          tempoRetornoHoras: getDefaultTempo("medio"),
-          sinalizacao: false,
-        }));
-      return [...keep, ...needed];
+          priority_id: defaultPriority?.id || '',
+          sla_hours: defaultPriority ? getDefaultTempo(defaultPriority.name) : 8,
+          warning: false,
+        };
+      });
+      
+      // Manter rows de outras categorias
+      const otherCategoryRows = prev.filter(r => r.ticket_category_id !== selectedCategory);
+      
+      return [...otherCategoryRows, ...existingRows, ...newRows];
     });
-  }, [selectedGroupIds]);
+  }, [selectedGroupIds, selectedCategory, priorities]);
+
+  // Limpar grupos selecionados ao trocar categoria
+  useEffect(() => {
+    if (selectedCategory) {
+      // Obter grupos já existentes para esta categoria
+      const existingGroups = rows
+        .filter(r => r.ticket_category_id === selectedCategory)
+        .map(r => r.groupId);
+      setSelectedGroupIds(existingGroups);
+    }
+  }, [selectedCategory]);
 
   const updateRow = (idx: number, patch: Partial<Regra>) => {
     setRows(prev => {
       const copy = [...prev];
       copy[idx] = { ...copy[idx], ...patch };
       // Auto-default tempo quando priority muda
-      if (patch.priority) {
-        const tempo = getDefaultTempo(patch.priority);
-        copy[idx].tempoRetornoHoras = tempo;
+      if (patch.priority_id) {
+        const priority = priorities.find(p => p.id === patch.priority_id);
+        if (priority) {
+          copy[idx].sla_hours = getDefaultTempo(priority.name);
+        }
       }
       return copy;
     });
@@ -123,29 +172,93 @@ export function SlaByStatusDialog({
     setRows(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const currentRows = rows.map((r, i) => ({ i, r }));
+  // Obter regras da categoria ativa
+  const getCurrentCategoryRows = (categoryId: string) => {
+    return rows
+      .filter(r => r.ticket_category_id === categoryId)
+      .map((r) => ({ i: rows.indexOf(r), r }));
+  };
 
   const handleSave = async () => {
     // Validação simples
-    for (const { r } of currentRows) {
-      if (!r.tempoRetornoHoras || r.tempoRetornoHoras <= 0) {
+    for (const r of rows) {
+      if (!r.sla_hours || r.sla_hours <= 0) {
         throw new Error("Tempo de retorno deve ser maior que zero.");
+      }
+      if (!r.priority_id) {
+        throw new Error("Prioridade deve ser selecionada.");
       }
     }
     await onSave(rows);
     onOpenChange(false);
   };
 
+  if (loading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Carregando...</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">Carregando categorias e prioridades...</div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (categories.length === 0) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Nenhuma categoria encontrada</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">
+              Nenhuma categoria de ticket AMS foi encontrada.
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const currentRows = getCurrentCategoryRows(selectedCategory);
+  const selectedCategoryName = categories.find(c => c.id === selectedCategory)?.name || '';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>
-            {selectedDay ? `${selectedDay}` : "Regras por Status"}
+            {selectedDay ? `${selectedDay} - Regras por Categoria` : "Regras por Categoria"}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Seletor de Categoria */}
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium">Categoria:</label>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Controles e Badges */}
           <div className="flex items-center justify-between">
             <Popover>
               <PopoverTrigger asChild>
@@ -172,23 +285,24 @@ export function SlaByStatusDialog({
               </PopoverContent>
             </Popover>
             <div className="flex gap-2">
-              {PRIORITIES.map(p => (
+              {priorities.map(p => (
                 <ColoredBadge 
-                  key={p.value} 
-                  value={PRIORITY_TO_LABEL[p.value]} 
+                  key={p.id} 
+                  value={p.name} 
                   type="priority" 
                 />
               ))}
             </div>
           </div>
 
+          {/* Tabela */}
           <div className="rounded-md border">
             {/* Header fixo */}
             <div className="grid grid-cols-12 px-3 py-2 text-xs text-muted-foreground bg-muted/50">
               <div className="col-span-4">Status</div>
               <div className="col-span-3">Prioridade</div>
-              <div className="col-span-3">Tempo Retorno (h)</div>
-              <div className="col-span-1">Sinalização</div>
+              <div className="col-span-3">Tempo SLA (h)</div>
+              <div className="col-span-1">Notificar</div>
               <div className="col-span-1 text-right">Ações</div>
             </div>
             
@@ -196,25 +310,25 @@ export function SlaByStatusDialog({
             <div className="divide-y max-h-96 overflow-y-auto">
               {currentRows.length === 0 && (
                 <div className="px-3 py-6 text-sm text-muted-foreground">
-                  Nenhum grupo selecionado. Use &quot;Adicionar grupo&quot;.
+                  Nenhum grupo selecionado para “{selectedCategoryName}”. Use “Adicionar grupo”.
                 </div>
               )}
               {currentRows.map(({ i, r }) => (
-                <div key={r.groupId} className="grid grid-cols-12 items-center gap-2 px-3 py-2">
+                <div key={`${r.ticket_category_id}-${r.groupId}`} className="grid grid-cols-12 items-center gap-2 px-3 py-2">
                   <div className="col-span-4 text-sm truncate">
                     {GROUP_LABELS[r.groupId] || `Grupo ${r.groupId}`}
                   </div>
                   <div className="col-span-3">
                     <Select
-                      value={r.priority}
-                      onValueChange={(v) => updateRow(i, { priority: v as Priority })}
+                      value={r.priority_id}
+                      onValueChange={(v) => updateRow(i, { priority_id: v })}
                     >
                       <SelectTrigger className="h-8 w-full">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {PRIORITIES.map(p => (
-                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        {priorities.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -224,14 +338,14 @@ export function SlaByStatusDialog({
                       type="number"
                       min={1}
                       className="h-8"
-                      value={r.tempoRetornoHoras}
-                      onChange={(e) => updateRow(i, { tempoRetornoHoras: Number(e.target.value) })}
+                      value={r.sla_hours}
+                      onChange={(e) => updateRow(i, { sla_hours: Number(e.target.value) })}
                     />
                   </div>
                   <div className="col-span-1 flex justify-center">
                     <Checkbox
-                      checked={r.sinalizacao}
-                      onCheckedChange={(v) => updateRow(i, { sinalizacao: Boolean(v) })}
+                      checked={r.warning}
+                      onCheckedChange={(v) => updateRow(i, { warning: Boolean(v) })}
                     />
                   </div>
                   <div className="col-span-1 flex justify-end">
@@ -248,11 +362,11 @@ export function SlaByStatusDialog({
               ))}
             </div>
           </div>
+        </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" className="hover:bg-destructive hover:text-destructive-foreground" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>Salvar</Button>
-          </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" className="hover:bg-destructive hover:text-destructive-foreground" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleSave}>Salvar</Button>
         </div>
       </DialogContent>
     </Dialog>
