@@ -6,9 +6,11 @@ import ThemeSwitcher from "@/components/theme-switcher";
 import { LogoutButton } from "@/components/logout-button";
 import { NotificationPopover } from "@/components/NotificationPopover";
 import { useUserContext } from "@/components/user-context";
+import ProfileDialog from "@/components/ProfileDialog";
 
 export function TopBar() {
-  const { user, loading } = useUserContext();
+  const { user, loading, setProfileDialogOpen } = useUserContext();
+  const isDev = process.env.NODE_ENV === "development";
 
   // Função utilitária para exibir o nome do cargo
   function roleToLabel(role: number | string | null | undefined, is_client: boolean) {
@@ -53,7 +55,10 @@ export function TopBar() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setProfileDialogOpen(true)}
+            className="flex items-center gap-3 p-2 rounded-md hover:bg-primary-foreground/10 transition-colors cursor-pointer"
+          >
             <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary-foreground/20 text-primary-foreground font-bold text-sm">
               {getUserInitials()}
             </div>
@@ -65,7 +70,7 @@ export function TopBar() {
                 {user ? roleToLabel(user.role, user.is_client) : "Cargo Indefinido"}
               </span>
             </div>
-          </div>
+          </button>
         )}
         
         {/* Divisor */}
@@ -73,7 +78,7 @@ export function TopBar() {
         
         {/* Controles de ação - com estilos customizados para o fundo primary */}
         <div className="flex items-center gap-2">
-          <NotificationPopover />
+          {!isDev && <NotificationPopover />}
           <div className="[&>button]:text-primary-foreground [&>button:hover]:bg-primary-foreground/10 [&>button:hover]:text-primary-foreground [&_svg]:text-primary-foreground">
             <ThemeSwitcher />
           </div>
@@ -82,6 +87,7 @@ export function TopBar() {
           </div>
         </div>
       </div>
+      <ProfileDialog />
     </header>
   );
 }

@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { ColoredBadge } from "@/components/ui/colored-badge";
 import { AuthenticatedUser } from "@/lib/api-auth";
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -86,12 +87,12 @@ export const getColumns = (): ColumnDef<TimesheetRow>[] => {
         ),
         cell: ({ getValue }) => {
             const date = getValue() as string;
-            const parseUTCDateAsLocal = (utcDateString: string) => {
-                const datePart = utcDateString.split('T')[0];
-                const [year, month, day] = datePart.split('-').map(Number);
-                return new Date(year, month - 1, day);
-            };
-            return <span>{format(parseUTCDateAsLocal(date), "dd/MM/yyyy")}</span>;
+            // const parseUTCDateAsLocal = (utcDateString: string) => {
+            //     const datePart = utcDateString.split('T')[0];
+            //     const [year, month, day] = datePart.split('-').map(Number);
+            //     return new Date(year, month - 1, day);
+            // };
+            return <span>{format(date, "dd/MM/yyyy")}</span>;
         },
     },
     {
@@ -228,22 +229,24 @@ export const getChildColumns = (user: AuthenticatedUser | null): ColumnDef<Ticke
     },
     {
       accessorKey: "appoint_start",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Início" />
-      ),
-      cell: ({ getValue }) => {
-        const time = getValue() as string;
-        return <span className="font-mono text-xs">{time || "-"}</span>;
+      header: "Início",
+      cell: ({ row }) => {
+        const value = row.original.appoint_start;
+        if (!value) return "-";
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return "-";
+        return format(date, "HH:mm", { locale: ptBR });
       },
     },
     {
       accessorKey: "appoint_end", 
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Fim" />
-      ),
-      cell: ({ getValue }) => {
-        const time = getValue() as string;
-        return <span className="font-mono text-xs">{time || "-"}</span>;
+      header: "Fim",
+      cell: ({ row }) => {
+        const value = row.original.appoint_end;
+        if (!value) return "-";
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return "-";
+        return format(date, "HH:mm", { locale: ptBR });
       },
     },
     {

@@ -7,8 +7,13 @@ import type { Contract } from "@/types/contracts";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
+
 import ProjectUsersTab from "./users/ProjectUsersTab";
 import { toast } from "sonner";
+import { SlaByStatusDialog } from "@/components/SlaByStatusDialog";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { WeeklyScheduleDisplay } from "@/components/WeeklyScheduleDisplay";
+import { SlaRule } from "@/types/sla_rules";
 
 interface ProjectDetailsTabProps {
   project: Contract;
@@ -82,6 +87,10 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
   const [statusOptions, setStatusOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // SLA Dialog state
+  const [slaByStatusDialogOpen, setSlaByStatusDialogOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string>("");
 
   // Garante que o valor do status está sempre sincronizado com as opções
   useEffect(() => {
@@ -218,8 +227,107 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
     setError(null);
   };
 
+  // SLA Dialog functions
+  const handleOpenSlaDialog = (dayName: string) => {
+    setSelectedDay(dayName);
+    setSlaByStatusDialogOpen(true);
+  };
+
+  const handleSaveSlaByStatus = async (regras: { 
+    project_id: string;
+    ticket_category_id: number;
+    priority_id: number;
+    status_id: number;
+    weekday_id: number;
+    sla_hours: number;
+    warning: boolean;
+  }[]) => {
+    try {
+      // Primeiro, buscar regras existentes para verificar duplicatas
+      const params = new URLSearchParams({
+        project_id: String(project.id),
+        weekday_id: getWeekdayId(selectedDay).toString()
+      });
+      
+      const existingResponse = await fetch(`/api/sla-rules?${params}`);
+      const { data: existingRules = [] } = existingResponse.ok ? await existingResponse.json() : { data: [] };
+
+      // Processar cada regra - agora os dados já vêm no formato correto da API
+      const savePromises = regras.map(async (ruleData) => {
+        // Verificar se já existe uma regra com a mesma combinação
+        // Comparar por: projeto + categoria + prioridade + status + dia
+        const existingRule = existingRules.find((existing: SlaRule) => 
+          existing.project_id === ruleData.project_id &&
+          existing.ticket_category_id === ruleData.ticket_category_id &&
+          existing.priority_id === ruleData.priority_id &&
+          existing.status_id === ruleData.status_id &&
+          existing.weekday_id === ruleData.weekday_id
+        );
+
+        if (existingRule) {
+          // Atualizar regra existente (apenas sla_hours e warning podem mudar)
+          const response = await fetch(`/api/sla-rules/${existingRule.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sla_hours: ruleData.sla_hours,
+              warning: ruleData.warning,
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Erro ao atualizar regra SLA');
+          }
+
+          return response.json();
+        } else {
+          // Criar nova regra
+          const response = await fetch('/api/sla-rules', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(ruleData),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Erro ao criar regra SLA');
+          }
+
+          return response.json();
+        }
+      });
+
+      // Aguardar todas as operações
+      await Promise.all(savePromises);
+      
+      toast.success(`${regras.length} regra(s) SLA processada(s) para ${selectedDay}`);
+      
+    } catch (error) {
+      toast.error(`Erro ao salvar regras SLA: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
+  };
+
+  // Função auxiliar para converter nome do dia para weekday_id
+  const getWeekdayId = (dayName: string): number => {
+    const dayMap: Record<string, number> = {
+      'Domingo': 0,
+      'Segunda-feira': 1,
+      'Terça-feira': 2,
+      'Quarta-feira': 3,
+      'Quinta-feira': 4,
+      'Sexta-feira': 5,
+      'Sábado': 6,
+    };
+    return dayMap[dayName] || 0;
+  };
+
   return (
-    <>
+    <TooltipProvider>
       <div className="flex items-center justify-between gap-2 px-1">
         <h1 className="text-2xl font-bold truncate">{form.projectName || 'Projeto'}</h1>
         {editMode ? (
@@ -361,56 +469,89 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
                   <div>{project.is_247 ? <Badge variant="secondary">Sim</Badge> : <Badge variant="outline">Não</Badge>}</div>                )}
               </div>
             </div>
-            {/* Seção de cobrança - sempre aparece para projetos AMS no admin */}
-            {(form.project_type === "AMS" || project.project_type === "AMS") && (
-              <div className="md:col-span-4 pt-6">
-                <h2 className="flex items-center text-lg font-semibold pt-4 pb-3">
-                  <CircleDollarSignIcon className="w-4 h-4 mr-2" />Informações de Cobrança
-                </h2>
-                {/* Linha 1: Horas Máx, Horas Baseline */}
-                <div className="grid gap-6 md:grid-cols-4">
-                  <div>
-                    <Label htmlFor="hours_max" className="text-xs text-muted-foreground">Máx. Horas por Chamado</Label>
-                    <Input id="hours_max" name="hours_max" type="number" value={form.hours_max || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                  <div>
-                    <Label htmlFor="baseline_hours" className="text-xs text-muted-foreground">Horas Baseline</Label>
-                    <Input id="baseline_hours" name="baseline_hours" type="number" value={form.baseline_hours || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                    <div>
-                    <Label htmlFor="cred_exp_period" className="text-xs text-muted-foreground">Período Exp. Crédito (dias)</Label>
-                    <Input id="cred_exp_period" name="cred_exp_period" type="number" value={form.cred_exp_period || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                </div>
-                {/* Linha 2: Valores e Período Exp. Crédito */}
-                <div className="grid gap-6 md:grid-cols-4 mt-6">
-                  <div>
-                    <Label htmlFor="value_hr_normal" className="text-xs text-muted-foreground">Valor Hora Normal</Label>
-                    <Input id="value_hr_normal" name="value_hr_normal" type="number" step="0.01" value={form.value_hr_normal || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                  <div>
-                    <Label htmlFor="value_hr_excdn" className="text-xs text-muted-foreground">Valor Hora Excedente</Label>
-                    <Input id="value_hr_excdn" name="value_hr_excdn" type="number" step="0.01" value={form.value_hr_excdn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                  <div>
-                    <Label htmlFor="value_hr_except" className="text-xs text-muted-foreground">Valor Hora Exceção</Label>
-                    <Input id="value_hr_except" name="value_hr_except" type="number" step="0.01" value={form.value_hr_except || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                  <div>
-                    <Label htmlFor="value_hr_warn" className="text-xs text-muted-foreground">Valor Hora Aviso</Label>
-                    <Input id="value_hr_warn" name="value_hr_warn" type="number" step="0.01" value={form.value_hr_warn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
-                  </div>
-                </div>
-              </div>
-            )}
           </form>
         </CardContent>
       </Card>
+
+      {/* Card para Informações de Atendimento */}
+      <Card className="mt-4">
+        <div className="px-6 pb-4 pt-2">
+          <h2 className="flex items-center text-lg font-semibold">
+            <Info className="w-4 h-4 mr-2" />Informações de Atendimento
+          </h2>
+        </div>
+        <CardContent className="pt-4">
+          <WeeklyScheduleDisplay 
+            onAddSla={handleOpenSlaDialog}
+            disabled={isClosed}
+          />
+        </CardContent>
+      </Card>
+      
+      {/* Card separado para Informações de Cobrança - aparece para projetos AMS */}
+      {(form.project_type === "AMS" || project.project_type === "AMS") && (
+        <Card className="mt-4">
+          <div className="px-6 pb-4 pt-2">
+            <h2 className="flex items-center text-lg font-semibold">
+              <CircleDollarSignIcon className="w-4 h-4 mr-2" />Informações de Cobrança
+            </h2>
+          </div>
+          <CardContent className="pt-4">
+            <form className="grid gap-6" onSubmit={handleSave}>
+              {/* Linha 1: Horas Máx, Horas Baseline, Período Exp. Crédito */}
+              <div className="grid gap-6 md:grid-cols-3">
+                <div>
+                  <Label htmlFor="hours_max" className="text-xs text-muted-foreground">Máx. Horas por Chamado</Label>
+                  <Input id="hours_max" name="hours_max" type="number" value={form.hours_max || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                </div>
+                <div>
+                  <Label htmlFor="baseline_hours" className="text-xs text-muted-foreground">Horas Baseline</Label>
+                  <Input id="baseline_hours" name="baseline_hours" type="number" value={form.baseline_hours || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                </div>
+                <div>
+                  <Label htmlFor="cred_exp_period" className="text-xs text-muted-foreground">Período Exp. Crédito (dias)</Label>
+                  <Input id="cred_exp_period" name="cred_exp_period" type="number" value={form.cred_exp_period || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                </div>
+              </div>
+              
+              {/* Linha 2: Valores das horas */}
+              <div className="grid gap-6 md:grid-cols-4">
+                <div>
+                  <Label htmlFor="value_hr_normal" className="text-xs text-muted-foreground">Valor Hora Normal</Label>
+                  <Input id="value_hr_normal" name="value_hr_normal" type="number" step="0.01" value={form.value_hr_normal || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                </div>
+                <div>
+                  <Label htmlFor="value_hr_excdn" className="text-xs text-muted-foreground">Valor Hora Excedente</Label>
+                  <Input id="value_hr_excdn" name="value_hr_excdn" type="number" step="0.01" value={form.value_hr_excdn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                </div>
+                <div>
+                  <Label htmlFor="value_hr_except" className="text-xs text-muted-foreground">Valor Hora Exceção</Label>
+                  <Input id="value_hr_except" name="value_hr_except" type="number" step="0.01" value={form.value_hr_except || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                </div>
+                <div>
+                  <Label htmlFor="value_hr_warn" className="text-xs text-muted-foreground">Valor Hora Aviso</Label>
+                  <Input id="value_hr_warn" name="value_hr_warn" type="number" step="0.01" value={form.value_hr_warn || ''} onChange={handleChange} className="h-9" disabled={!editMode} />
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
       <Card className="mt-4">
         <div className="px-6 pb-4 pt-2">
           <ProjectUsersTab projectId={String(project.id)} isClosed={isClosed} />
         </div>
       </Card>
-    </>
+
+      {/* SlaByStatusDialog */}
+      <SlaByStatusDialog
+        open={slaByStatusDialogOpen}
+        onOpenChange={setSlaByStatusDialogOpen}
+        onSave={handleSaveSlaByStatus}
+        selectedDay={selectedDay}
+        projectId={project.id ? String(project.id) : undefined}
+        weekdayId={getWeekdayId(selectedDay)}
+      />
+    </TooltipProvider>
   );
 }

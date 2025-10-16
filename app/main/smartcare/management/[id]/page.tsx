@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import type { Ticket } from "@/types/tickets";
 // import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,11 @@ import { isTicketFinalized } from "@/lib/ticket-status";
 import { getCategoryOptions, getPriorityOptions } from "@/hooks/useOptions";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-// import { useTicketStatuses } from "@/hooks/useTicketStatuses";
+import ParalizarChamadoButton from "@/components/ButtonParalizarChamado";
+import DesparalizarChamadoButton from "@/components/ButtonDesparalizarChamado";
+import SolicitarEncerramentoButton from "@/components/ButtonSolicitarEncerramento";
+import { Rating as Stars, RatingButton as Star } from "@/components/ui/RatingButton";
+import { Textarea } from "@/components/ui/textarea";
 
 // Define o tipo correto para o recurso retornado pelo backend
 interface TicketResource {
@@ -104,8 +108,39 @@ export default function TicketDetailsPage() {
   const [selectedValue, setSelectedValue] = useState<string>("");
   const [updatingField, setUpdatingField] = useState(false);
 
+  // Estados para ações do cliente (paralisar/desparalisar/solicitar encerramento)
+  type ClientAction = "pause" | "unpause" | "close";
+  const [confirmOpen, setConfirmOpen] = useState<null | { action: ClientAction; title: string }>(null);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [ratingSystem, setRatingSystem] = useState<number>(0);
+  const [ratingManager, setRatingManager] = useState<number>(0);
+  const [ratingFunctional, setRatingFunctional] = useState<number>(0);
+  const [ratingService, setRatingService] = useState<number>(0);
+  // Status IDs fixos solicitados: 14 = Paralizado pelo Solicitante, 9 = Enc. para Encerramento
+
+  // Helper: resolve target status for action
+  const resolveTargetStatus = useCallback(async (action: ClientAction) => {
+    if (action === "pause") return { id: 14, label: "Paralizado pelo Solicitante" } as const;
+    if (action === "close") return { id: 9, label: "Enc. para Encerramento" } as const;
+    // unpause/reactivar: status fixo 1
+    return { id: 1, label: "Ag. Atendimento" } as const;
+  }, []);
+
+  // Helper: build default message body for action
+  const buildMsgBody = useCallback((action: ClientAction, reasonText: string) => {
+    const trimmed = reasonText?.trim();
+    let base = trimmed || "";
+    if (!base) {
+      if (action === "pause") base = "Cliente solicitou paralisação do chamado.";
+      else if (action === "unpause") base = "Cliente solicitou retomada do chamado.";
+      else base = "Cliente solicitou encerramento do chamado.";
+    }
+    return base;
+  }, []);
+
   // Corrige mapeamento das mensagens vindas do backend para o formato esperado pelo frontend
-  const mapMessageBackendToFrontend = (msg: Record<string, unknown>): Message => ({
+  const mapMessageBackendToFrontend = useCallback((msg: Record<string, unknown>): Message => ({
     id: String(msg.id),
     ticket_id: typeof msg.ticket_id === 'string' ? msg.ticket_id : undefined,
     msgStatus: msg.status_id ? String(msg.status_id) : undefined,
@@ -161,7 +196,7 @@ export default function TicketDetailsPage() {
     is_system: Boolean(msg.is_system), // Mapeia is_system
     msg_ref: typeof msg.msg_ref === 'string' ? msg.msg_ref : undefined,
     ref_msg_id: typeof msg.ref_msg_id === 'string' ? msg.ref_msg_id : undefined,
-  });
+  }), []);
 
   // Calcular total de horas das mensagens
   // const totalHours = allMessages.reduce((total, msg) => {
@@ -169,7 +204,11 @@ export default function TicketDetailsPage() {
   // }, 0);
 
   // Busca apenas as mensagens do ticket
-  const refreshMessages = async () => {
+  // Refs estáveis para evitar dependências em cascata
+  const fetchEstimatedHoursRef = useRef<() => Promise<void>>(async () => {});
+  const refreshTicketDataRef = useRef<() => Promise<void>>(async () => {});
+
+  const refreshMessages = useCallback(async () => {
     if (!ticket) return;
     setMessagesLoading(true);
     try {
@@ -180,18 +219,14 @@ export default function TicketDetailsPage() {
       setAllMessages(mappedMessages);
       setMessagesLoaded(true);
       
-      // Atualiza as horas estimadas quando as mensagens são atualizadas
-      // A função fetchEstimatedHours já considera a filtragem de mensagens privadas
-      await fetchEstimatedHours();
-      
-      // Força um refresh completo do ticket para pegar mudanças de status
-      await refreshTicketData();
+      await fetchEstimatedHoursRef.current();
+      await refreshTicketDataRef.current();
     } catch {
       setAllMessages([]);
     } finally {
       setMessagesLoading(false);
     }
-  };
+  }, [ticket, mapMessageBackendToFrontend]);
 
   // Carrega apenas o ticket no início
   useEffect(() => {
@@ -219,7 +254,7 @@ export default function TicketDetailsPage() {
   }, [id]);
 
   // Função para atualizar os dados do ticket sem loading
-  const refreshTicketData = async () => {
+  const refreshTicketData = useCallback(async () => {
     if (!id) return;
     try {
       const response = await fetch(`/api/smartcare?external_id=${id}`);
@@ -235,7 +270,7 @@ export default function TicketDetailsPage() {
     } catch (error) {
       console.error("Erro ao atualizar dados do ticket:", error);
     }
-  };
+  }, [id]);
 
   // Busca mensagens apenas ao ativar a aba 'messages' e se ainda não carregou
   useEffect(() => {
@@ -318,6 +353,10 @@ export default function TicketDetailsPage() {
   useEffect(() => {
     fetchResources();
   }, [fetchResources]);
+
+  // Atualiza refs com funções reais após declaração
+  useEffect(() => { fetchEstimatedHoursRef.current = fetchEstimatedHours; }, [fetchEstimatedHours]);
+  useEffect(() => { refreshTicketDataRef.current = refreshTicketData; }, [refreshTicketData]);
 
   // Buscar horas estimadas quando o ticket for carregado
   useEffect(() => {
@@ -490,6 +529,107 @@ export default function TicketDetailsPage() {
     setSelectedValue("");
   };
 
+  // Ações: Paralisar / Solicitar Encerramento
+  async function postMessageForAction(ticketId: string, body: string, statusId: number): Promise<void> {
+    const msgRes = await fetch(`/api/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body, is_private: false, status_id: statusId, ticket_id: ticketId }),
+    });
+    if (!msgRes.ok) {
+      const errData = await msgRes.json().catch(() => ({}));
+      throw new Error(errData.error ?? "Erro ao criar mensagem");
+    }
+  }
+
+  async function updateTicketStatusIfChanged(ticketId: string, currentStatusId: number | null, targetStatusId: number): Promise<boolean> {
+    if (currentStatusId === targetStatusId) return false;
+    const updRes = await fetch(`/api/tickets`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket_id: ticketId, status_id: targetStatusId }),
+    });
+    if (!updRes.ok) {
+      const errTicket = await updRes.json().catch(() => ({}));
+      throw new Error(errTicket.error ?? "Erro ao atualizar status do ticket");
+    }
+    return true;
+  }
+
+  async function sendFeedbackForClose(ticketId: string, ratings: { system?: number; manager?: number; functional?: number; service?: number }, commentText: string): Promise<void> {
+    try {
+      const payload: Record<string, unknown> = { ticket_id: ticketId };
+      if (ratings.system && ratings.system > 0) payload.fb_system = ratings.system;
+      if (ratings.manager && ratings.manager > 0) payload.fb_manager = ratings.manager;
+      if (ratings.functional && ratings.functional > 0) payload.fb_functional = ratings.functional;
+      if (ratings.service && ratings.service > 0) payload.fb_service = ratings.service;
+      const trimmed = commentText?.trim();
+      if (trimmed) payload.comment = trimmed;
+      // Se nenhum campo além do ticket_id foi informado, não envia feedback
+      if (Object.keys(payload).length <= 1) return;
+
+      const fbRes = await fetch(`/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!fbRes.ok) {
+        const fbErr = await fbRes.json().catch(() => ({} as { error?: string }));
+  console.warn("Falha ao enviar feedback:", fbErr);
+  const extra = fbErr && typeof fbErr.error === 'string' && fbErr.error ? `: ${fbErr.error}` : '';
+  toast.warning(`Chamado encerrado, mas o feedback não pôde ser enviado${extra}.`);
+      }
+    } catch (err) {
+      console.warn("Erro ao enviar feedback:", err);
+      toast.warning("Chamado encerrado, mas o feedback não pôde ser enviado.");
+    }
+  }
+
+  const doChangeStatus = useCallback(
+    async (action: ClientAction) => {
+      if (!ticket) return;
+      setSubmitting(true);
+      try {
+        const target = await resolveTargetStatus(action);
+
+        const currentStatusId = ticket.status_id != null ? Number(ticket.status_id) : null;
+        const msgBody = action === "close" ? "Iniciado processo de encerramento de chamado pelo cliente" : buildMsgBody(action, reason);
+        await postMessageForAction(ticket.id, msgBody, target.id);
+        await updateTicketStatusIfChanged(ticket.id, currentStatusId, target.id);
+        if (action === "close") {
+          await sendFeedbackForClose(
+            ticket.id,
+            {
+              system: ratingSystem,
+              manager: ratingManager,
+              functional: ratingFunctional,
+              service: ratingService,
+            },
+            reason
+          );
+        }
+
+        toast.success(`Status atualizado: ${target.label}`);
+
+        await refreshTicketData();
+        if (activeTab === "messages") await refreshMessages();
+        await fetchResources();
+        setConfirmOpen(null);
+        setReason("");
+        setRatingSystem(0);
+        setRatingManager(0);
+        setRatingFunctional(0);
+        setRatingService(0);
+      } catch (e) {
+        console.error(e);
+        toast.error("Não foi possível atualizar o status");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  [ticket, reason, refreshTicketData, activeTab, fetchResources, refreshMessages, resolveTargetStatus, buildMsgBody, ratingSystem, ratingManager, ratingFunctional, ratingService]
+  );
+
   // Ordena mensagens da mais nova para a mais antiga
   const sortedMessages = [...allMessages].sort((a, b) => {
     if (!a.createdAt || !b.createdAt) return 0;
@@ -551,6 +691,16 @@ export default function TicketDetailsPage() {
       : []),
     // Add more status options here if available from API
   ];
+
+  // Helpers para exibição de botões de ação (cliente)
+  const statusId = ticket.status_id != null ? Number(ticket.status_id) : null;
+  const statusName =
+    ticket && typeof ticket.status === "object" && ticket.status && "name" in ticket.status
+      ? String((ticket.status as { name?: string }).name || "").trim()
+      : "";
+  const isPausedByRequester = statusId === 14 || /parali\w*\s*pelo\s*solicitante/i.test(statusName) || /parali\w*/i.test(statusName);
+  const isCloseRequested = /solicitad\w*\s*encerramento/i.test(statusName);
+  const isFinalized = statusId === 9 || isTicketFinalized(ticket);
 
   // Função utilitária para montar o nome do criador do ticket, igual ao padrão das mensagens
   function getTicketCreatorName(ticket: Ticket): string {
@@ -624,12 +774,65 @@ export default function TicketDetailsPage() {
 
   return (
     <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
-      <TabsList className="mb-4">
-        <TabsTrigger value="details">Detalhes</TabsTrigger>
-        <TabsTrigger value="messages">
-          {totalMessages > 0 ? `Mensagens (${totalMessages})` : "Mensagens"}
-        </TabsTrigger>
-      </TabsList>
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <TabsList className="mb-0">
+          <TabsTrigger value="details">Detalhes</TabsTrigger>
+          <TabsTrigger value="messages">
+            {totalMessages > 0 ? `Mensagens (${totalMessages})` : "Mensagens"}
+          </TabsTrigger>
+        </TabsList>
+        {currentUser?.is_client && !isCloseRequested && !isFinalized && (
+          <div className="flex items-center gap-2">
+            {isPausedByRequester ? (
+              <>
+                <DesparalizarChamadoButton
+                  onClick={() => {
+                    setConfirmOpen({ action: "unpause", title: "Desparalisar Chamado" });
+                    setReason("");
+                  }}
+                  disabled={isFinalized}
+                  loading={submitting}
+                />
+        <SolicitarEncerramentoButton
+                  onClick={() => {
+          setRatingSystem(0);
+          setRatingManager(0);
+          setRatingFunctional(0);
+          setRatingService(0);
+          setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
+                    setReason("");
+                  }}
+                  disabled={isFinalized}
+                  loading={submitting}
+                />
+              </>
+            ) : (
+              <>
+                <ParalizarChamadoButton
+                  onClick={() => {
+                    setConfirmOpen({ action: "pause", title: "Paralisar Chamado" });
+                    setReason("");
+                  }}
+                  disabled={isFinalized}
+                  loading={submitting}
+                />
+        <SolicitarEncerramentoButton
+                  onClick={() => {
+          setRatingSystem(0);
+          setRatingManager(0);
+          setRatingFunctional(0);
+          setRatingService(0);
+          setConfirmOpen({ action: "close", title: "Solicitar Encerramento" });
+                    setReason("");
+                  }}
+                  disabled={isFinalized}
+                  loading={submitting}
+                />
+              </>
+            )}
+          </div>
+        )}
+      </div>
       <Card className="p-6 rounded-md w-full h-full">
         <TabsContent value="details">
           <CardHeader className="flex flex-col gap-2">
@@ -880,63 +1083,71 @@ export default function TicketDetailsPage() {
                 </Button>
               )}
             </div>
-            {resourcesLoading ? (
-              <div className="text-muted-foreground text-sm">Carregando recursos...</div>
-            ) : resources.length === 0 ? (
-              <div className="text-muted-foreground text-sm italic">Nenhum recurso vinculado a este chamado.</div>
-            ) : (
-              <ul className="list-disc ml-6 space-y-1">
-                {resources.map((r) => (
-                  <li key={r.user_id} className="text-sm flex items-center justify-between gap-2">
-                    <span>
-                      <strong>{r.user?.first_name} {r.user?.last_name}</strong> - <strong>{r.user?.is_client ? "Cliente" : "Numen"}</strong> - ({r.user?.email})
-                      {r.is_main && (
-                        <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-semibold">Responsável principal</span>
-                      )}
-                    </span>
-                    {!hideResourceActions && (
-                      <div className="flex gap-2">
-                        {/* Botão para remover is_main se for o principal */}
+            {(() => {
+              if (resourcesLoading) {
+                return (
+                  <div className="text-muted-foreground text-sm">Carregando recursos...</div>
+                );
+              }
+              if (resources.length === 0) {
+                return (
+                  <div className="text-muted-foreground text-sm italic">Nenhum recurso vinculado a este chamado.</div>
+                );
+              }
+              return (
+                <ul className="list-disc ml-6 space-y-1">
+                  {resources.map((r) => (
+                    <li key={r.user_id} className="text-sm flex items-center justify-between gap-2">
+                      <span>
+                        <strong>{r.user?.first_name} {r.user?.last_name}</strong> - <strong>{r.user?.is_client ? "Cliente" : "Numen"}</strong> - ({r.user?.email})
                         {r.is_main && (
-                          <Button size="sm" variant="outline" onClick={async () => {
+                          <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-semibold">Responsável principal</span>
+                        )}
+                      </span>
+                      {!hideResourceActions && (
+                        <div className="flex gap-2">
+                          {/* Botão para remover is_main se for o principal */}
+                          {r.is_main && (
+                            <Button size="sm" variant="outline" onClick={async () => {
+                              await fetch("/api/ticket-resources", {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ user_id: r.user_id, ticket_id: ticket?.id, is_main: false })
+                              });
+                              fetchResources();
+                            }}>
+                              Remover responsável
+                            </Button>
+                          )}
+                          {/* Botão para remover usuário do chamado */}
+                          <Button size="sm" variant="destructive" onClick={async () => {
                             await fetch("/api/ticket-resources", {
-                              method: "PUT",
+                              method: "DELETE",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ user_id: r.user_id, ticket_id: ticket?.id, is_main: false })
+                              body: JSON.stringify({ user_id: r.user_id, ticket_id: ticket?.id })
                             });
                             fetchResources();
                           }}>
-                            Remover responsável
+                            Remover usuário
                           </Button>
-                        )}
-                        {/* Botão para remover usuário do chamado */}
-                        <Button size="sm" variant="destructive" onClick={async () => {
-                          await fetch("/api/ticket-resources", {
-                            method: "DELETE",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ user_id: r.user_id, ticket_id: ticket?.id })
-                          });
-                          fetchResources();
-                        }}>
-                          Remover usuário
-                        </Button>
-                        {/* Botão Encaminhar, só se não for is_main */}
-                        {!r.is_main && (
-                          <ForwardButton 
-                            ticketId={ticket?.id} 
-                            userId={r.user_id} 
-                            userEmail={r.user?.email || ""}
-                            userName={`${r.user?.first_name || ''} ${r.user?.last_name || ''}`.trim()}
-                            ticket={ticket}
-                            onSuccess={fetchResources}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+                          {/* Botão Encaminhar, só se não for is_main */}
+                          {!r.is_main && (
+                            <ForwardButton 
+                              ticketId={ticket?.id} 
+                              userId={r.user_id} 
+                              userEmail={r.user?.email || ""}
+                              userName={`${r.user?.first_name || ''} ${r.user?.last_name || ''}`.trim()}
+                              ticket={ticket}
+                              onSuccess={fetchResources}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
           </div>
           
           {/* Dialog para editar data de encerramento estimada */}
@@ -1331,6 +1542,102 @@ export default function TicketDetailsPage() {
               ) : (
                 'Salvar'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    {/* Dialog de confirmação para ações do cliente */}
+  <Dialog open={!!confirmOpen} onOpenChange={(o) => { if (!o) { setConfirmOpen(null); setReason(""); setRatingSystem(0); setRatingManager(0); setRatingFunctional(0); setRatingService(0); } }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{confirmOpen?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {confirmOpen?.action === "close" && (
+                <div className="pt-2 space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-muted-foreground min-w-[260px]">
+                        Como você avalia a ferramenta para o atendimento deste chamado?
+                      </div>
+                      <Stars value={ratingSystem} onValueChange={setRatingSystem} className="gap-1">
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                      </Stars>
+                    </div>
+                    <Separator className="my-2" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-muted-foreground min-w-[260px]">
+                        Como você avalia o atendimento do seu Gerente de Contas neste chamado?
+                      </div>
+                      <Stars value={ratingManager} onValueChange={setRatingManager} className="gap-1">
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                      </Stars>
+                    </div>
+                    <Separator className="my-2" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-muted-foreground min-w-[260px]">
+                        Como você avalia o atendimento do(s) Atendente(s) neste chamado?
+                      </div>
+                      <Stars value={ratingFunctional} onValueChange={setRatingFunctional} className="gap-1">
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                      </Stars>
+                    </div>
+                    <Separator className="my-2" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-sm text-muted-foreground min-w-[260px]">
+                        Como você avalia o tempo de atendimento deste chamado?
+                      </div>
+                      <Stars value={ratingService} onValueChange={setRatingService} className="gap-1">
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                        <Star />
+                      </Stars>
+                    </div>
+                    <Separator className="my-2" />
+                  </div>
+                    <div className="text-sm text-muted-foreground">
+                      Compartilhe suas impressões, elogios ou sugestões sobre o atendimento. Sua opinião é muito importante para nós!
+                    </div>
+                  <Textarea
+                    placeholder="Escreva aqui..."
+                    className="min-h-32"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(null)} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              variant={confirmOpen?.action === "pause" ? "destructive" : "colored2"}
+              onClick={() => confirmOpen && doChangeStatus(confirmOpen.action)}
+              disabled={submitting}
+            >
+              {submitting ? "Enviando..." : "Confirmar"}
             </Button>
           </DialogFooter>
         </DialogContent>

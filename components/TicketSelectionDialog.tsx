@@ -33,6 +33,7 @@ interface TicketSelectionDialogProps {
   onSelect: (ticketId: string, ticketTitle: string) => void;
   selectedTicketId?: string;
   projectId?: string; // Opcional: filtrar tickets por projeto
+  showInactive?: boolean;
 }
 
 export function TicketSelectionDialog({
@@ -40,6 +41,7 @@ export function TicketSelectionDialog({
   onSelect,
   selectedTicketId,
   projectId,
+  showInactive = true,
 }: TicketSelectionDialogProps) {
   const [open, setOpen] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -95,17 +97,21 @@ export function TicketSelectionDialog({
       console.log("Response status:", response.status);
       if (response.ok) {
         const data = await response.json();
-        console.log("Tickets encontrados:", data?.length || 0);
-        console.log("Primeiro ticket:", data?.[0]);
-        setTickets(data || []);
-        setFilteredTickets(data || []);
+        // Só filtra se showInactive for false
+        const filtered = showInactive
+          ? (data || [])
+          : (data || []).filter(
+              (ticket: Ticket) => ticket.status_id !== 4 && ticket.status_id !== 14
+            );
+        setTickets(filtered);
+        setFilteredTickets(filtered);
       }
     } catch (error) {
       console.error("Erro ao buscar tickets:", error);
     } finally {
       setLoading(false);
     }
-  }, [user, projectId]);
+  }, [user, projectId, showInactive]);
 
   useEffect(() => {
     if (open && user) {

@@ -75,7 +75,7 @@ export function DataTable<
   showPagination = true,
 }: Readonly<DataTableProps<TData, TValue>>) {
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "projectExtId", desc: true },
+    // { id: "projectExtId", desc: true },
   ])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({})
@@ -139,8 +139,8 @@ export function DataTable<
           <ColumnVisibilityToggle table={table} columnLabels={columnLabels} />
         </div>
       )}
-      <div className="rounded-md border bg-card shadow-md">
-        <Table>
+      <div className="rounded-md border bg-card shadow-md overflow-x-auto">
+        <Table className="min-w-max">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

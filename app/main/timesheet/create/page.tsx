@@ -409,6 +409,7 @@ const TimeSheetCreatePage = () => {
               }}
               selectedTicketId={formData.ticketId}
               projectId={formData.projectId}
+              showInactive={false}
             />
           </div>
         </div>

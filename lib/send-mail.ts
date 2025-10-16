@@ -9,17 +9,17 @@ export interface SendMailOptions {
 
 export async function sendOutlookMail(options: SendMailOptions) {
   const transporter = nodemailer.createTransport({
-    host: "smtp.office365.com",
+    host: "smart.iagentesmtp.com.br",
     port: 587,
     secure: false,
     auth: {
-      user: process.env.OUTLOOK_USER,
-      pass: process.env.OUTLOOK_PASS,
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
     },
   });
 
   await transporter.sendMail({
-    from: process.env.OUTLOOK_USER,
+    from: process.env.MAIL_FROM,
     ...options,
   });
 }

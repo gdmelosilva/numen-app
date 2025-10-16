@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendOutlookMail } from "@/lib/sendOutlookMail";
+import { sendOutlookMail } from "@/lib/send-mail";
 import { generateEmailTemplate, type TicketAssignedTemplateData } from "@/lib/email-templates";
 
 export async function POST(req: NextRequest) {

@@ -79,29 +79,29 @@ const TimeSheetManagementPage = () => {
 	const estimatedHours = getBusinessDays(year, month) * 8 
 
 	// Função para converter data UTC para data local sem conversão de fuso horário
-	const parseUTCDateAsLocal = (utcDateString: string) => {
-		const datePart = utcDateString.split('T')[0];
-		const [year, month, day] = datePart.split('-').map(Number);
-		return new Date(year, month - 1, day);
-	};
+	// const parseUTCDateAsLocal = (utcDateString: string) => {
+	// 	const datePart = utcDateString.split('T')[0];
+	// 	const [year, month, day] = datePart.split('-').map(Number);
+	// 	return new Date(year, month - 1, day);
+	// };
 
 	// Função para converter data UTC para horário local brasileiro
-	const parseUTCTimeAsLocal = (utcTimeString: string | undefined) => {
-		if (!utcTimeString) return '-';
+	// const parseUTCTimeAsLocal = (utcTimeString: string | undefined) => {
+	// 	if (!utcTimeString) return '-';
 		
-		// Remove o fuso horário da string para tratar como local
-		const localTimeString = utcTimeString.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
-		const date = new Date(localTimeString);
+	// 	// Remove o fuso horário da string para tratar como local
+	// 	const localTimeString = utcTimeString.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
+	// 	const date = new Date(localTimeString);
 		
-		// Verifica se a data é válida
-		if (isNaN(date.getTime())) return '-';
+	// 	// Verifica se a data é válida
+	// 	if (isNaN(date.getTime())) return '-';
 		
-		return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-	};
+	// 	return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+	// };
 
 	// Converte os dados do hook para o formato esperado pelas colunas e ordena por data
 	const tableData = data
-		.sort((a, b) => parseUTCDateAsLocal(a.appoint_date).getTime() - parseUTCDateAsLocal(b.appoint_date).getTime())
+		.sort((a, b) => new Date(a.appoint_date).getTime() - new Date(b.appoint_date).getTime())
 		.map(row => ({
 			id: row.id,
 			appoint_date: row.appoint_date,
@@ -128,8 +128,8 @@ const TimeSheetManagementPage = () => {
 					ticket_title: child.ticket_title,
 					ticket_type_id: child.ticket_type_id,
 					ticket_external_id: child.ticket_external_id,
-					appoint_start: parseUTCTimeAsLocal(child.appoint_start),
-					appoint_end: parseUTCTimeAsLocal(child.appoint_end),
+					appoint_start: child.appoint_start,
+					appoint_end: child.appoint_end,
 					// Adicionar o objeto ticket completo para a função de export
 					ticket: child.ticket
 				}))
