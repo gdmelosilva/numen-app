@@ -26,97 +26,245 @@ export function ticketUpdatedTemplate(data: TicketUpdatedTemplateData): EmailTem
   return {
     subject: `EasyTime - Chamado Atualizado: ${ticketTitle}`,
     
-    html: `
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Chamado Atualizado - EasyTime</title>
+        html: `
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+                <title>Chamado Atualizado - EasyTime</title>
+                <style>
+          /* Reset e estilos base para compatibilidade com clientes de email */
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            font-family: 'Manrope', Arial, Helvetica, sans-serif !important;
+          }
+          
+          table {
+            border-collapse: collapse !important;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+          }
+          
+          img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+          }
+          
+          /* Responsividade */
+          @media screen and (max-width: 600px) {
+            .email-container {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+            
+            .header-image, .footer-image {
+              width: 100% !important;
+              height: auto !important;
+            }
+            
+            .content-wrapper {
+              width: 100% !important;
+              padding: 20px !important;
+            }
+            
+            .info-table {
+              font-size: 14px !important;
+            }
+            
+            .info-table td {
+              display: block !important;
+              width: 100% !important;
+              padding: 5px 0 !important;
+            }
+            
+            .info-table td:first-child {
+              font-weight: bold !important;
+              padding-bottom: 2px !important;
+            }
+          }
+        </style>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #f9f9f9; font-family: Arial, sans-serif;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #2563eb; margin: 0; font-size: 24px; font-weight: bold;">EasyTime</h1>
-              <div style="height: 2px; background-color: #e5e7eb; margin: 15px 0;"></div>
-            </div>
-            
-            <h2 style="color: #f59e0b; margin-top: 0; margin-bottom: 20px; font-size: 20px;">
-              🔄 Chamado Atualizado
-            </h2>
-            
-            <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-              <h3 style="color: #92400e; margin-top: 0; margin-bottom: 15px; font-size: 16px;">
-                📋 Informações da Atualização
-              </h3>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #92400e; width: 120px;">ID do Chamado:</td>
-                  <td style="padding: 5px 0; color: #451a03;">#${displayId}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #92400e;">Título:</td>
-                  <td style="padding: 5px 0; color: #451a03;">${ticketTitle}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #92400e;">Projeto:</td>
-                  <td style="padding: 5px 0; color: #451a03;">${projectName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #92400e;">Atualizado por:</td>
-                  <td style="padding: 5px 0; color: #451a03;">${updatedBy}</td>
-                </tr>
-                ${newStatus && previousStatus ? `
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #92400e;">Status:</td>
-                  <td style="padding: 5px 0; color: #451a03;">${previousStatus} → ${newStatus}</td>
-                </tr>
-                ` : ''}
+      <body style="margin: 0; padding: 0px; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif; align-items: center; justify-content: center; display: flex;">
+      <div style="max-width: 780px; background: linear-gradient(135deg, #ffcd83 0%, #ffffff 15%, #ffffff 50%, #ffffff 85%, #dff8ff 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; align-items: center; padding: 10px 10px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: transparent;">
+              <tr>
+                  <td align="center" style="padding: 0; margin: 0px;">
+                      
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" class="email-container" style="width: 680px; max-width: 680px; background-color: transparent;">
+                          
+                          <tr>
+                              <td align="center" style="padding: 0; margin: 0px;">
+                                  <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20HEAD%20-%20Updated.png" 
+                                  alt="EasyTime - Header" 
+                                  class="header-image"
+                                  style="width: 680px; max-width: 100%; height: auto; display: block; border: 0;">
+                              </td>
+                          </tr>
+          
+                          <tr>
+                              <td style="background-color: transparent; position: relative;">
+                                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                      <tr>
+                                          <td class="content-wrapper" style="padding: 40px 50px; padding-bottom: 20px;">
+                                              <div style="display: flex; align-items: center; gap: 10px;">
+                                                  <img src="https://numenit-ops.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px;margin-right: 10px;">
+                                                  <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
+                                                      Dados da Atualização
+                                                  </h2>            
+                                              </div>
+       
+                                              <div style="background-color: #fff9f3;outline: 3px solid #ffd284;border-radius: 12px; border-left: 3px solid #ffa200; border-right: 0px; border-top: 0px; border-bottom: 0px; margin-bottom: 25px; padding: 25px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
+                                                  
+                                                  <!-- Informações em divs -->
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          ID do Chamado:
+                                                      </span>
+                                                      <span style="color: #374151; font-weight: bold;">
+                                                          #${displayId}
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Título:
+                                                      </span>
+                                                      <span style="color: #374151;">
+                                                          ${ticketTitle}
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Projeto:
+                                                      </span>
+                                                      <span style="color: #374151;">
+                                                          ${projectName}    
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Atualizado por:
+                                                      </span>
+                                                      <span style="color: #374151;">
+                                                          ${updatedBy}
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  ${newStatus && previousStatus ? `
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Status:
+                                                      </span>
+                                                      <span style="color: #374151; font-weight: bold;">
+                                                          <span style="color: #374151;">${previousStatus}</span> → 
+                                                          <span style="color: #dc7e26ff;">${newStatus}</span>
+                                                      </span>
+                                                  </div>
+                                                  ` : ''}
+                                                  
+                                              </div>
+                                          
+                                          <!-- Descrição da atualização -->
+                                          <div style="margin-bottom: 30px;">
+                                              <div style="display: flex; align-items: center; gap: 10px;">
+                                                  <img src="https://numenit-ops.com/icons/msg.svg" alt="Message Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
+                                                  <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
+                                                      Última Mensagem:
+                                                  </h2>            
+                                              </div>
+                                              
+                                              <div style="background-color: #f3ffff;outline: 3px solid #84d8ff;border-radius: 12px; border-left: 3px solid #00ccff; border-right: 0px; border-top: 0px; border-bottom: 0px; margin-bottom: 25px; padding: 25px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
+                                                  <p style="color: #374151; margin: 0; line-height: 1.6; font-size: 15px;">
+                                                      ${updateDescription.replace(/\n/g, '<br>')}
+                                                  </p>
+                                              </div>
+                                          </div>
+                                          
+                                          <!-- Botão de ação (opcional) -->
+                                          <div style="margin-bottom: 30px; text-align: center;">
+                                              <a href="https://numenit-ops.com/main/smartcare/management/${displayId}" style="display: flex; align-items: center; justify-content: center; height: 48px; width: 200px; padding: 12px 30px; background-color: #074799; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 6px; margin: 0 auto;">
+                                              <img src="https://numenit-ops.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
+                                                  <span style="margin: 0;">Ver Chamado</span>
+                                              </a>
+                                          </div>                                    
+                                          
+                                          <!-- Rodapé do conteúdo -->
+                                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" 
+                                          style="border-top: 1px solid #e5e7eb; padding-top: 25px;">
+                                          <tr style="text-align: center; align-items: center;">
+                                              <td align="center">
+                                                  <p style="color: #6b7280; font-size: 11px; margin: 0; padding: 0px; text-align: center;">
+                                                      Este é um email automático gerado pelo sistema EasyTime.<br>
+                                                      Não responda diretamente a este email.
+                                                  </p>
+                                              </td>
+                                          </tr>
+                                      </table>
+                                      
+                                  </td>
+                              </tr>
+                          </table>
+                          
+                      </td>
+                  </tr>
+                  
+                  <!-- Footer com imagem -->
+                  <tr>
+                      <td align="center" style="padding: 0;">
+                          <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20BOTTOM%20-%20Updated.png" 
+                          alt="EasyTime - Footer" 
+                          class="footer-image"
+                          style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin: 0px;">
+                      </td>
+                  </tr>
+                  
               </table>
-            </div>
+              
+          </td>
+      </tr>
+      </table>
+      </div>
 
-            <div style="margin: 20px 0;">
-              <h4 style="color: #374151; margin-bottom: 10px; font-size: 14px;">
-                📝 Descrição da Atualização:
-              </h4>
-              <div style="background-color: #f9fafb; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 4px; line-height: 1.5;">
-                ${updateDescription.replace(/\n/g, '<br>')}
-              </div>
-            </div>
-
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #6b7280; font-size: 12px; margin: 5px 0; line-height: 1.4;">
-                📧 Este é um email automático gerado pelo sistema EasyTime.<br>
-                Não responda diretamente a este email.
-              </p>
-            </div>
-          </div>
-        </div>
       </body>
       </html>
     `,
     
     text: `
-🔄 CHAMADO ATUALIZADO
+CHAMADO ATUALIZADO - EASYTIME
 
 ═══════════════════════════════════════
 
-📋 INFORMAÇÕES DA ATUALIZAÇÃO:
+DADOS DA ATUALIZAÇÃO:
 • ID do Chamado: #${displayId}
 • Título: ${ticketTitle}
 • Projeto: ${projectName}
 • Atualizado por: ${updatedBy}${newStatus && previousStatus ? `\n• Status: ${previousStatus} → ${newStatus}` : ''}
 
-📝 DESCRIÇÃO:
+ÚLTIMA MENSAGEM:
 ${updateDescription}
 
 ═══════════════════════════════════════
 
-💡 Acesse o sistema EasyTime para mais detalhes.
+Acesse o sistema EasyTime para ver mais detalhes do chamado.
 
 ---
-📧 Este é um email automático gerado pelo sistema EasyTime.
+Este é um email automático gerado pelo sistema EasyTime.
+Não responda diretamente a este email.
     `.trim()
   };
 }
