@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export function UpdatePasswordForm({
   className,
@@ -142,11 +143,13 @@ export function UpdatePasswordForm({
               </Button>
             </div>
           </form>
-          <div>
-            {/* TESTE */}
-          </div>
         </CardContent>
       </Card>
+      <div className="flex justify-center mt-4">
+        <Link href="/auth" className="underline underline-offset-4 text-muted-foreground hover:text-foreground">
+          Voltar
+        </Link>
+      </div>
     </div>
   );
 }
