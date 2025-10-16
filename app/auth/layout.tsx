@@ -9,7 +9,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#0b0e46] to-[#07070f] px-4">
+    <main className="relative min-h-screen flex flex-col items-center justify-center px-4">
       <div className="absolute top-4 right-4 z-20">
         <ThemeSwitcher />
       </div>
