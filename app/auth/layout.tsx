@@ -11,7 +11,6 @@ export default function AuthLayout({
   return (
     <main className="relative min-h-screen flex flex-col items-center justify-center px-4">
       <div className="absolute top-4 right-4 z-20">
-        <ThemeSwitcher />
       </div>
       <div className="relative z-10 flex flex-col items-center space-y-6 w-full">
         <Image

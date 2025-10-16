@@ -142,6 +142,9 @@ export function UpdatePasswordForm({
               </Button>
             </div>
           </form>
+          <div>
+            {/* TESTE */}
+          </div>
         </CardContent>
       </Card>
     </div>
