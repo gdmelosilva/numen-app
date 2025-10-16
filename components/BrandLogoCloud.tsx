@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useState } from "react";
 
 export function BrandLogoCloud() {
     const logos = [
@@ -29,18 +30,25 @@ export function BrandLogoCloud() {
         "ebanx.webp",
         "unico.webp",
     ];
+
+    // Track which images failed to load
+    const [failed, setFailed] = useState<string[]>([]);
+
     return (
         <div className="flex flex-wrap justify-center gap-6 py-8">
-            {logos.map((logo) => (
-                <Image
-                    key={logo}
-                    src={`https://numenit.com/wp-content/uploads/2024/09/${logo}`}
-                    alt={logo.replace(/[-_.]/g, " ")}
-                    width={50}
-                    height={40}
-                    className="object-contain grayscale opacity-80 hover:opacity-100 transition invert dark:invert-0 dark:brightness-200"
-                />
-            ))}
+            {logos.map((logo) =>
+                failed.includes(logo) ? null : (
+                    <Image
+                        key={logo}
+                        src={`https://numenit.com/wp-content/uploads/2024/09/${logo}`}
+                        alt={logo.replace(/[-_.]/g, " ")}
+                        width={50}
+                        height={40}
+                        className="object-contain grayscale opacity-80 hover:opacity-100 transition invert dark:invert-0 dark:brightness-200"
+                        onError={() => setFailed((prev) => [...prev, logo])}
+                    />
+                )
+            )}
         </div>
     );
 }
