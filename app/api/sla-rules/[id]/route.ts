@@ -5,7 +5,7 @@ import { UpdateSlaRuleRequest } from "@/types/sla_rules";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Autenticar usuário
   const { error } = await authenticateRequest();
@@ -27,7 +27,7 @@ export async function GET(
         updated_at,
         warning
       `)
-      .eq('id', parseInt(params.id))
+      .eq('id', parseInt((await params).id))
       .single();
 
     if (queryError) {
