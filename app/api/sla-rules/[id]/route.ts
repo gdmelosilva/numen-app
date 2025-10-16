@@ -85,7 +85,7 @@ export async function PUT(
     const { data, error: updateError } = await supabase
       .from('sla_rules')
       .update(updateData)
-      .eq('id', parseInt(params.id))
+      .eq('id', parseInt((await params).id))
       .select()
       .single();
 
@@ -115,7 +115,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Autenticar usuário
   const { user, error } = await authenticateRequest();
@@ -131,7 +131,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('sla_rules')
       .delete()
-      .eq('id', parseInt(params.id));
+      .eq('id', parseInt((await params).id));
 
     if (deleteError) {
       console.error('Erro ao deletar regra SLA:', deleteError);
