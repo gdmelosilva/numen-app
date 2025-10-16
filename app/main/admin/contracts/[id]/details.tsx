@@ -8,12 +8,13 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 
+
 import ProjectUsersTab from "./users/ProjectUsersTab";
 import { toast } from "sonner";
-import { SlaByStatusDialog } from "@/components/SlaByStatusDialog";
+// import { SlaByStatusDialog } from "@/components/SlaByStatusDialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { WeeklyScheduleDisplay } from "@/components/WeeklyScheduleDisplay";
-import { SlaRule } from "@/types/sla_rules";
+// import { WeeklyScheduleDisplay } from "@/components/WeeklyScheduleDisplay";
+// import { SlaRule } from "@/types/sla_rules";
 
 interface ProjectDetailsTabProps {
   project: Contract;
@@ -89,8 +90,8 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
   const [error, setError] = useState<string | null>(null);
   
   // SLA Dialog state
-  const [slaByStatusDialogOpen, setSlaByStatusDialogOpen] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<string>("");
+  // const [slaByStatusDialogOpen, setSlaByStatusDialogOpen] = useState(false);
+  // const [selectedDay, setSelectedDay] = useState<string>("");
 
   // Garante que o valor do status está sempre sincronizado com as opções
   useEffect(() => {
@@ -228,103 +229,103 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
   };
 
   // SLA Dialog functions
-  const handleOpenSlaDialog = (dayName: string) => {
-    setSelectedDay(dayName);
-    setSlaByStatusDialogOpen(true);
-  };
+  // const handleOpenSlaDialog = (dayName: string) => {
+  //   setSelectedDay(dayName);
+  //   setSlaByStatusDialogOpen(true);
+  // };
 
-  const handleSaveSlaByStatus = async (regras: { 
-    project_id: string;
-    ticket_category_id: number;
-    priority_id: number;
-    status_id: number;
-    weekday_id: number;
-    sla_hours: number;
-    warning: boolean;
-  }[]) => {
-    try {
-      // Primeiro, buscar regras existentes para verificar duplicatas
-      const params = new URLSearchParams({
-        project_id: String(project.id),
-        weekday_id: getWeekdayId(selectedDay).toString()
-      });
+  // const handleSaveSlaByStatus = async (regras: { 
+  //   project_id: string;
+  //   ticket_category_id: number;
+  //   priority_id: number;
+  //   status_id: number;
+  //   weekday_id: number;
+  //   sla_hours: number;
+  //   warning: boolean;
+  // }[]) => {
+  //   try {
+  //     // Primeiro, buscar regras existentes para verificar duplicatas
+  //     const params = new URLSearchParams({
+  //       project_id: String(project.id),
+  //       weekday_id: getWeekdayId(selectedDay).toString()
+  //     });
       
-      const existingResponse = await fetch(`/api/sla-rules?${params}`);
-      const { data: existingRules = [] } = existingResponse.ok ? await existingResponse.json() : { data: [] };
+  //     const existingResponse = await fetch(`/api/sla-rules?${params}`);
+  //     const { data: existingRules = [] } = existingResponse.ok ? await existingResponse.json() : { data: [] };
 
-      // Processar cada regra - agora os dados já vêm no formato correto da API
-      const savePromises = regras.map(async (ruleData) => {
-        // Verificar se já existe uma regra com a mesma combinação
-        // Comparar por: projeto + categoria + prioridade + status + dia
-        const existingRule = existingRules.find((existing: SlaRule) => 
-          existing.project_id === ruleData.project_id &&
-          existing.ticket_category_id === ruleData.ticket_category_id &&
-          existing.priority_id === ruleData.priority_id &&
-          existing.status_id === ruleData.status_id &&
-          existing.weekday_id === ruleData.weekday_id
-        );
+  //     // Processar cada regra - agora os dados já vêm no formato correto da API
+  //     const savePromises = regras.map(async (ruleData) => {
+  //       // Verificar se já existe uma regra com a mesma combinação
+  //       // Comparar por: projeto + categoria + prioridade + status + dia
+  //       const existingRule = existingRules.find((existing: SlaRule) => 
+  //         existing.project_id === ruleData.project_id &&
+  //         existing.ticket_category_id === ruleData.ticket_category_id &&
+  //         existing.priority_id === ruleData.priority_id &&
+  //         existing.status_id === ruleData.status_id &&
+  //         existing.weekday_id === ruleData.weekday_id
+  //       );
 
-        if (existingRule) {
-          // Atualizar regra existente (apenas sla_hours e warning podem mudar)
-          const response = await fetch(`/api/sla-rules/${existingRule.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              sla_hours: ruleData.sla_hours,
-              warning: ruleData.warning,
-            }),
-          });
+  //       if (existingRule) {
+  //         // Atualizar regra existente (apenas sla_hours e warning podem mudar)
+  //         const response = await fetch(`/api/sla-rules/${existingRule.id}`, {
+  //           method: 'PUT',
+  //           headers: {
+  //             'Content-Type': 'application/json',
+  //           },
+  //           body: JSON.stringify({
+  //             sla_hours: ruleData.sla_hours,
+  //             warning: ruleData.warning,
+  //           }),
+  //         });
 
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Erro ao atualizar regra SLA');
-          }
+  //         if (!response.ok) {
+  //           const error = await response.json();
+  //           throw new Error(error.error || 'Erro ao atualizar regra SLA');
+  //         }
 
-          return response.json();
-        } else {
-          // Criar nova regra
-          const response = await fetch('/api/sla-rules', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(ruleData),
-          });
+  //         return response.json();
+  //       } else {
+  //         // Criar nova regra
+  //         const response = await fetch('/api/sla-rules', {
+  //           method: 'POST',
+  //           headers: {
+  //             'Content-Type': 'application/json',
+  //           },
+  //           body: JSON.stringify(ruleData),
+  //         });
 
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Erro ao criar regra SLA');
-          }
+  //         if (!response.ok) {
+  //           const error = await response.json();
+  //           throw new Error(error.error || 'Erro ao criar regra SLA');
+  //         }
 
-          return response.json();
-        }
-      });
+  //         return response.json();
+  //       }
+  //     });
 
-      // Aguardar todas as operações
-      await Promise.all(savePromises);
+  //     // Aguardar todas as operações
+  //     await Promise.all(savePromises);
       
-      toast.success(`${regras.length} regra(s) SLA processada(s) para ${selectedDay}`);
+  //     toast.success(`${regras.length} regra(s) SLA processada(s) para ${selectedDay}`);
       
-    } catch (error) {
-      toast.error(`Erro ao salvar regras SLA: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    }
-  };
+  //   } catch (error) {
+  //     toast.error(`Erro ao salvar regras SLA: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  //   }
+  // };
 
   // Função auxiliar para converter nome do dia para weekday_id
-  const getWeekdayId = (dayName: string): number => {
-    const dayMap: Record<string, number> = {
-      'Domingo': 0,
-      'Segunda-feira': 1,
-      'Terça-feira': 2,
-      'Quarta-feira': 3,
-      'Quinta-feira': 4,
-      'Sexta-feira': 5,
-      'Sábado': 6,
-    };
-    return dayMap[dayName] || 0;
-  };
+  // const getWeekdayId = (dayName: string): number => {
+  //   const dayMap: Record<string, number> = {
+  //     'Domingo': 0,
+  //     'Segunda-feira': 1,
+  //     'Terça-feira': 2,
+  //     'Quarta-feira': 3,
+  //     'Quinta-feira': 4,
+  //     'Sexta-feira': 5,
+  //     'Sábado': 6,
+  //   };
+  //   return dayMap[dayName] || 0;
+  // };
 
   return (
     <TooltipProvider>
@@ -474,7 +475,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       </Card>
 
       {/* Card para Informações de Atendimento */}
-      <Card className="mt-4">
+      {/* <Card className="mt-4">
         <div className="px-6 pb-4 pt-2">
           <h2 className="flex items-center text-lg font-semibold">
             <Info className="w-4 h-4 mr-2" />Informações de Atendimento
@@ -486,7 +487,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             disabled={isClosed}
           />
         </CardContent>
-      </Card>
+      </Card> */}
       
       {/* Card separado para Informações de Cobrança - aparece para projetos AMS */}
       {(form.project_type === "AMS" || project.project_type === "AMS") && (
@@ -544,14 +545,14 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       </Card>
 
       {/* SlaByStatusDialog */}
-      <SlaByStatusDialog
+      {/* <SlaByStatusDialog
         open={slaByStatusDialogOpen}
         onOpenChange={setSlaByStatusDialogOpen}
         onSave={handleSaveSlaByStatus}
         selectedDay={selectedDay}
         projectId={project.id ? String(project.id) : undefined}
         weekdayId={getWeekdayId(selectedDay)}
-      />
+      /> */}
     </TooltipProvider>
   );
 }
