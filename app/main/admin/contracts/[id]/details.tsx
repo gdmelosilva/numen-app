@@ -474,7 +474,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
       </Card>
 
       {/* Card para Informações de Atendimento */}
-      <Card className="mt-4">
+      {/* <Card className="mt-4">
         <div className="px-6 pb-4 pt-2">
           <h2 className="flex items-center text-lg font-semibold">
             <Info className="w-4 h-4 mr-2" />Informações de Atendimento
@@ -486,7 +486,7 @@ export default function ProjectDetailsTab({ project, editMode, setEditMode }: Pr
             disabled={isClosed}
           />
         </CardContent>
-      </Card>
+      </Card> */}
       
       {/* Card separado para Informações de Cobrança - aparece para projetos AMS */}
       {(form.project_type === "AMS" || project.project_type === "AMS") && (
