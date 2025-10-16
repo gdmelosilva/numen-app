@@ -10,12 +10,6 @@ export default function AuthLayout({
 }) {
   return (
     <main className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#0b0e46] to-[#07070f] px-4">
-      <Image
-        src="/bg.png"
-        alt="Background"
-        fill
-        className="object-cover pointer-events-none z-0 opacity-40"
-      />
       <div className="absolute top-4 right-4 z-20">
         <ThemeSwitcher />
       </div>
