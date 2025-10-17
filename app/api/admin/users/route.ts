@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { authenticateRequest, requireRole, USER_ROLES } from "@/lib/api-auth";
+import { sendOutlookMail } from '@/lib/send-mail';
 
 export async function GET(request: Request) {
 
@@ -129,80 +130,104 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  // Autenticar usuário
-  const { user, error } = await authenticateRequest();
-  if (error) return error;
+    // Autenticar usuário
+    const { user, error } = await authenticateRequest();
+    if (error) return error;
 
-  // Verificar se tem permissão para criar usuários
-  const roleCheck = requireRole([USER_ROLES.ADMIN])(user!);
-  if (roleCheck) return roleCheck;
+    // Verificar se tem permissão para criar usuários
+    const roleCheck = requireRole([USER_ROLES.ADMIN])(user!);
+    if (roleCheck) return roleCheck;
 
-  try {
-    const supabase = await createClient();
-    
-    const { 
-      email, 
-      firstName, 
-      lastName, 
-      telephone,
-      isClient,
-      role,
-      partnerId 
-    } = await request.json();     
-    
-    // Debug info removed for security
-    
-    // Validar se pode criar usuário para este partner
-    // Apenas admins não-clientes podem criar usuários para qualquer partner
-    const isUnrestrictedAdmin = user!.role === USER_ROLES.ADMIN && !user!.is_client;
-    
-    // Permission check debug info removed for security
-    
-    if (!isUnrestrictedAdmin) {
-      // Usuários restritos (não-admins ou admins clientes) só podem criar para seu próprio partner
-      if (partnerId !== user!.partner_id) {
-        return NextResponse.json(
-          { error: 'Forbidden: Cannot create user for different partner' },
-          { status: 403 }
-        );
-      }
-    }
-
-    if (!email || !firstName || !lastName) {
-      return NextResponse.json(
-        { error: 'Missing required fields: email, firstName, and lastName are required.' },
-        { status: 400 }
-      );
-    }
-
-    const { data, error: authError } = await supabase.auth.admin.inviteUserByEmail(
-      email,
-      {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/`,
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          is_client: Boolean(isClient),
-          is_active: true, // Usuário criado ativo por padrão
-          tel_contact: telephone || null,
-          role: role,
-          partner_id: partnerId || user!.partner_id // Use o partner do usuário logado se não especificado
+    try {
+        const supabase = await createClient();
+        
+        const { 
+        email, 
+        firstName, 
+        lastName, 
+        telephone,
+        isClient,
+        role,
+        partnerId 
+        } = await request.json();     
+        
+        // Debug info removed for security
+        
+        // Validar se pode criar usuário para este partner
+        // Apenas admins não-clientes podem criar usuários para qualquer partner
+        const isUnrestrictedAdmin = user!.role === USER_ROLES.ADMIN && !user!.is_client;
+        
+        // Permission check debug info removed for security
+        
+        if (!isUnrestrictedAdmin) {
+        // Usuários restritos (não-admins ou admins clientes) só podem criar para seu próprio partner
+        if (partnerId !== user!.partner_id) {
+            return NextResponse.json(
+            { error: 'Forbidden: Cannot create user for different partner' },
+            { status: 403 }
+            );
         }
-      }
-    );
+        }
 
-    if (authError) {
-      // Auth error details omitted for security
-      throw authError;
+        if (!email || !firstName || !lastName) {
+        return NextResponse.json(
+            { error: 'Missing required fields: email, firstName, and lastName are required.' },
+            { status: 400 }
+        );
+        }
+
+    // 1) Gerar senha segura (8 chars: maiúscula, minúscula, dígito)
+    const password = generateSecurePassword(8);
+
+    // 2) Criar usuário com senha via Admin API
+    // - email_confirm: true => já considera email verificado (opcional, ajuste ao seu fluxo)
+    // - user_metadata/data: seus atributos customizados
+    const { data, error: createErr } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName,
+        last_name: lastName,
+        is_client: Boolean(isClient),
+        is_active: true,
+        tel_contact: telephone || null,
+        role,
+        partner_id: partnerId || user!.partner_id,
+      },
+    });
+
+    if (createErr) {
+      throw createErr;
+    }
+
+    // 3) Enviar e-mail de boas-vindas com a senha temporária
+    // Utiliza o template moderno de email
+    const { createUserTemplate } = await import("@/lib/email-templates/createuser");
+    const emailTemplate = createUserTemplate({
+      userName: `${firstName} ${lastName}`,
+      userEmail: email,
+      temporaryPassword: password,
+      loginUrl: undefined
+    });
+
+    try {
+      await sendOutlookMail({
+        to: email,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html,
+        text: emailTemplate.text,
+      });
+    } catch (mailErr) {
+      // Opcional: você pode considerar reverter o usuário criado se o envio de email falhar
+      // ou registrar para análise posterior.
+      // Aqui retorno 207 (Multi-Status) ou 200 com warning, a seu critério.
+      console.warn('Email send failed:', mailErr);
     }
 
     return NextResponse.json({ success: true, user: data.user });
-
   } catch (err) {
     const error = err as Error & { status?: number; code?: string };
-    // Error details omitted for security
-
-    // Handle specific database errors
     let friendlyMessage = 'An unexpected error occurred.';
     let status = 500;
 
@@ -220,10 +245,39 @@ export async function POST(request: Request) {
       status = 400;
     }
 
-    return NextResponse.json({ 
-      error: friendlyMessage,
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { status });
+    return NextResponse.json(
+      {
+        error: friendlyMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      },
+      { status }
+    );
   }
+}
+/* ===== Utilitários ===== */
+
+// Geração de senha com fonte criptográfica (Deno/Web)
+function generateSecurePassword(length = 8): string {
+  if (length < 3) throw new Error('length must be >= 3');
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // sem I/O
+  const lower = 'abcdefghijkmnopqrstuvwxyz'; // sem l
+  const digits = '23456789'; // sem 0/1
+  const all = upper + lower + digits;
+  const randIndex = (max: number) => {
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return arr[0] % max;
+  };
+  const pick = (chars: string) => chars[randIndex(chars.length)];
+  const required = [pick(upper), pick(lower), pick(digits)];
+  const remaining: string[] = [];
+  for (let i = 0; i < length - required.length; i++) remaining.push(pick(all));
+  // Fisher–Yates
+  const pwd = [...required, ...remaining];
+  for (let i = pwd.length - 1; i > 0; i--) {
+    const j = randIndex(i + 1);
+    [pwd[i], pwd[j]] = [pwd[j], pwd[i]];
+  }
+  return pwd.join('');
 }
 

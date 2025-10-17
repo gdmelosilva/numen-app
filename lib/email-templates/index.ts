@@ -21,7 +21,7 @@ export interface EmailTemplate {
 import { ticketCreatedTemplate } from './ticket-created';
 import { ticketUpdatedTemplate, type TicketUpdatedTemplateData } from './ticket-updated';
 import { ticketAssignedTemplate, type TicketAssignedTemplateData } from './ticket-assigned';
-
+import { createUserTemplate, type CreateUserTemplateData } from './createuser';
 export { ticketCreatedTemplate } from './ticket-created';
 export { ticketUpdatedTemplate } from './ticket-updated';
 export { ticketAssignedTemplate } from './ticket-assigned';
@@ -47,8 +47,13 @@ export function generateEmailTemplate(
   baseUrl?: string
 ): EmailTemplate;
 export function generateEmailTemplate(
-  type: 'ticket-created' | 'ticket-updated' | 'ticket-assigned',
-  data: EmailTemplateData | TicketUpdatedTemplateData | TicketAssignedTemplateData,
+  type: 'create-user',
+  data: CreateUserTemplateData,
+  baseUrl?: string
+): EmailTemplate;
+export function generateEmailTemplate(
+  type: 'ticket-created' | 'ticket-updated' | 'ticket-assigned' | 'create-user',
+  data: EmailTemplateData | TicketUpdatedTemplateData | TicketAssignedTemplateData | CreateUserTemplateData,
   baseUrl?: string
 ): EmailTemplate {
   switch (type) {
@@ -58,10 +63,13 @@ export function generateEmailTemplate(
       return ticketUpdatedTemplate(data as TicketUpdatedTemplateData);
     case 'ticket-assigned':
       return ticketAssignedTemplate(data as TicketAssignedTemplateData, baseUrl);
+    case 'create-user':
+      return createUserTemplate(data as CreateUserTemplateData)
     default:
       throw new Error(`Tipo de template não suportado: ${type}`);
   }
 }
+
 
 // Função legacy para compatibilidade (manter por enquanto)
 export function generateTicketCreatedEmailTemplate(data: EmailTemplateData, baseUrl?: string): EmailTemplate {
