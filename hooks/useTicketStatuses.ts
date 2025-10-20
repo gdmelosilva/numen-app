@@ -13,7 +13,7 @@ export interface TicketStatus {
   group: number;
 }
 
-export function useTicketStatuses(SLA: boolean = true) {
+export function useTicketStatuses(SLA: boolean = false) {
   const [statuses, setStatuses] = useState<TicketStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
