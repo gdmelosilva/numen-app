@@ -75,6 +75,14 @@ export function createUserTemplate(
               height: auto !important;
             }
             
+            .header-image {
+              border-radius: 8px 8px 0 0 !important;
+            }
+            
+            .footer-image {
+              border-radius: 0 0 8px 8px !important;
+            }
+            
             .content-wrapper {
               width: 100% !important;
               padding: 20px !important;
@@ -98,7 +106,7 @@ export function createUserTemplate(
         </style>
       </head>
       <body style="margin: 0; padding: 0px; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif; align-items: center; justify-content: center; display: flex;">
-      <div style="max-width: 780px; background: linear-gradient(135deg, #ffcd83 0%, #ffffff 15%, #ffffff 50%, #ffffff 85%, #dff8ff 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; align-items: center; padding: 10px 10px;">
+      <div style="max-width: 780px; background: linear-gradient(135deg, #ffcd83 0%, #ffffff 15%, #ffffff 50%, #ffffff 85%, #dff8ff 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; align-items: center; padding: 5px 5px;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: transparent;">
               <tr>
                   <td align="center" style="padding: 0; margin: 0px;">
@@ -110,7 +118,7 @@ export function createUserTemplate(
                                   <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20HEAD%20-%20New%20User.png" 
                                   alt="EasyTime - Header" 
                                   class="header-image"
-                                  style="width: 680px; max-width: 100%; height: auto; display: block; border: 0;">
+                                  style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; border-radius: 12px 12px 0 0;">
                               </td>
                           </tr>
           
@@ -118,7 +126,7 @@ export function createUserTemplate(
                               <td style="background-color: transparent; position: relative;">
                                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                       <tr>
-                                          <td class="content-wrapper" style="padding: 40px 50px; padding-bottom: 20px;">
+                                          <td class="content-wrapper" style="padding: 30px 50px; padding-bottom: 20px;">
                                               <div style="display: flex; align-items: center; gap: 10px;">
                                                   <img src="https://numenit-ops.com/icons/user.svg" alt="User Icon" style="width: 18px; height: auto; margin-bottom: 20px;margin-right: 10px;">
                                                   <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
@@ -210,7 +218,7 @@ export function createUserTemplate(
                           <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20BOTTOM%20-%20New%20User.png" 
                           alt="EasyTime - Footer" 
                           class="footer-image"
-                          style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin: 0px;">
+                          style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin: 0px; border-radius: 0 0 12px 12px;">
                       </td>
                   </tr>
                   

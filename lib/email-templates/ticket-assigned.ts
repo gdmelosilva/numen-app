@@ -36,7 +36,7 @@ export function ticketAssignedTemplate(
 
   const displayTicketId = ticketExternalId || ticketId;
   const subject = `EasyTime - Chamado Vinculado: ${ticketTitle}`;
-  const link = `${(baseUrl ?? 'https://numenit-ops.com')}/main/smartcare/management/${displayTicketId}`;
+  const link = `${(baseUrl ?? 'https://easytime.numenlean.com')}/main/smartcare/management/${displayTicketId}`;
   
 
   const html = `
@@ -72,7 +72,7 @@ export function ticketAssignedTemplate(
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" class="email-container" style="width: 680px; max-width: 680px; background-color: transparent;">
             <tr>
               <td align="center" style="padding: 0; margin: 0px;">
-                <img src="https://easytime-dev.numenlean.com/mailing/ATUALIZAÇÃO%201%20EMAIL%20HEAD%20@2x.png"
+                <img src="https://easytime.numenlean.com/mailing/ATUALIZAÇÃO%201%20EMAIL%20HEAD%20@2x.png"
                      alt="EasyTime - Header"
                      class="header-image"
                      style="width: 680px; max-width: 100%; height: auto; display: block; border: 0;">
@@ -87,7 +87,7 @@ export function ticketAssignedTemplate(
 
                       <!-- Título/Seção: Dados da Atribuição -->
                       <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="https://numenit-ops.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
+                        <img src="https://easytime.numenlean.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
                         <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
                           Dados da Atribuição
                         </h2>
@@ -142,7 +142,7 @@ export function ticketAssignedTemplate(
                       <!-- Resumo/Descrição do Chamado -->
                       <div style="margin-bottom: 30px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                          <img src="https://numenit-ops.com/icons/msg.svg" alt="Message Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
+                          <img src="https://easytime.numenlean.com/icons/msg.svg" alt="Message Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
                           <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
                             Resumo do Chamado
                           </h2>
@@ -159,7 +159,7 @@ export function ticketAssignedTemplate(
                       <div style="margin-bottom: 30px; text-align: center;">
                         <a href="${link}"
                            style="display: flex; align-items: center; justify-content: center; height: 48px; width: 200px; padding: 12px 30px; background-color: #074799; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 6px; margin: 0 auto;">
-                          <img src="https://numenit-ops.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
+                          <img src="https://easytime.numenlean.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
                           <span style="margin: 0;">Ver Chamado</span>
                         </a>
                       </div>
@@ -198,7 +198,7 @@ export function ticketAssignedTemplate(
       <!-- Footer com imagem -->
       <tr>
         <td align="center" style="padding: 0;">
-          <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20BOTTOM%20-%20Updated.png"
+          <img src="https://easytime.numenlean.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20BOTTOM%20-%20Updated.png"
                alt="EasyTime - Footer"
                class="footer-image"
                style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin: 0px;">
