@@ -1,7 +1,6 @@
 import { EmailTemplateData, EmailTemplate } from './index';
-import { getLogoUrl } from './utils';
 
-export function ticketCreatedTemplate(data: EmailTemplateData, baseUrl?: string): EmailTemplate {
+export function ticketCreatedTemplate(data: EmailTemplateData): EmailTemplate {
   const {
     ticketId,
     ticketExternalId,
@@ -16,137 +15,257 @@ export function ticketCreatedTemplate(data: EmailTemplateData, baseUrl?: string)
 
   const displayId = ticketExternalId || ticketId;
   
-  // URL da logo (usar baseUrl customizada se fornecida, senão usar função utilitária)
-  const logoUrl = baseUrl ? `${baseUrl}/LOGO%20CLARO%201@2x.png` : getLogoUrl();
-  
   return {
     subject: `EasyTime - Novo Chamado: ${ticketTitle}`,
     
-    html: `
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Novo Chamado - EasyTime</title>
+        html: `
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+                <title>Novo Chamado - EasyTime</title>
+                <style>
+          /* Reset e estilos base para compatibilidade com clientes de email */
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            font-family: 'Manrope', Arial, Helvetica, sans-serif !important;
+          }
+          
+          table {
+            border-collapse: collapse !important;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+          }
+          
+          img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+          }
+          
+          /* Responsividade */
+          @media screen and (max-width: 600px) {
+            .email-container {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+            
+            .header-image, .footer-image {
+              width: 100% !important;
+              height: auto !important;
+            }
+            
+            .content-wrapper {
+              width: 100% !important;
+              padding: 20px !important;
+            }
+            
+            .info-table {
+              font-size: 14px !important;
+            }
+            
+            .info-table td {
+              display: block !important;
+              width: 100% !important;
+              padding: 5px 0 !important;
+            }
+            
+            .info-table td:first-child {
+              font-weight: bold !important;
+              padding-bottom: 2px !important;
+            }
+          }
+        </style>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #f9f9f9; font-family: Arial, sans-serif;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-          <!-- Header -->
-          <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <img 
-                src="${logoUrl}" 
-                alt="EasyTime - Sistema de Gestão de Chamados" 
-                style="height: auto; width: auto; max-width: 200px; display: block; margin: 0 auto;"
-                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-              />
-              <!-- Fallback text caso a imagem não carregue -->
-              <h1 style="color: #2563eb; margin: 0; font-size: 24px; font-weight: bold; display: none;">
-                EasyTime
-              </h1>
-              <div style="height: 2px; background-color: #e5e7eb; margin: 15px 0;"></div>
-            </div>
-            
-            <!-- Título Principal -->
-            <h2 style="color: #2563eb; margin-top: 0; margin-bottom: 20px; font-size: 20px;">
-              Novo Chamado de ${partnerName}
-            </h2>
-            
-            <!-- Detalhes do Chamado -->
-            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #374151; margin-top: 0; margin-bottom: 15px; font-size: 16px;">
-                Detalhes do Chamado
-              </h3>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #374151; width: 120px;">ID do Chamado:</td>
-                  <td style="padding: 5px 0; color: #6b7280;">#${displayId}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #374151;">Título:</td>
-                  <td style="padding: 5px 0; color: #6b7280;">${ticketTitle}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #374151;">Projeto:</td>
-                  <td style="padding: 5px 0; color: #6b7280;">${projectName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #374151;">Parceiro:</td>
-                  <td style="padding: 5px 0; color: #6b7280;">${partnerName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #374151;">Criado por:</td>
-                  <td style="padding: 5px 0; color: #6b7280;">${clientName}${clientEmail ? ` (${clientEmail})` : ''}</td>
-                </tr>
-                ${categoryName ? `
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #374151;">Categoria:</td>
-                  <td style="padding: 5px 0; color: #6b7280;">${categoryName}</td>
-                </tr>
-                ` : ''}
+      <body style="margin: 0; padding: 0px; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif; align-items: center; justify-content: center; display: flex;">
+      <div style="max-width: 780px; background: linear-gradient(135deg, #012da750 0%, #ffffff 15%, #ffffff 50%, #ffffff 85%, #0b4d8a46 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; align-items: center; padding: 10px 10px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: transparent;">
+              <tr>
+                  <td align="center" style="padding: 0; margin: 0px;">
+                      
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" class="email-container" style="width: 680px; max-width: 680px; background-color: transparent;">
+                          
+                          <tr>
+                              <td align="center" style="padding: 0; margin: 0px;">
+                                  <img src="https://easytime.numenlean.com/mailing/NOVO%20CHAMADO%20EMAIL%20HEAD%20.png" 
+                                  alt="EasyTime - Header" 
+                                  class="header-image"
+                                  style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin-top: -10px">
+                              </td>
+                          </tr>
+          
+                          <tr>
+                              <td style="background-color: transparent; position: relative;">
+                                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                      <tr>
+                                          <td class="content-wrapper" style="padding: 40px 50px; padding-bottom: 20px;">
+                                              <div style="display: flex; align-items: center; gap: 10px;">
+                                                  <img src="https://easytime.numenlean.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px;margin-right: 10px;">
+                                                  <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
+                                                      Dados do Chamado
+                                                  </h2>            
+                                              </div>
+       
+                                              <div style="background-color: #f3fff9;outline: 3px solid #03389bff;border-radius: 12px; border-left: 3px solid #01004bff; border-right: 0px; border-top: 0px; border-bottom: 0px; margin-bottom: 25px; padding: 25px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
+                                                  
+                                                  <!-- Informações em divs -->
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          ID do Chamado:
+                                                      </span>
+                                                      <span style="color: #374151; font-weight: bold;">
+                                                          #${displayId}
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Título:
+                                                      </span>
+                                                      <span style="color: #374151;">
+                                                          ${ticketTitle}
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Projeto:
+                                                      </span>
+                                                      <span style="color: #374151;">
+                                                          ${projectName}    
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Parceiro:
+                                                      </span>
+                                                      <span style="color: #374151;">
+                                                          ${partnerName}
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Criado por:
+                                                      </span>
+                                                      <span style="color: #374151;">
+                                                          ${clientName}${clientEmail ? ` (${clientEmail})` : ''}
+                                                      </span>
+                                                  </div>
+                                                  
+                                                  ${categoryName ? `
+                                                  <div style="margin-bottom: 8px;">
+                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
+                                                          Categoria:
+                                                      </span>
+                                                      <span style="color: #374151;">
+                                                          ${categoryName}
+                                                      </span>
+                                                  </div>
+                                                  ` : ''}
+                                                  
+                                              </div>
+                                          
+                                          <!-- Descrição do chamado -->
+                                          <div style="margin-bottom: 30px;">
+                                              <div style="display: flex; align-items: center; gap: 10px;">
+                                                  <img src="https://easytime.numenlean.com/icons/msg.svg" alt="Message Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
+                                                  <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
+                                                      Descrição do Chamado:
+                                                  </h2>            
+                                              </div>
+                                              
+                                              <div style="background-color: #f3ffff;outline: 3px solid #84d8ff;border-radius: 12px; border-left: 3px solid #00ccff; border-right: 0px; border-top: 0px; border-bottom: 0px; margin-bottom: 25px; padding: 25px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
+                                                  <p style="color: #374151; margin: 0; line-height: 1.6; font-size: 15px;">
+                                                      ${ticketDescription.replace(/\n/g, '<br>')}
+                                                  </p>
+                                              </div>
+                                          </div>
+                                          
+                                          <!-- Botão de ação (opcional) -->
+                                          <div style="margin-bottom: 30px; text-align: center;">
+                                              <a href="https://easytime.numenlean.com/main/smartcare/management/${displayId}" style="display: flex; align-items: center; justify-content: center; height: 48px; width: 200px; padding: 12px 30px; background-color: #074799; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 6px; margin: 0 auto;">
+                                              <img src="https://easytime.numenlean.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
+                                                  <span style="margin: 0;">Ver Chamado</span>
+                                              </a>
+                                          </div>                                    
+                                          
+                                          <!-- Rodapé do conteúdo -->
+                                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" 
+                                          style="border-top: 1px solid #e5e7eb; padding-top: 25px;">
+                                          <tr style="text-align: center; align-items: center;">
+                                              <td align="center">
+                                                  <p style="color: #6b7280; font-size: 11px; margin: 0; padding: 0px; text-align: center;">
+                                                      Este é um email automático gerado pelo sistema EasyTime.<br>
+                                                      Não responda diretamente a este email.
+                                                  </p>
+                                              </td>
+                                          </tr>
+                                      </table>
+                                      
+                                  </td>
+                              </tr>
+                          </table>
+                          
+                      </td>
+                  </tr>
+                  
+                  <!-- Footer com imagem -->
+                  <tr>
+                      <td align="center" style="padding: 0;">
+                          <img src="https://easytime.numenlean.com/mailing/NOVO%20CHAMADO%20EMAIL%20BOTTOM%20@2x.png" 
+                          alt="EasyTime - Footer" 
+                          class="footer-image"
+                          style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin-bottom: -35px;">
+                      </td>
+                  </tr>
+                  
               </table>
-            </div>
+              
+          </td>
+      </tr>
+      </table>
+      </div>
 
-            <!-- Descrição -->
-            <div style="margin: 20px 0;">
-              <h4 style="color: #374151; margin-bottom: 10px; font-size: 14px;">
-                Descrição do Chamado:
-              </h4>
-              <div style="background-color: #f9fafb; padding: 15px; border-left: 4px solid #2563eb; border-radius: 4px; line-height: 1.5;">
-                ${ticketDescription.replace(/\n/g, '<br>')}
-              </div>
-            </div>
-
-            <!-- Call to Action (opcional) -->
-            <div style="text-align: center; margin: 30px 0;">
-              <div style="background-color: #dbeafe; padding: 15px; border-radius: 6px; border: 1px solid #bfdbfe;">
-                <p style="margin: 0; color: #1e40af; font-weight: 500;">
-                  💡 Acesse o sistema EasyTime para visualizar e gerenciar este chamado
-                </p>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #6b7280; font-size: 12px; margin: 5px 0; line-height: 1.4;">
-                Este é um email automático gerado pelo sistema EasyTime.<br>
-                Não responda diretamente a este email.
-              </p>
-              <p style="color: #9ca3af; font-size: 11px; margin: 10px 0 0 0;">
-                © ${new Date().getFullYear()} EasyTime - Sistema de Gestão de Chamados
-              </p>
-            </div>
-          </div>
-        </div>
       </body>
       </html>
     `,
     
     text: `
-🎫 NOVO CHAMADO AMS CRIADO
+NOVO CHAMADO CRIADO - EASYTIME
 
 ═══════════════════════════════════════
 
-DETALHES DO CHAMADO:
+DADOS DO CHAMADO:
 • ID do Chamado: #${displayId}
 • Título: ${ticketTitle}
 • Projeto: ${projectName}
 • Parceiro: ${partnerName}
 • Criado por: ${clientName}${clientEmail ? ` (${clientEmail})` : ''}${categoryName ? `\n• Categoria: ${categoryName}` : ''}
 
-DESCRIÇÃO:
+DESCRIÇÃO DO CHAMADO:
 ${ticketDescription}
 
 ═══════════════════════════════════════
 
-💡 Acesse o sistema EasyTime para visualizar e gerenciar este chamado.
+Acesse o sistema EasyTime para visualizar e gerenciar este chamado.
 
 ---
 Este é um email automático gerado pelo sistema EasyTime.
 Não responda diretamente a este email.
-
-© ${new Date().getFullYear()} EasyTime - Sistema de Gestão de Chamados
     `.trim()
   };
 }

@@ -115,10 +115,10 @@ export function createUserTemplate(
                           
                           <tr>
                               <td align="center" style="padding: 0; margin: 0px;">
-                                  <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20HEAD%20-%20New%20User.png" 
+                                  <img src="https://easytime.numenlean.com/mailing/banner%20site%20welcome.svg" 
                                   alt="EasyTime - Header" 
                                   class="header-image"
-                                  style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; border-radius: 12px 12px 0 0;">
+                                  style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; border-radius: 12px 12px 0 0; margin: -232px">
                               </td>
                           </tr>
           
@@ -128,7 +128,6 @@ export function createUserTemplate(
                                       <tr>
                                           <td class="content-wrapper" style="padding: 30px 50px; padding-bottom: 20px;">
                                               <div style="display: flex; align-items: center; gap: 10px;">
-                                                  <img src="https://numenit-ops.com/icons/user.svg" alt="User Icon" style="width: 18px; height: auto; margin-bottom: 20px;margin-right: 10px;">
                                                   <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
                                                       Dados do Usuário
                                                   </h2>            
@@ -171,7 +170,7 @@ export function createUserTemplate(
                                           <!-- Informações adicionais -->
                                           <div style="margin-bottom: 30px;">
                                               <div style="display: flex; align-items: center; gap: 10px;">
-                                                  <img src="https://numenit-ops.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
+                                                  <img src="https://easytime.numenlean.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
                                                   <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
                                                       Instruções de Acesso:
                                                   </h2>            
@@ -179,7 +178,7 @@ export function createUserTemplate(
                                               
                                               <div style="background-color: #f3ffff;outline: 3px solid #84d8ff;border-radius: 12px; border-left: 3px solid #00ccff; border-right: 0px; border-top: 0px; border-bottom: 0px; margin-bottom: 25px; padding: 25px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
                                                   <p style="color: #374151; margin: 0; line-height: 1.6; font-size: 15px;">
-                                                      Seu usuário foi criado com sucesso no sistema EasyTime. Use as credenciais fornecidas acima para realizar o primeiro acesso. ${temporaryPassword ? 'Após o primeiro login, será solicitado que você altere a senha temporária.' : ''}
+                                                      Seu usuário foi criado com sucesso no sistema EasyTime. Use as credenciais fornecidas acima para realizar o primeiro acesso. Após o primeiro login, acesse seus dados de perfil para alterar a senha do usuário.
                                                   </p>
                                               </div>
                                           </div>
@@ -187,8 +186,8 @@ export function createUserTemplate(
                                           <!-- Botão de ação -->
                                           <div style="margin-bottom: 30px; text-align: center;">
                                               <a href="${link}" style="display: flex; align-items: center; justify-content: center; height: 48px; width: 200px; padding: 12px 30px; background-color: #074799; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 6px; margin: 0 auto;">
-                                              <img src="https://numenit-ops.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
-                                                  <span style="margin: 0;">Acessar Sistema</span>
+                                              <img src="https://easytime.numenlean.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
+                                                  <span style="margin: 0;">Acessar EasyTime</span>
                                               </a>
                                           </div>                                    
                                           
@@ -215,10 +214,10 @@ export function createUserTemplate(
                   <!-- Footer com imagem -->
                   <tr>
                       <td align="center" style="padding: 0;">
-                          <img src="https://numenit-ops.com/mailing/ATUALIZAÇÃO%202%20EMAIL%20BOTTOM%20-%20New%20User.png" 
+                          <img src="https://easytime.numenlean.com/mailing/NOVO%20CHAMADO%20EMAIL%20BOTTOM%20@2x.png" 
                           alt="EasyTime - Footer" 
                           class="footer-image"
-                          style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin: 0px; border-radius: 0 0 12px 12px;">
+                          style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin: -30px; border-radius: 0 0 12px 12px;">
                       </td>
                   </tr>
                   

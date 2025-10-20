@@ -64,7 +64,7 @@ export function ticketAssignedTemplate(
   </style>
 </head>
 <body style="margin: 0; padding: 0px; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif; align-items: center; justify-content: center; display: flex;">
-  <div style="max-width: 780px; background: linear-gradient(135deg, #ffcd83 0%, #ffffff 15%, #ffffff 50%, #ffffff 85%, #dff8ff 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; align-items: center; padding: 10px 10px;">
+  <div style="max-width: 780px; background: linear-gradient(135deg, #eb5109 0%, #ffffff 15%, #ffffff 50%, #ffffff 85%, #dff8ff 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; align-items: center; padding: 10px 10px;">
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: transparent;">
       <tr>
         <td align="center" style="padding: 0; margin: 0px;">
