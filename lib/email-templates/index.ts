@@ -58,7 +58,7 @@ export function generateEmailTemplate(
 ): EmailTemplate {
   switch (type) {
     case 'ticket-created':
-      return ticketCreatedTemplate(data as EmailTemplateData, baseUrl);
+      return ticketCreatedTemplate(data as EmailTemplateData);
     case 'ticket-updated':
       return ticketUpdatedTemplate(data as TicketUpdatedTemplateData);
     case 'ticket-assigned':
