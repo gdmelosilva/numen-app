@@ -30,206 +30,150 @@ export function createUserTemplate(
             <!DOCTYPE html>
             <html lang="pt-BR">
             <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
-                <title>Novo Usuário Criado - EasyTime</title>
-                <style>
-          /* Reset e estilos base para compatibilidade com clientes de email */
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          
-          body {
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-            font-family: 'Manrope', Arial, Helvetica, sans-serif !important;
-          }
-          
-          table {
-            border-collapse: collapse !important;
-            mso-table-lspace: 0pt;
-            mso-table-rspace: 0pt;
-          }
-          
-          img {
-            border: 0;
-            height: auto;
-            line-height: 100%;
-            outline: none;
-            text-decoration: none;
-            -ms-interpolation-mode: bicubic;
-          }
-          
-          /* Responsividade */
-          @media screen and (max-width: 600px) {
-            .email-container {
-              width: 100% !important;
-              max-width: 100% !important;
-            }
-            
-            .header-image, .footer-image {
-              width: 100% !important;
-              height: auto !important;
-            }
-            
-            .header-image {
-              border-radius: 8px 8px 0 0 !important;
-            }
-            
-            .footer-image {
-              border-radius: 0 0 8px 8px !important;
-            }
-            
-            .content-wrapper {
-              width: 100% !important;
-              padding: 20px !important;
-            }
-            
-            .info-table {
-              font-size: 14px !important;
-            }
-            
-            .info-table td {
-              display: block !important;
-              width: 100% !important;
-              padding: 5px 0 !important;
-            }
-            
-            .info-table td:first-child {
-              font-weight: bold !important;
-              padding-bottom: 2px !important;
-            }
-          }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 0px; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif; align-items: center; justify-content: center; display: flex;">
-      <div style="max-width: 780px; background: linear-gradient(135deg, #ffcd83 0%, #ffffff 15%, #ffffff 50%, #ffffff 85%, #dff8ff 100%); border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; align-items: center; padding: 5px 5px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: transparent;">
-              <tr>
-                  <td align="center" style="padding: 0; margin: 0px;">
-                      
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" class="email-container" style="width: 680px; max-width: 680px; background-color: transparent;">
-                          
-                          <tr>
-                              <td align="center" style="padding: 0; margin: 0px;">
-                                  <img src="https://easytime.numenlean.com/mailing/banner%20site%20welcome.svg" 
-                                  alt="EasyTime - Header" 
-                                  class="header-image"
-                                  style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; border-radius: 12px 12px 0 0; margin: -232px">
-                              </td>
-                          </tr>
-          
-                          <tr>
-                              <td style="background-color: transparent; position: relative;">
-                                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                      <tr>
-                                          <td class="content-wrapper" style="padding: 30px 50px; padding-bottom: 20px;">
-                                              <div style="display: flex; align-items: center; gap: 10px;">
-                                                  <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
-                                                      Dados do Usuário
-                                                  </h2>            
-                                              </div>
-       
-                                              <div style="background-color: #e8f5e8;outline: 3px solid #84ff84;border-radius: 12px; border-left: 3px solid #00cc00; border-right: 0px; border-top: 0px; border-bottom: 0px; margin-bottom: 25px; padding: 25px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
-                                                  
-                                                  <!-- Informações em divs -->
-                                                  <div style="margin-bottom: 8px;">
-                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
-                                                          Nome:
-                                                      </span>
-                                                      <span style="color: #374151; font-weight: bold;">
-                                                          ${userName}
-                                                      </span>
-                                                  </div>
-                                                  
-                                                  <div style="margin-bottom: 8px;">
-                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
-                                                          Email:
-                                                      </span>
-                                                      <span style="color: #374151;">
-                                                          ${userEmail}
-                                                      </span>
-                                                  </div>
-                                                  
-                                                  ${temporaryPassword ? `
-                                                  <div style="margin-bottom: 8px;">
-                                                      <span style="font-weight: bold; color: #374151; display: inline-block; width: 140px; vertical-align: top;">
-                                                          Senha Temporária:
-                                                      </span>
-                                                      <span style="color: #374151; font-weight: bold;">
-                                                          ${temporaryPassword}
-                                                      </span>
-                                                  </div>
-                                                  ` : ''}
-                                                  
-                                              </div>
-                                          
-                                          <!-- Informações adicionais -->
-                                          <div style="margin-bottom: 30px;">
-                                              <div style="display: flex; align-items: center; gap: 10px;">
-                                                  <img src="https://easytime.numenlean.com/icons/info.svg" alt="Info Icon" style="width: 18px; height: auto; margin-bottom: 20px; margin-right: 10px;">
-                                                  <h2 style="color: #374151; margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">
-                                                      Instruções de Acesso:
-                                                  </h2>            
-                                              </div>
-                                              
-                                              <div style="background-color: #f3ffff;outline: 3px solid #84d8ff;border-radius: 12px; border-left: 3px solid #00ccff; border-right: 0px; border-top: 0px; border-bottom: 0px; margin-bottom: 25px; padding: 25px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
-                                                  <p style="color: #374151; margin: 0; line-height: 1.6; font-size: 15px;">
-                                                      Seu usuário foi criado com sucesso no sistema EasyTime. Use as credenciais fornecidas acima para realizar o primeiro acesso. Após o primeiro login, acesse seus dados de perfil para alterar a senha do usuário.
-                                                  </p>
-                                              </div>
-                                          </div>
-                                          
-                                          <!-- Botão de ação -->
-                                          <div style="margin-bottom: 30px; text-align: center;">
-                                              <a href="${link}" style="display: flex; align-items: center; justify-content: center; height: 48px; width: 200px; padding: 12px 30px; background-color: #074799; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 6px; margin: 0 auto;">
-                                              <img src="https://easytime.numenlean.com/ÍCONE%20AZUL%20E%20LARANJA@2x.png" alt="EasyTime Logo" style="width: auto; height: 24px; margin-right: 8px;">
-                                                  <span style="margin: 0;">Acessar EasyTime</span>
-                                              </a>
-                                          </div>                                    
-                                          
-                                          <!-- Rodapé do conteúdo -->
-                                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" 
-                                          style="border-top: 1px solid #e5e7eb; padding-top: 25px;">
-                                          <tr style="text-align: center; align-items: center;">
-                                              <td align="center">
-                                                  <p style="color: #6b7280; font-size: 11px; margin: 0; padding: 0px; text-align: center;">
-                                                      Este é um email automático gerado pelo sistema EasyTime.<br>
-                                                      Não responda diretamente a este email.
-                                                  </p>
-                                              </td>
-                                          </tr>
-                                      </table>
-                                      
-                                  </td>
-                              </tr>
-                          </table>
-                          
-                      </td>
-                  </tr>
-                  
-                  <!-- Footer com imagem -->
-                  <tr>
-                      <td align="center" style="padding: 0;">
-                          <img src="https://easytime.numenlean.com/mailing/NOVO%20CHAMADO%20EMAIL%20BOTTOM%20@2x.png" 
-                          alt="EasyTime - Footer" 
-                          class="footer-image"
-                          style="width: 680px; max-width: 100%; height: auto; display: block; border: 0; margin: -30px; border-radius: 0 0 12px 12px;">
-                      </td>
-                  </tr>
-                  
-              </table>
-              
-          </td>
-      </tr>
-      </table>
-      </div>
+            <meta charset="UTF-8">
+            <title>Novo Usuário Criado - EasyTime</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Preheader (texto de pré-visualização) -->
+            <meta name="x-apple-disable-message-reformatting">
+            <!-- Evite fontes externas; use fallbacks do sistema -->
+            </head>
+            <body style="margin:0; padding:0; background-color:#f5f5f5; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;">
+            <!-- Wrapper -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f5f5f5;">
+                <tr>
+                <td align="center" style="padding:20px 10px;">
+                    <!-- Container -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px; max-width:600px; background-color:#ffffff; border-radius:12px; overflow:hidden;">
+                    
+                    <!-- Header Image -->
+                    <tr>
+                        <td align="center" style="padding:0;">
+                        </td>
+                    </tr>
 
-      </body>
-      </html>
+                    <!-- Conteúdo -->
+                    <tr>
+                        <td style="padding:24px 24px 8px 24px; font-family:Arial, Helvetica, sans-serif; color:#374151;">
+                        <h2 style="margin:0 0 12px 0; font-size:20px; line-height:1.3; font-weight:bold;">Dados do Usuário</h2>
+                        </td>
+                    </tr>
+
+                    <!-- Bloco de dados (verde claro) -->
+                    <tr>
+                        <td style="padding:0 24px 16px 24px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                            <tr>
+                            <td style="background-color:#e8f5e8; border-left:3px solid #00cc00; border-radius:8px; padding:16px; font-family:Arial, Helvetica, sans-serif;">
+                                
+                                <!-- Linha: Nome -->
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td width="140" valign="top" style="font-weight:bold; color:#374151; padding:4px 0; font-size:14px;">Nome:</td>
+                                    <td valign="top" style="color:#374151; padding:4px 0; font-size:14px; font-weight:bold;">${userName}</td>
+                                </tr>
+                                <!-- Linha: Email -->
+                                <tr>
+                                    <td width="140" valign="top" style="font-weight:bold; color:#374151; padding:4px 0; font-size:14px;">Email:</td>
+                                    <td valign="top" style="color:#374151; padding:4px 0; font-size:14px;">${userEmail}</td>
+                                </tr>
+                                <!-- Linha: Senha Temporária (renderize condicionalmente no seu back) -->
+                                <!-- IF temporaryPassword -->
+                                <tr>
+                                    <td width="140" valign="top" style="font-weight:bold; color:#374151; padding:4px 0; font-size:14px;">Senha Temporária:</td>
+                                    <td valign="top" style="color:#374151; padding:4px 0; font-size:14px; font-weight:bold;">${temporaryPassword}</td>
+                                </tr>
+                                <!-- ENDIF -->
+                                </table>
+
+                            </td>
+                            </tr>
+                        </table>
+                        </td>
+                    </tr>
+
+                    <!-- Instruções de acesso -->
+                    <tr>
+                        <td style="padding:8px 24px 0 24px; font-family:Arial, Helvetica, sans-serif; color:#374151;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                            <tr>
+                            <td valign="middle" width="24" style="padding:0 8px 0 0;">
+                                <img src="https://easytime.numenlean.com/icons/info.svg" alt="" width="18" style="display:block; border:0;">
+                            </td>
+                            <td valign="middle">
+                                <h2 style="margin:0; font-size:18px; line-height:1.3; font-weight:bold; color:#374151;">Instruções de Acesso</h2>
+                            </td>
+                            </tr>
+                        </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:12px 24px 16px 24px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                            <td style="background-color:#f3ffff; border-left:3px solid #00ccff; border-radius:8px; padding:16px; font-family:Arial, Helvetica, sans-serif; color:#374151; font-size:14px; line-height:1.6;">
+                                Seu usuário foi criado com sucesso no sistema EasyTime. Use as credenciais acima para o primeiro acesso. Após o login, acesse seu perfil para alterar a senha do usuário.
+                            </td>
+                            </tr>
+                        </table>
+                        </td>
+                    </tr>
+
+                    <!-- Botão (bulletproof + VML para Outlook) -->
+                    <tr>
+                        <td align="center" style="padding:8px 24px 24px 24px;">
+                        
+                        <!--[if mso]>
+                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${link}" arcsize="8%" stroke="f" fillcolor="#074799" style="height:48px;v-text-anchor:middle;width:260px;">
+                            <w:anchorlock/>
+                            <center style="color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:bold;">Acessar EasyTime</center>
+                        </v:roundrect>
+                        <![endif]-->
+
+                        <!--[if !mso]><!-- -->
+                        <a href="${link}" target="_blank"
+                            style="background-color:#074799; color:#ffffff; text-decoration:none; display:inline-block; font-family:Arial, Helvetica, sans-serif; font-size:16px; font-weight:bold; line-height:48px; height:48px; width:260px; text-align:center; border-radius:6px;">
+                            Acessar EasyTime
+                        </a>
+                        <!--<![endif]-->
+
+                        </td>
+                    </tr>
+
+                    <!-- Divider + rodapé de texto -->
+                    <tr>
+                        <td style="padding:0 24px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                            <td style="border-top:1px solid #e5e7eb; font-size:0; line-height:0;">&nbsp;</td>
+                            </tr>
+                        </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="padding:16px 24px 8px 24px; font-family:Arial, Helvetica, sans-serif;">
+                        <p style="margin:0; color:#6b7280; font-size:11px; line-height:1.5; text-align:center;">
+                            Este é um e-mail automático gerado pelo sistema EasyTime.<br>
+                            Não responda diretamente a este e-mail.
+                        </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer Image -->
+                    <tr>
+                        <td align="center" style="padding:0;">
+                        </td>
+                    </tr>
+
+                    </table>
+                    <!-- /Container -->
+                </td>
+                </tr>
+            </table>
+            <!-- /Wrapper -->
+            </body>
+            </html>
     `.trim();
 
     const text = `
