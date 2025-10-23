@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { DataTable } from "@/components/ui/data-table";
 import type { Ticket } from "@/types/tickets";
-import { TicketCard } from "@/components/ticket-card";
-import { SortControl, type SortOption } from "@/components/sort-control";
+import { getColumns } from "./columns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { usePartnerOptions } from "@/hooks/usePartnerOptions";
 import { useProjectOptions } from "@/hooks/useProjectOptions";
 import { getCategoryOptions, getPriorityOptions, getModuleOptions } from "@/hooks/useOptions";
 import { exportTicketsToExcel } from "@/lib/export-file";
+import type { VisibilityState } from "@tanstack/react-table";
 
 interface Filters {
   external_id: string;
@@ -141,14 +142,8 @@ export default function TicketManagementPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // Estado para ordenação
-  const [currentSort, setCurrentSort] = useState<SortOption>({
-    field: 'created_at',
-    label: 'Data de Criação',
-    direction: 'desc'
-  });
-
-
+  // Estado para controlar visibilidade das colunas
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   // Função para salvar filtros no sessionStorage
   const saveFiltersToSession = useCallback((filtersToSave: Filters) => {
@@ -194,7 +189,27 @@ export default function TicketManagementPage() {
     return 10;
   }, []);
 
+  // Função para salvar/carregar visibilidade das colunas do sessionStorage
+  const saveColumnVisibilityToSession = useCallback((visibility: VisibilityState) => {
+    try {
+      sessionStorage.setItem('smartcare-column-visibility', JSON.stringify(visibility));
+    } catch {
+      // Silent error - visibilidade das colunas não é crítica
+    }
+  }, []);
 
+  const loadColumnVisibilityFromSession = useCallback((): VisibilityState => {
+    try {
+      const savedVisibility = sessionStorage.getItem('smartcare-column-visibility');
+      if (savedVisibility) {
+        return JSON.parse(savedVisibility);
+      }
+    } catch {
+      // Silent error - visibilidade das colunas não é crítica
+    }
+    // Configuração padrão: coluna "Abrir" oculta por padrão
+    return { open_ticket: false };
+  }, []);
 
   // Efeito para definir automaticamente o parceiro do cliente
   useEffect(() => {
@@ -217,7 +232,9 @@ export default function TicketManagementPage() {
     const savedPageSize = loadPageSizeFromSession();
     setPageSize(savedPageSize);
     
-
+    // Carregar visibilidade das colunas salva
+    const savedColumnVisibility = loadColumnVisibilityFromSession();
+    setColumnVisibility(savedColumnVisibility);
     
     // Carregar estado dos filtros colapsados
     try {
@@ -228,7 +245,7 @@ export default function TicketManagementPage() {
     } catch {
       // Silent error - filtros não são críticos
     }
-  }, [loadFiltersFromSession, loadPageSizeFromSession]);
+  }, [loadFiltersFromSession, loadPageSizeFromSession, loadColumnVisibilityFromSession]);
 
   // Efeito para limpar filtros quando o usuário faz logout
   useEffect(() => {
@@ -273,7 +290,7 @@ export default function TicketManagementPage() {
 
     loadOptions();
   }, []);
-  const buildTicketQueryParams = useCallback((customFilters: Filters, page: number = 1, limit: number = 10, sort?: SortOption) => {
+  const buildTicketQueryParams = useCallback((customFilters: Filters, page: number = 1, limit: number = 10) => {
     const queryParams = new URLSearchParams();
     const filterKeys = [
       "external_id",
@@ -307,12 +324,6 @@ export default function TicketManagementPage() {
     // Adicionar parâmetros de paginação
     queryParams.append('page', page.toString());
     queryParams.append('limit', limit.toString());
-
-    // Adicionar parâmetros de ordenação
-    if (sort) {
-      queryParams.append('sort_by', sort.field);
-      queryParams.append('sort_direction', sort.direction);
-    }
 
     return queryParams;
   }, []);
@@ -381,10 +392,10 @@ export default function TicketManagementPage() {
   );
 
   const fetchTickets = useCallback(
-    async (customFilters: Filters, page: number = 1, limit: number = 10, sort?: SortOption) => {
+    async (customFilters: Filters, page: number = 1, limit: number = 10) => {
       setLoading(true);
       try {
-        const queryParams = buildTicketQueryParams(customFilters, page, limit, sort);
+        const queryParams = buildTicketQueryParams(customFilters, page, limit);
         const url = `/api/smartcare?${queryParams.toString()}`;
         
         const response = await fetch(url);
@@ -440,13 +451,13 @@ export default function TicketManagementPage() {
           setFilters(profileFilters);
           setPendingFilters(profileFilters);
           saveFiltersToSession(profileFilters);
-          fetchTickets(profileFilters, 1, pageSize, currentSort);
+          fetchTickets(profileFilters, 1, pageSize);
         } else if (JSON.stringify(currentFilters) !== JSON.stringify(filters)) {
           setFilters(currentFilters);
           setPendingFilters(currentFilters);
-          fetchTickets(currentFilters, 1, pageSize, currentSort);
+          fetchTickets(currentFilters, 1, pageSize);
         } else if (hasFiltersToApply && tickets.length === 0) {
-          fetchTickets(profileFilters, 1, pageSize, currentSort);
+          fetchTickets(profileFilters, 1, pageSize);
         }
       }
     };
@@ -463,7 +474,6 @@ export default function TicketManagementPage() {
     saveFiltersToSession,
     tickets.length,
     pageSize,
-    currentSort,
   ]);
 
   useEffect(() => {
@@ -721,7 +731,7 @@ export default function TicketManagementPage() {
     setFilters(pendingFilters);
     saveFiltersToSession(pendingFilters);
     setCurrentPage(1); 
-    fetchTickets(pendingFilters, 1, pageSize, currentSort);
+    fetchTickets(pendingFilters, 1, pageSize);
   };
 
   const handleClearFilters = async () => {
@@ -756,7 +766,7 @@ export default function TicketManagementPage() {
     setFilters(filtersWithProfile);
     saveFiltersToSession(filtersWithProfile);
     setCurrentPage(1); 
-    fetchTickets(filtersWithProfile, 1, pageSize, currentSort);
+    fetchTickets(filtersWithProfile, 1, pageSize);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -764,12 +774,6 @@ export default function TicketManagementPage() {
       e.preventDefault();
       handleSearch();
     }
-  };
-
-  const handleSortChange = (newSort: SortOption) => {
-    setCurrentSort(newSort);
-    setCurrentPage(1);
-    fetchTickets(filters, 1, pageSize, newSort);
   };
 
   const handleExportCurrentPageToExcel = async () => {
@@ -1138,12 +1142,12 @@ export default function TicketManagementPage() {
     setPageSize(newPageSize);
     setCurrentPage(1);
     savePageSizeToSession(newPageSize);
-    fetchTickets(filters, 1, newPageSize, currentSort);
+    fetchTickets(filters, 1, newPageSize);
   };
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
-    fetchTickets(filters, newPage, pageSize, currentSort);
+    fetchTickets(filters, newPage, pageSize);
   };
 
   const handlePreviousPage = () => {
@@ -1158,7 +1162,10 @@ export default function TicketManagementPage() {
     }
   };
 
-
+  const handleColumnVisibilityChange = useCallback((newVisibility: VisibilityState) => {
+    setColumnVisibility(newVisibility);
+    saveColumnVisibilityToSession(newVisibility);
+  }, [saveColumnVisibilityToSession]);
 
   const handleLinkResource = useCallback((ticket: Ticket) => {
     setSelectedTicketForLinking(ticket);
@@ -1167,8 +1174,8 @@ export default function TicketManagementPage() {
 
   const handleLinkResourceSuccess = useCallback(() => {
     // Recarregar a lista de tickets para refletir as mudanças
-    fetchTickets(filters, currentPage, pageSize, currentSort);
-  }, [fetchTickets, filters, currentPage, pageSize, currentSort]);
+    fetchTickets(filters, currentPage, pageSize);
+  }, [fetchTickets, filters, currentPage, pageSize]);
 
   return (
     <div className="space-y-4">
@@ -2323,60 +2330,39 @@ export default function TicketManagementPage() {
           </div>
         </div>
       </div>
-
-      {/* Controle de Ordenação */}
-      <div className="flex items-center justify-between py-3 border-b bg-muted/30 rounded-md px-4">
-        <SortControl
-          currentSort={currentSort}
-          onSortChange={handleSortChange}
-          disabled={loading}
-        />
-        <div className="text-sm text-muted-foreground">
-          {totalCount > 0 ? (
-            <>Exibindo {tickets.length} de {totalCount} registros</>
-          ) : (
-            "Nenhum registro encontrado"
-          )}
-        </div>
-      </div>
       
       {loading ? (
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : tickets.length > 0 ? (
-        <div className="space-y-4">
-          {tickets.map((ticket) => (
-            <TicketCard
-              key={ticket.id}
-              ticket={ticket}
-              user={user}
-              onLinkResource={handleLinkResource}
-              onClick={handleRowClick}
-            />
-          ))}
-        </div>
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-            <Search className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-muted-foreground">
-              Nenhum chamado encontrado
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Não há chamados que correspondam aos filtros aplicados. Tente ajustar os filtros ou limpar todos os filtros.
-            </p>
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={handleClearFilters}
-            className="mt-4"
-          >
-            Limpar Filtros
-          </Button>
-        </div>
+        <DataTable 
+          columns={getColumns(user, handleLinkResource)} 
+          data={tickets} 
+          onRowClick={handleRowClick}
+          showColumnVisibility={true}
+          showPagination={false}
+          columnVisibility={columnVisibility}
+          onColumnVisibilityChange={handleColumnVisibilityChange}
+          columnLabels={{
+            'open_ticket': 'Abrir',
+            'is_private': 'Privado?',
+            'external_id': 'Id Chamado',
+            'ref_external_id': 'Ref. Externa',
+            'project': 'Projeto',
+            'partner': 'Parceiro',
+            'category': 'Categoria',
+            'title': 'Título',
+            'module': 'Módulo Func.',
+            'status': 'Status',
+            'created_at': 'Criado em',
+            'created_by': 'Criado Por',
+            'priority': 'Prioridade',
+            'planned_end_date': 'Prev. Fim',
+            'main_resource': 'Recurso Principal',
+            'other_resources': 'Demais Recursos',
+          }}
+        />
       )}
 
       {/* Dialog para vincular recurso */}
