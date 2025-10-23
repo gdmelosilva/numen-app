@@ -21,9 +21,6 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Abrir" />
     ),
-    size: 80,
-    minSize: 70,
-    maxSize: 90,
     cell: ({ row }) => {
       const ticketId = row.original.external_id || row.original.id;
       
@@ -68,9 +65,6 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="ID" />
     ),
-    size: 120,
-    minSize: 100,
-    maxSize: 150,
   },
   {
     accessorKey: "ref_external_id",
@@ -84,10 +78,11 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Projeto" />
     ),
-    size: 200,
-    minSize: 150,
-    maxSize: 250,
-    cell: ({ row }) => row.original.project?.projectName || row.original.project_id || "-",
+    cell: ({ row }) => (
+      <div className="max-w-[200px] truncate" title={row.original.project?.projectName || row.original.project_id || "-"}>
+        {row.original.project?.projectName || row.original.project_id || "-"}
+      </div>
+    ),
   },
   {
     id: "partner",
@@ -95,10 +90,11 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Parceiro" />
     ),
-    size: 180,
-    minSize: 150,
-    maxSize: 220,
-    cell: ({ row }) => row.original.partner?.partner_desc || row.original.partner_id || "-",
+    cell: ({ row }) => (
+      <div className="max-w-[180px] truncate" title={row.original.partner?.partner_desc || row.original.partner_id || "-"}>
+        {row.original.partner?.partner_desc || row.original.partner_id || "-"}
+      </div>
+    ),
   },
     {
     id: "category",
@@ -113,9 +109,11 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Título" />
     ),
-    size: 20,
-    minSize: 20,
-    maxSize: 20,
+    cell: ({ row }) => (
+      <div className="max-w-[300px] truncate" title={row.original.title || "-"}>
+        {row.original.title || "-"}
+      </div>
+    ),
   },
   {
     id: "module",
@@ -131,9 +129,6 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
-    size: 240,
-    minSize: 240,
-    maxSize: 240,
     cell: ({ row }) => {
       const status = row.original.status;
       const name = status?.name || row.original.status_id || "-";
@@ -161,9 +156,6 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Criado Por" />
     ),
-    size: 160,
-    minSize: 140,
-    maxSize: 200,
     cell: ({ row }) => {
       const createdByUser = row.original.created_by_user;
       if (createdByUser) {
@@ -208,9 +200,6 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Recurso Principal" />
     ),
-    size: 180,
-    minSize: 150,
-    maxSize: 220,
     cell: ({ row }) => {
       const resources = row.original.resources || [];
       const mainResource = resources.find(r => r.is_main);
@@ -239,9 +228,6 @@ export const getColumns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Demais Recursos" />
     ),
-    size: 160,
-    minSize: 130,
-    maxSize: 200,
     cell: ({ row }) => {
       const resources = row.original.resources || [];
       const otherResources = resources.filter(r => !r.is_main);

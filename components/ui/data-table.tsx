@@ -133,14 +133,14 @@ export function DataTable<
   const expanded = meta?.expanded as Record<string, boolean> | undefined;
 
   return (
-    <div>
+    <div className="w-full">
       {showColumnVisibility && (
         <div className="flex items-center pb-4">
           <ColumnVisibilityToggle table={table} columnLabels={columnLabels} />
         </div>
       )}
-      <div className="rounded-md border bg-card shadow-md overflow-x-auto">
-        <Table className="min-w-max">
+      <div className="rounded-md border bg-card shadow-md overflow-x-auto w-full">
+        <Table className="w-full table-auto">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -177,7 +177,7 @@ export function DataTable<
                     onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell key={cell.id} className="max-w-0">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
