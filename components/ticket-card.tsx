@@ -230,21 +230,22 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
   };
 
   return (
-    <Card 
-      className={`ticket-card cursor-pointer border-l-4 ${getFinalizedCardClasses()} ${getPriorityHoverClass()} transition-all duration-300`}
+    <Card
+      className={`ticket-card cursor-pointer border-l-8 rounded-xl shadow-md bg-white ${getFinalizedCardClasses()} ${getPriorityHoverClass()} transition-all duration-300 hover:shadow-lg`}
+      style={{ borderLeftWidth: 8 }}
       onClick={handleCardClick}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-6">
         <div className="flex">
           {/* Barra de SLA na lateral esquerda */}
-          <div className="flex flex-col items-center w-20 py-2 pr-6 mr-6 border-r border-gray-200">
+          <div className="flex flex-col items-center w-24 py-2 pr-8 mr-8 border-r border-gray-100">
             {/* Label SLA */}
             <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">SLA</div>
             
             {/* Barra de progresso SLA */}
             <div className="flex flex-col items-center mb-3">
-              <div className="w-4 h-20 bg-gray-200 rounded-full overflow-hidden">
-                <div 
+              <div className="w-5 h-24 bg-gray-100 rounded-full overflow-hidden flex items-end">
+                <div
                   className={`w-full transition-all duration-300 rounded-full ${getSLABarColor()}`}
                   style={{ height: `${getSLAPercentage()}%` }}
                 />
@@ -264,43 +265,43 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
           </div>
 
           {/* Coluna de Badges */}
-          <div className="flex flex-col items-stretch w-28 py-2 pr-6 mr-6 border-r border-gray-200">
+          <div className="flex flex-col items-center justify-center w-32 py-2 pr-8 mr-8 border-r border-gray-100 gap-4">
             
             {/* Badge de Status */}
-            <div className="mb-2">
-              <div className="text-xs text-muted-foreground mb-1 text-center">Status</div>
-              <div className={`px-2 py-1 rounded text-xs font-bold uppercase border w-full text-center ${getStatusBadgeClasses()}`}>
+            <div className="flex flex-col items-center w-full">
+              <div className="text-xs text-muted-foreground mb-1 text-center font-medium tracking-wide">Status</div>
+              <div className={`px-3 py-2 rounded-lg text-xs font-bold uppercase border w-full text-center ${getStatusBadgeClasses()} shadow-sm`} style={{ minWidth: 110, maxWidth: 130 }}>
                 {ticket.status?.name || "N/A"}
               </div>
             </div>
 
             {/* Badge de Categoria */}
-            <div className="mb-2">
-              <div className="text-xs text-muted-foreground mb-1 text-center">Categoria</div>
-              <div className="px-2 py-1 rounded text-xs font-bold uppercase border w-full text-center bg-blue-100 text-blue-800 border-blue-200">
+            <div className="flex flex-col items-center w-full">
+              <div className="text-xs text-muted-foreground mb-1 text-center font-medium tracking-wide">Categoria</div>
+              <div className="px-3 py-2 rounded-lg text-xs font-bold uppercase border w-full text-center bg-blue-100 text-blue-800 border-blue-200 shadow-sm" style={{ minWidth: 110, maxWidth: 130 }}>
                 {ticket.category?.name || ticket.category_id || "SEM CATEGORIA"}
               </div>
             </div>
 
             {/* Badge de Criticidade */}
-            <div className="mb-2">
-              <div className="text-xs text-muted-foreground mb-1 text-center">Prioridade</div>
-              <div className={`px-2 py-1 rounded text-xs font-bold uppercase border w-full text-center ${getPriorityBadgeClasses()}`}>
+            <div className="flex flex-col items-center w-full">
+              <div className="text-xs text-muted-foreground mb-1 text-center font-medium tracking-wide">Prioridade</div>
+              <div className={`px-3 py-2 rounded-lg text-xs font-bold uppercase border w-full text-center ${getPriorityBadgeClasses()} shadow-sm"`} style={{ minWidth: 110, maxWidth: 130 }}>
                 {ticket.priority?.name || "N/A"}
               </div>
             </div>
           </div>
 
           {/* Conteúdo principal do card */}
-          <div className="flex-1 flex flex-col space-y-4 pr-6">
+          <div className="flex-1 flex flex-col space-y-4 pr-8">
             {/* Header do Card: Número do chamado | Data e usuário criação */}
             <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 {/* Ícone e Número do chamado */}
                 <div className="flex items-center space-x-2">
-                  <TicketIcon className="h-5 w-5 text-black" />
-                  <div 
-                    className="text-lg font-semibold text-black cursor-pointer hover:text-gray-700 transition-colors select-all"
+                  <TicketIcon className="h-5 w-5 text-primary" />
+                  <div
+                    className="text-xl font-bold text-primary cursor-pointer hover:text-gray-700 transition-colors select-all drop-shadow-sm"
                     title="Clique para copiar o número do chamado"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -335,13 +336,13 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
 
             {/* Título */}
             <div className="space-y-1">
-              <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+              <h3 className="font-semibold text-xl leading-tight line-clamp-2 text-gray-900">
                 {ticket.title || "Sem título"}
               </h3>
             </div>
 
             {/* Parceiro e Projeto em uma linha */}
-            <div className="flex items-center space-x-2 text-sm">
+            <div className="flex items-center space-x-3 text-base">
               <span className="font-medium truncate">
                 {ticket.partner?.partner_desc || ticket.partner_id || "Sem parceiro"}
               </span>
@@ -352,7 +353,7 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
             </div>
 
             {/* Informações adicionais com labels alinhadas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 border-t border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
               <div className="space-y-2">
                 <div className="grid grid-cols-[80px_1fr] items-center gap-2">
                   <span className="text-xs text-muted-foreground text-right">Módulo:</span>
@@ -407,7 +408,7 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
           </div>
 
           {/* Botões de ação na lateral direita */}
-          <div className="flex flex-col space-y-2 pl-6 border-l border-gray-200">
+          <div className="flex flex-col space-y-3 pl-8 border-l border-gray-100 items-end justify-between min-w-[120px]">
             <Button
               variant="ghost"
               size="sm"
