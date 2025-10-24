@@ -6,14 +6,24 @@ Este projeto é um sistema de gestão de contratos, parceiros, usuários, chamad
 
 ---
 ## To-Do Guilherme
-- [ ] Refatoração do Card/Tabela
+- [X] Refatoração do Card/Tabela
 
 ---
 
 ## To-Do Gustavo
 - [ ] SLA
+- [X] Pool de Chamados
+- [X] Corrção das cores do TicketCard no dark mode
   
 ### SLA
-- [ ] Adicionar Criticidade para cada, em vez de categorias
+- [X] Adicionar Criticidade para cada, em vez de categorias
+- [X] Ajustar API para fazer um único post
+- [ ] Ajustar a centralização das colunas no dialog do SLA
 - [ ] Implementar o counter do SLA
 - [ ] Notificação de aviso de SLA
+
+  
+### Pool de Chamados
+- [X] Mostrar o Pool
+- [X] Converter a tabela para o Card
+- 
