@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DataTable } from "@/components/ui/data-table";
+import { TicketCard } from "@/components/ticket-card";
 import type { Ticket } from "@/types/tickets";
-import { getColumns } from "./columns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,13 +48,6 @@ interface Filters {
 }
 
 interface ResourceUser {
-  id: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-}
-
-interface CreatedByUser {
   id: string;
   first_name?: string;
   last_name?: string;
@@ -147,7 +139,6 @@ export default function AmsPoolPage() {
   const [totalPages, setTotalPages] = useState(0);
 
   // Estado para controlar visibilidade das colunas
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   // Dialog de visualização rápida do ticket
   const [quickViewOpen, setQuickViewOpen] = useState(false);
@@ -198,13 +189,6 @@ export default function AmsPoolPage() {
   }, []);
 
   // Função para salvar/carregar visibilidade das colunas do sessionStorage
-  const saveColumnVisibilityToSession = useCallback((visibility: VisibilityState) => {
-    try {
-      sessionStorage.setItem('smartcare-column-visibility', JSON.stringify(visibility));
-    } catch {
-      // Silent error - visibilidade das colunas não é crítica
-    }
-  }, []);
 
   const loadColumnVisibilityFromSession = useCallback((): VisibilityState => {
     try {
@@ -240,9 +224,6 @@ export default function AmsPoolPage() {
     const savedPageSize = loadPageSizeFromSession();
     setPageSize(savedPageSize);
     
-    // Carregar visibilidade das colunas salva
-    const savedColumnVisibility = loadColumnVisibilityFromSession();
-    setColumnVisibility(savedColumnVisibility);
     
     // Carregar estado dos filtros colapsados
     try {
@@ -1242,10 +1223,6 @@ export default function AmsPoolPage() {
     }
   };
 
-  const handleColumnVisibilityChange = useCallback((newVisibility: VisibilityState) => {
-    setColumnVisibility(newVisibility);
-    saveColumnVisibilityToSession(newVisibility);
-  }, [saveColumnVisibilityToSession]);
 
   const handleLinkResource = useCallback((ticket: Ticket) => {
     setSelectedTicketForLinking(ticket);
@@ -2410,47 +2387,36 @@ export default function AmsPoolPage() {
           </div>
         </div>
       </div>
-      
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <div className="w-full">
-          {/* Container de largura fixa da página */}
-          <div className="max-w-full" style={{ width: 1200 }}>
-            {/* Wrapper com scroll horizontal quando DataTable exceder a largura fixa */}
-            <div className="overflow-x-auto max-w-auto">
-              <DataTable 
-                columns={getColumns(user, handleLinkResource)} 
-                data={tickets} 
-                onRowClick={handleRowClick}
-                showColumnVisibility={true}
-                showPagination={false}
-                columnVisibility={columnVisibility}
-                onColumnVisibilityChange={handleColumnVisibilityChange}
-                columnLabels={{
-                  'open_ticket': 'Abrir',
-                  'external_id': 'Id Chamado',
-                  'ref_external_id': 'Ref. Externa',
-                  'project': 'Projeto',
-                  'partner': 'Parceiro',
-                  'category': 'Categoria',
-                  'title': 'Título',
-                  'module': 'Módulo Func.',
-                  'status': 'Status',
-                  'created_at': 'Criado em',
-                  'created_by': 'Criado Por',
-                  'priority': 'Prioridade',
-                  'planned_end_date': 'Prev. Fim',
-                  'main_resource': 'Recurso Principal',
-                  'other_resources': 'Demais Recursos',
-                }}
-              />
+        {(() => {
+          if (loading) {
+            return (
+              <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            );
+          }
+          if (tickets.length > 0) {
+            return (
+              <div className="space-y-4">
+                {tickets.map((ticket) => (
+                  <TicketCard
+                    key={ticket.id}
+                    ticket={ticket}
+                    user={user}
+                    onLinkResource={handleLinkResource}
+                    onClick={handleRowClick}
+                  />
+                ))}
+              </div>
+            );
+          }
+          // Optionally, handle empty state
+          return (
+            <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">
+              Nenhum chamado encontrado.
             </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
 
       {/* Dialog para vincular recurso */}
       <LinkResourceDialog
