@@ -27,8 +27,7 @@ interface Regra {
   id?: number; // ID da regra SLA existente (para deletar)
   ticket_category_id: string;
   groupId: number;
-  priority_id: string;
-  sla_hours: number;
+  sla_hours_by_priority: { [priorityId: string]: string | number };
   warning: boolean;
 }
 
@@ -43,10 +42,10 @@ const GROUP_LABELS: Record<number, string> = {
 // Tempo padrão baseado no nome da prioridade (fallback)
 const getDefaultTempo = (priorityName: string) => {
   const name = priorityName.toLowerCase();
-  if (name.includes('crítica') || name.includes('critica')) return 2;
-  if (name.includes('alto') || name.includes('alta')) return 4;
-  if (name.includes('médio') || name.includes('medio')) return 8;
-  if (name.includes('baixo') || name.includes('baixa')) return 24;
+  if (name.includes('crítica') || name.includes('critica')) return '';
+  if (name.includes('alto') || name.includes('alta')) return '';
+  if (name.includes('médio') || name.includes('media')) return '';
+  if (name.includes('baixo') || name.includes('baixa')) return '';
   return 8; // padrão
 };
 
@@ -125,18 +124,23 @@ export function SlaByStatusDialog({
         const { data: existingRules } = await response.json();
         
         if (existingRules && existingRules.length > 0) {
-          // Converter dados do servidor para formato do componente
-          const convertedRows: Regra[] = existingRules.map((rule: SlaRule) => ({
-            id: rule.id, // Incluir o ID para permitir exclusão
-            ticket_category_id: rule.ticket_category_id?.toString() || '',
-            groupId: rule.status_id || 0,
-            priority_id: rule.priority_id?.toString() || '',
-            sla_hours: rule.sla_hours || 8,
-            warning: rule.warning || false,
-          }));
-          
+          // Agrupar por categoria e grupo, e mapear horas por prioridade
+          const grouped: { [key: string]: Regra } = {};
+          existingRules.forEach((rule: SlaRule) => {
+            const key = `${rule.ticket_category_id}-${rule.status_id}`;
+            if (!grouped[key]) {
+              grouped[key] = {
+                id: undefined,
+                ticket_category_id: rule.ticket_category_id?.toString() || '',
+                groupId: rule.status_id || 0,
+                sla_hours_by_priority: {},
+                warning: rule.warning || false,
+              };
+            }
+            grouped[key].sla_hours_by_priority[rule.priority_id?.toString() || ''] = rule.sla_hours || 8;
+          });
+          const convertedRows: Regra[] = Object.values(grouped);
           setRows(convertedRows);
-          
           // Definir categoria baseada nos dados carregados - primeira categoria encontrada
           if (convertedRows.length > 0 && !selectedCategory) {
             const firstCategoryId = convertedRows[0].ticket_category_id;
@@ -216,14 +220,15 @@ export function SlaByStatusDialog({
     if (checked) {
       // Adicionar grupo e criar nova row
       setSelectedGroupIds(prev => [...prev, groupId]);
-      
       if (selectedCategory && priorities.length > 0) {
-        const defaultPriority = priorities[0];
+        const sla_hours_by_priority: { [priorityId: string]: string | number } = {};
+        priorities.forEach(p => {
+          sla_hours_by_priority[p.id] = '';
+        });
         const newRow: Regra = {
           ticket_category_id: selectedCategory,
           groupId,
-          priority_id: defaultPriority?.id.toString() || '',
-          sla_hours: defaultPriority ? getDefaultTempo(defaultPriority.name) : 8,
+          sla_hours_by_priority,
           warning: false,
         };
         setRows(prev => [...prev, newRow]);
@@ -239,13 +244,6 @@ export function SlaByStatusDialog({
     setRows(prev => {
       const copy = [...prev];
       copy[idx] = { ...copy[idx], ...patch };
-      // Auto-default tempo quando priority muda
-      if (patch.priority_id) {
-        const priority = priorities.find(p => p.id.toString() === patch.priority_id);
-        if (priority) {
-          copy[idx].sla_hours = getDefaultTempo(priority.name);
-        }
-      }
       return copy;
     });
   };
@@ -278,29 +276,33 @@ export function SlaByStatusDialog({
 
   const handleSave = async () => {
     if (saving) return; // Prevenir múltiplos cliques
-    
+
     // Validação simples
     for (const r of rows) {
-      if (!r.sla_hours || r.sla_hours <= 0) {
-        throw new Error("Tempo de retorno deve ser maior que zero.");
-      }
-      if (!r.priority_id) {
-        throw new Error("Prioridade deve ser selecionada.");
+      for (const p of priorities) {
+        const sla = r.sla_hours_by_priority[p.id];
+        if (sla === '' || sla === undefined || sla === null) {
+          // Permitir vazio, não enviar
+          continue;
+        }
+        if (typeof sla === 'number' && sla <= 0) {
+          throw new Error(`Tempo de retorno deve ser maior que zero para prioridade ${p.name}.`);
+        }
       }
     }
-    
+
     setSaving(true);
-    
+
     try {
       // 1. Primeiro, buscar todas as regras existentes para este projeto/dia
       const params = new URLSearchParams({
         project_id: projectId!,
         weekday_id: weekdayId!.toString()
       });
-      
+
       const existingResponse = await fetch(`/api/sla-rules?${params}`);
       const { data: existingRules = [] } = existingResponse.ok ? await existingResponse.json() : { data: [] };
-      
+
       // 2. Identificar regras que foram removidas (existem no banco mas não estão nos rows atuais)
       const currentRuleIds = rows.filter(r => r.id).map(r => r.id);
       const rulesToDelete = existingRules.filter((rule: SlaRule) => 
@@ -308,36 +310,55 @@ export function SlaByStatusDialog({
         rule.weekday_id === weekdayId &&
         !currentRuleIds.includes(rule.id)
       );
-      
+
       // 3. Deletar regras removidas
       const deletePromises = rulesToDelete.map(async (rule: SlaRule) => {
         const response = await fetch(`/api/sla-rules/${rule.id}`, {
           method: 'DELETE',
         });
-        
+
         if (!response.ok) {
           const error = await response.json();
           throw new Error(error.error || 'Erro ao deletar regra SLA');
         }
       });
-      
+
       // 4. Converter regras atuais para formato da API
-      const apiFormatRules = rows.map(r => ({
-        project_id: projectId!,
-        ticket_category_id: parseInt(r.ticket_category_id),
-        priority_id: parseInt(r.priority_id),
-        status_id: r.groupId,
-        weekday_id: weekdayId!,
-        sla_hours: r.sla_hours,
-        warning: r.warning
-      }));
-      
+      const apiFormatRules: ApiSlaRule[] = [];
+      rows.forEach(r => {
+        priorities.forEach(p => {
+          const sla = r.sla_hours_by_priority[p.id];
+          if (sla !== '' && sla !== undefined && sla !== null) {
+            apiFormatRules.push({
+              project_id: projectId!,
+              ticket_category_id: parseInt(r.ticket_category_id),
+              priority_id: parseInt(p.id),
+              status_id: r.groupId,
+              weekday_id: weekdayId!,
+              sla_hours: typeof sla === 'string' ? Number(sla) : sla,
+              warning: r.warning
+            });
+          }
+        });
+      });
+
       // 5. Aguardar exclusões e então salvar regras atuais
       await Promise.all(deletePromises);
-      await onSave(apiFormatRules);
-      
+      // Envia todas as regras em uma única chamada POST
+      const response = await fetch('/api/sla-rules', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiFormatRules),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao salvar regras SLA');
+      }
+
       onOpenChange(false);
-      
+
     } catch (error) {
       throw error; // Re-throw para que o componente pai possa tratar
     } finally {
@@ -397,11 +418,11 @@ export function SlaByStatusDialog({
   }
 
   const currentRows = getCurrentCategoryRows(selectedCategory);
-  const selectedCategoryName = categories.find(c => c.id === selectedCategory)?.name || '';
+  // const selectedCategoryName = categories.find(c => c.id === selectedCategory)?.name || '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl">
+  <DialogContent className="sm:max-w-5xl ">
         <DialogHeader>
           <DialogTitle>
             {selectedDay ? `${selectedDay} - Regras por Categoria` : "Regras por Categoria"}
@@ -456,70 +477,64 @@ export function SlaByStatusDialog({
               </PopoverContent>
             </Popover>
             <div className="flex gap-2">
-              {priorities.map(p => (
-                <ColoredBadge 
-                  key={p.id} 
-                  value={p.name} 
-                  type="priority" 
-                />
-              ))}
+              {/* Badges removidos daqui, agora estão no header da tabela */}
             </div>
           </div>
 
           {/* Tabela */}
           <div className="rounded-md border">
             {/* Header fixo */}
-            <div className="grid grid-cols-12 px-3 py-2 text-xs text-muted-foreground bg-muted/50">
-              <div className="col-span-4">Status</div>
-              <div className="col-span-3">Prioridade</div>
-              <div className="col-span-3">Tempo SLA (h)</div>
-              <div className="col-span-1">Notificar</div>
-              <div className="col-span-1 text-right">Ações</div>
+            <div className={`grid px-3 py-2 text-xs text-muted-foreground bg-muted/50`} style={{ gridTemplateColumns: `220px repeat(${priorities.length}, 120px) 80px 60px` }}>
+              <div className="flex items-center justify-center h-full text-center">Status</div>
+              {priorities.map(p => (
+                <div key={p.id} className="flex items-center justify-center h-full text-center">
+                  <div className="flex items-center justify-center w-full h-full">
+                    <ColoredBadge value={p.name} type="priority" />
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-center justify-center h-full text-center">Notificar</div>
+              <div className="flex items-center justify-center h-full text-center">Ações</div>
             </div>
-            
             {/* Área com scroll */}
             <div className="divide-y max-h-96 overflow-y-auto">
               {currentRows.length === 0 && (
                 <div className="px-3 py-6 text-sm text-muted-foreground">
-                  Nenhum grupo selecionado para “{selectedCategoryName}”. Use “Adicionar grupo”.
+                  Nenhum grupo selecionado. Use “Adicionar grupo”.
                 </div>
               )}
               {currentRows.map(({ i, r }) => (
-                <div key={`${r.ticket_category_id}-${r.groupId}`} className="grid grid-cols-12 items-center gap-2 px-3 py-2">
-                  <div className="col-span-4 text-sm truncate">
-                    {GROUP_LABELS[r.groupId] || `Grupo ${r.groupId}`}
-                  </div>
-                  <div className="col-span-3">
-                    <Select
-                      value={r.priority_id}
-                      onValueChange={(v) => updateRow(i, { priority_id: v })}
-                    >
-                      <SelectTrigger className="h-8 w-full">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {priorities.map(p => (
-                          <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-3">
-                    <Input
-                      type="number"
-                      min={1}
-                      className="h-8"
-                      value={r.sla_hours}
-                      onChange={(e) => updateRow(i, { sla_hours: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div className="col-span-1 flex justify-center">
+                <div key={`${r.ticket_category_id}-${r.groupId}`} className="grid items-center gap-2 px-3 py-2" style={{ gridTemplateColumns: `220px repeat(${priorities.length}, 120px) 80px 60px` }}>
+                  <div className="text-sm truncate flex items-center justify-center h-full">{GROUP_LABELS[r.groupId] || `Grupo ${r.groupId}`}</div>
+                  {priorities.map(p => (
+                    <div key={p.id} className="flex items-center justify-center h-full">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        min={1}
+                        className="h-8 w-20 text-center"
+                        value={r.sla_hours_by_priority[p.id] === '' ? '' : r.sla_hours_by_priority[p.id].toString()}
+                        onChange={e => {
+                          const raw = e.target.value;
+                          // Accept only positive numbers or empty string
+                          const value = raw === '' ? '' : (/^\d+$/.test(raw) ? Number(raw) : r.sla_hours_by_priority[p.id]);
+                          updateRow(i, {
+                            sla_hours_by_priority: {
+                              ...r.sla_hours_by_priority,
+                              [p.id]: value
+                            }
+                          });
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-center h-full">
                     <Checkbox
                       checked={r.warning}
                       onCheckedChange={(v) => updateRow(i, { warning: Boolean(v) })}
                     />
                   </div>
-                  <div className="col-span-1 flex justify-end">
+                  <div className="flex items-center justify-center h-full">
                     <Button 
                       variant="ghost" 
                       size="icon" 
