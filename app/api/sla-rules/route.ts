@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@/lib/supabase/server';
 import { authenticateRequest, requireRole, USER_ROLES } from "@/lib/api-auth";
-import { CreateSlaRuleRequest } from "@/types/sla_rules";
 
 export async function GET(request: NextRequest) {
   // Autenticar usuário
@@ -72,10 +71,13 @@ export async function POST(request: NextRequest) {
   if (roleCheck) return roleCheck;
 
   try {
-    const body: CreateSlaRuleRequest = await request.json();
+    const body = await request.json();
+
+    // Aceita array ou objeto único
+    const rules = Array.isArray(body) ? body : [body];
 
     // Validação básica
-    if (!body.project_id) {
+    if (!rules.length || !rules[0].project_id) {
       return NextResponse.json(
         { error: 'project_id é obrigatório' },
         { status: 400 }
@@ -86,22 +88,23 @@ export async function POST(request: NextRequest) {
 
     const { data, error: insertError } = await supabase
       .from('sla_rules')
-      .insert({
-        project_id: body.project_id,
-        ticket_category_id: body.ticket_category_id,
-        priority_id: body.priority_id,
-        status_id: body.status_id,
-        weekday_id: body.weekday_id,
-        sla_hours: body.sla_hours,
-        warning: body.warning ?? false, // Valor padrão false se não fornecido
-      })
-      .select()
-      .single();
+      .insert(
+        rules.map(rule => ({
+          project_id: rule.project_id,
+          ticket_category_id: rule.ticket_category_id,
+          priority_id: rule.priority_id,
+          status_id: rule.status_id,
+          weekday_id: rule.weekday_id,
+          sla_hours: rule.sla_hours,
+          warning: rule.warning ?? false,
+        }))
+      )
+      .select();
 
     if (insertError) {
-      console.error('Erro ao criar regra SLA:', insertError);
+      console.error('Erro ao criar regras SLA:', insertError);
       return NextResponse.json(
-        { error: 'Erro ao criar regra SLA' },
+        { error: 'Erro ao criar regras SLA' },
         { status: 500 }
       );
     }
