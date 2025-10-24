@@ -183,8 +183,9 @@ export function AppSidebar() {
       newTab: false,
       items: [
         { title: "Gestão AMS", url: "/main/smartcare/ams", newTab: false },
-        // { title: "Pool de Chamados", url: "/main/smartcare/management/pool", newTab: false },
+        { title: "Pool de Chamados", url: "/main/smartcare/management/pool", newTab: false },
         { title: "Administrar Chamados", url: "/main/smartcare/management", newTab: false },
+        { title: "Administrar Tarefas", url: "/main/smartcare/tasks", newTab: false},
         { title: "Abrir Chamado", url: "/main/smartcare/create", newTab: false },
       ],
     },
