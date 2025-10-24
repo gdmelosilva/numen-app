@@ -2334,44 +2334,52 @@ export default function TicketManagementPage() {
         </div>
       </div>
       
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : tickets.length > 0 ? (
-        <div className="space-y-4">
-          {tickets.map((ticket) => (
-            <TicketCard
-              key={ticket.id}
-              ticket={ticket}
-              user={user}
-              onLinkResource={handleLinkResource}
-              onClick={handleRowClick}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-            <Search className="w-8 h-8 text-muted-foreground" />
+      {(() => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
+        if (tickets.length > 0) {
+          return (
+            <div className="space-y-4">
+              {tickets.map((ticket) => (
+                <TicketCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  user={user}
+                  onLinkResource={handleLinkResource}
+                  onClick={handleRowClick}
+                />
+              ))}
+            </div>
+          );
+        }
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+              <Search className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-muted-foreground">
+                Nenhum chamado encontrado
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                Não há chamados que correspondam aos filtros aplicados. Tente ajustar os filtros ou limpar todos os filtros.
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleClearFilters}
+              className="mt-4"
+            >
+              Limpar Filtros
+            </Button>
           </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-muted-foreground">
-              Nenhum chamado encontrado
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Não há chamados que correspondam aos filtros aplicados. Tente ajustar os filtros ou limpar todos os filtros.
-            </p>
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={handleClearFilters}
-            className="mt-4"
-          >
-            Limpar Filtros
-          </Button>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Dialog para vincular recurso */}
       <LinkResourceDialog
