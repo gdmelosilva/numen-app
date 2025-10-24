@@ -102,24 +102,24 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
   const getPriorityHoverClass = () => {
     // Se o ticket está finalizado, usa hover mais sutil
     if (isTicketFinalized()) {
-      return "hover:border-l-gray-400 hover:opacity-75";
+      return "hover:border-l-gray-400 hover:opacity-75 dark:hover:border-l-gray-500";
     }
 
-    if (!ticket.priority?.name) return "hover:border-l-primary";
-    
+    if (!ticket.priority?.name) return "hover:border-l-primary dark:hover:border-l-blue-400";
+
     const priority = ticket.priority.name.toLowerCase();
-    
+
     if (priority.includes("alta") || priority.includes("high") || priority.includes("crítica") || priority.includes("critical")) {
-      return "hover:border-l-red-500";
+      return "hover:border-l-red-500 dark:hover:border-l-red-400";
     } else if (priority.includes("média") || priority.includes("medium") || priority.includes("normal")) {
-      return "hover:border-l-yellow-500";
+      return "hover:border-l-yellow-500 dark:hover:border-l-yellow-400";
     } else if (priority.includes("baixa") || priority.includes("low")) {
-      return "hover:border-l-green-500";
+      return "hover:border-l-green-500 dark:hover:border-l-green-400";
     } else if (priority.includes("urgente") || priority.includes("urgent")) {
-      return "hover:border-l-red-700";
+      return "hover:border-l-red-700 dark:hover:border-l-red-300";
     }
-    
-    return "hover:border-l-primary";
+
+    return "hover:border-l-primary dark:hover:border-l-blue-400";
   };
 
   // Função para obter as classes de estilo da badge de prioridade
@@ -224,21 +224,23 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
   // Função para obter as classes CSS para tickets finalizados
   const getFinalizedCardClasses = () => {
     if (isTicketFinalized()) {
-      return "opacity-60 bg-green-50/30 border-l-green-200";
+      return "opacity-60 bg-green-50/30 border-l-green-200 dark:border-l-green-500";
     }
-    return "border-l-gray-200";
+    return "border-l-gray-200 dark:border-l-[rgb(80,80,80)]";
   };
 
   return (
     <Card
-      className={`ticket-card cursor-pointer border-l-8 rounded-xl shadow-md bg-white ${getFinalizedCardClasses()} ${getPriorityHoverClass()} transition-all duration-300 hover:shadow-lg`}
+      className={`ticket-card cursor-pointer border-l-8 rounded-xl shadow-md bg-white dark:bg-background transition-all duration-300 hover:shadow-lg dark:shadow-[0_4px_24px_0_rgba(255,255,255,0.10)] dark:hover:shadow-[0_8px_32px_0_rgba(255,255,255,0.16)]
+        ${isTicketFinalized() ? 'border-l-green-200 dark:border-l-green-500 opacity-60 bg-green-50/30' : 'border-l-gray-200 dark:border-l-[rgb(80,80,80)]'}
+        ${getPriorityHoverClass()}`}
       style={{ borderLeftWidth: 8 }}
       onClick={handleCardClick}
     >
       <CardContent className="p-6">
         <div className="flex">
           {/* Barra de SLA na lateral esquerda */}
-          <div className="flex flex-col items-center w-24 py-2 pr-8 mr-8 border-r border-gray-100">
+          <div className="flex flex-col items-center w-24 py-2 pr-8 mr-8 border-r border-gray-100 dark:border-gray-800">
             {/* Label SLA */}
             <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">SLA</div>
             
@@ -265,7 +267,7 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
           </div>
 
           {/* Coluna de Badges */}
-          <div className="flex flex-col items-center justify-center w-32 py-2 pr-8 mr-8 border-r border-gray-100 gap-4">
+          <div className="flex flex-col items-center justify-center w-32 py-2 pr-8 mr-8 border-r border-gray-100 dark:border-gray-800 gap-4">
             
             {/* Badge de Status */}
             <div className="flex flex-col items-center w-full">
@@ -298,19 +300,19 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-4">
                 {/* Ícone e Número do chamado */}
-                <div className="flex items-center space-x-2">
-                  <TicketIcon className="h-5 w-5 text-primary" />
-                  <div
-                    className="text-xl font-bold text-primary cursor-pointer hover:text-gray-700 transition-colors select-all drop-shadow-sm"
-                    title="Clique para copiar o número do chamado"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigator.clipboard.writeText(ticket.external_id || '');
-                    }}
-                  >
-                    {ticket.external_id}
+                  <div className="flex items-center space-x-2">
+                    <TicketIcon className="h-5 w-5 text-primary dark:text-primary" />
+                    <div
+                      className="text-xl font-bold text-primary dark:text-primary cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors select-all drop-shadow-sm"
+                      title="Clique para copiar o número do chamado"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(ticket.external_id || '');
+                      }}
+                    >
+                      {ticket.external_id}
+                    </div>
                   </div>
-                </div>
                 
                 {/* Badge de Privado se aplicável */}
                 {!user?.is_client && ticket.is_private && (
@@ -336,24 +338,24 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
 
             {/* Título */}
             <div className="space-y-1">
-              <h3 className="font-semibold text-xl leading-tight line-clamp-2 text-gray-900">
+              <h3 className="font-semibold text-xl leading-tight line-clamp-2 text-gray-900 dark:text-gray-100">
                 {ticket.title || "Sem título"}
               </h3>
             </div>
 
             {/* Parceiro e Projeto em uma linha */}
             <div className="flex items-center space-x-3 text-base">
-              <span className="font-medium truncate">
+              <span className="font-medium truncate dark:text-gray-200">
                 {ticket.partner?.partner_desc || ticket.partner_id || "Sem parceiro"}
               </span>
-              <span className="text-muted-foreground">|</span>
-              <span className="font-medium truncate">
+              <span className="text-muted-foreground dark:text-gray-400">|</span>
+              <span className="font-medium truncate dark:text-gray-200">
                 {ticket.project?.projectName || ticket.project_id || "Sem projeto"}
               </span>
             </div>
 
             {/* Informações adicionais com labels alinhadas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-gray-100 dark:border-gray-800">
               <div className="space-y-2">
                 <div className="grid grid-cols-[80px_1fr] items-center gap-2">
                   <span className="text-xs text-muted-foreground text-right">Módulo:</span>
@@ -408,7 +410,7 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
           </div>
 
           {/* Botões de ação na lateral direita */}
-          <div className="flex flex-col space-y-3 pl-8 border-l border-gray-100 items-end justify-between min-w-[120px]">
+          <div className="flex flex-col space-y-3 pl-8 border-l border-gray-100 dark:border-gray-800 items-end justify-between min-w-[120px]">
             <Button
               variant="ghost"
               size="sm"
