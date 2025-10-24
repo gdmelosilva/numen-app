@@ -98,11 +98,11 @@
 
 /* Estilos para os cards de ticket */
 .ticket-card {
-  @apply transition-all duration-200 ease-in-out border-l-4;
+  @apply transition-all duration-200 ease-in-out;
 }
 
 .ticket-card:hover {
-  @apply shadow-lg border-l-primary;
+  @apply shadow-lg;
 }
 
 /* Responsividade específica do EasyTime */

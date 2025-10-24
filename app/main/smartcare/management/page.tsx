@@ -2259,31 +2259,41 @@ export default function TicketManagementPage() {
         </div>
       )}
       
-      {/* Interface de Paginação */}
-      <div className="flex items-center justify-between py-4 border-b">
-        <div className="flex items-center space-x-2">
-          <Label htmlFor="page-size" className="text-sm font-medium">
-            Tickets por página:
-          </Label>
-          <Select
-            value={pageSize.toString()}
-            onValueChange={(value) => handlePageSizeChange(parseInt(value, 10))}
+      {/* Interface de Controles: Paginação, Ordenação e Tamanho da Página */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 py-4 border-b bg-muted/30 rounded-md px-4">
+        {/* Linha superior: Ordenação e Tickets por página */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+          <SortControl
+            currentSort={currentSort}
+            onSortChange={handleSortChange}
             disabled={loading}
-          >
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
+          />
+          
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="page-size" className="text-sm font-medium whitespace-nowrap">
+              Tickets por página:
+            </Label>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => handlePageSizeChange(parseInt(value, 10))}
+              disabled={loading}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         
-        <div className="flex items-center space-x-4">
-          <span className="text-sm text-muted-foreground">
+        {/* Linha inferior/direita: Informações e controles de paginação */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
             {totalCount > 0 ? (
               <>
                 Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalCount)} de {totalCount} tickets
@@ -2321,22 +2331,6 @@ export default function TicketManagementPage() {
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
-        </div>
-      </div>
-
-      {/* Controle de Ordenação */}
-      <div className="flex items-center justify-between py-3 border-b bg-muted/30 rounded-md px-4">
-        <SortControl
-          currentSort={currentSort}
-          onSortChange={handleSortChange}
-          disabled={loading}
-        />
-        <div className="text-sm text-muted-foreground">
-          {totalCount > 0 ? (
-            <>Exibindo {tickets.length} de {totalCount} registros</>
-          ) : (
-            "Nenhum registro encontrado"
-          )}
         </div>
       </div>
       
