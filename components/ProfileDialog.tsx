@@ -9,9 +9,11 @@ import { ColoredBadge } from "@/components/ui/colored-badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUserContext } from "@/components/user-context";
-import { User, Mail, Building2, Edit, Phone, Key } from "lucide-react";
+import { User, Mail, Building2, Edit, Phone, Key, Table2, CreditCard } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useCurrentUserConfigs } from "@/hooks/useCurrentUser";
 
 interface ExtendedUser {
   id: string;
@@ -37,6 +39,20 @@ export default function ProfileDialog() {
     last_name: '',
     tel_contact: ''
   });
+  const { configs, refreshConfigs } = useCurrentUserConfigs();
+  const [tableSaving, setTableSaving] = React.useState(false);
+  const [tabValue, setTabValue] = React.useState("profile");
+
+  // Estado local para visualização
+  const [viewType, setViewType] = React.useState<'table' | 'cards'>(
+    configs?.table_id === 2 ? 'cards' : 'table'
+  );
+
+  // Sincroniza viewType com configs.table_id ao carregar configs
+  React.useEffect(() => {
+    if (configs?.table_id === 2) setViewType('cards');
+    else setViewType('table');
+  }, [configs?.table_id]);
 
   // Buscar dados completos do usuário quando o dialog abrir
   React.useEffect(() => {
@@ -198,174 +214,240 @@ export default function ProfileDialog() {
     window.location.href = '/auth/update-password';
   };
 
+  // Handler para mudar visualização
+  async function handleTableViewChange(view: "table" | "cards") {
+    setTableSaving(true);
+    setViewType(view); // Atualiza localmente imediatamente
+    try {
+      await fetch("/api/user-configs", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ table_id: view === "table" ? 1 : 2 }),
+      });
+      await refreshConfigs(); // Atualiza configs da sessão imediatamente
+    } finally {
+      setTableSaving(false);
+    }
+  }
+
   return (
     <Dialog open={isProfileDialogOpen} onOpenChange={handleDialogClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Perfil do Usuário
-          </DialogTitle>
-        </DialogHeader>
-        
-        {loading ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 animate-pulse">
-              <div className="h-16 w-16 rounded-full bg-muted"></div>
-              <div className="space-y-2">
-                <div className="h-4 w-32 bg-muted rounded"></div>
-                <div className="h-3 w-24 bg-muted rounded"></div>
-              </div>
-            </div>
+      <DialogContent className="sm:max-w-lg p-10">
+        <Tabs value={tabValue} onValueChange={setTabValue}>
+          <div className="flex items-center justify-between mb-4">
+            <DialogHeader className="p-0 m-0">
+              <DialogTitle className="flex items-center gap-2 mb-6 mt-4">
+                {tabValue === "profile" ? (
+                  <>
+                    <User className="h-5 w-5" />
+                    Perfil do Usuário
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-5 w-5" />
+                    Configurações
+                  </>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            <TabsList>
+              <TabsTrigger value="profile" className="flex-1">Perfil</TabsTrigger>
+              <TabsTrigger value="settings" className="flex-1">Configurações</TabsTrigger>
+            </TabsList>
           </div>
-        ) : !user ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Não foi possível carregar as informações do usuário.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Avatar e Nome */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary text-primary-foreground font-bold text-lg">
-                {getUserInitials()}
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold">{getUserFullName()}</h3>
-                <div className="flex items-center gap-2">
-                  {/* <ColoredBadge value={user.is_active} type="status" /> */}
-                  <ColoredBadge value={user.is_client} type="is_client" />
-                  <ColoredBadge value={roleToLabel(user.role, user.is_client)} type="user_role" />
+          <TabsContent value="profile">
+            {loading ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 animate-pulse">
+                  <div className="h-16 w-16 rounded-full bg-muted"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-32 bg-muted rounded"></div>
+                    <div className="h-3 w-24 bg-muted rounded"></div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <Separator />
-
-            {/* Informações do usuário */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Email</p>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                </div>
+            ) : !user ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Não foi possível carregar as informações do usuário.</p>
               </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Avatar e Nome */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary text-primary-foreground font-bold text-lg">
+                    {getUserInitials()}
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold">{getUserFullName()}</h3>
+                    <div className="flex items-center gap-2">
+                      {/* <ColoredBadge value={user.is_active} type="status" /> */}
+                      <ColoredBadge value={user.is_client} type="is_client" />
+                      <ColoredBadge value={roleToLabel(user.role, user.is_client)} type="user_role" />
+                    </div>
+                  </div>
+                </div>
 
-              {isEditing ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="first_name" className="text-sm font-medium">Nome</Label>
-                      <Input
-                        id="first_name"
-                        value={editForm.first_name}
-                        onChange={(e) => setEditForm({...editForm, first_name: e.target.value})}
-                        placeholder="Nome"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="last_name" className="text-sm font-medium">Sobrenome</Label>
-                      <Input
-                        id="last_name"
-                        value={editForm.last_name}
-                        onChange={(e) => setEditForm({...editForm, last_name: e.target.value})}
-                        placeholder="Sobrenome"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="tel_contact" className="text-sm font-medium">Telefone</Label>
-                    <Input
-                      id="tel_contact"
-                      value={editForm.tel_contact}
-                      onChange={(e) => setEditForm({...editForm, tel_contact: e.target.value})}
-                      placeholder="Telefone"
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
+                <Separator />
+
+                {/* Informações do usuário */}
+                <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 text-muted-foreground" />
+                    <Mail className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">Nome Completo</p>
-                      <p className="text-sm text-muted-foreground">{getUserFullName()}</p>
+                      <p className="text-sm font-medium">Email</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
 
-                  {user.tel_contact && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
+                  {isEditing ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="first_name" className="text-sm font-medium">Nome</Label>
+                          <Input
+                            id="first_name"
+                            value={editForm.first_name}
+                            onChange={(e) => setEditForm({...editForm, first_name: e.target.value})}
+                            placeholder="Nome"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="last_name" className="text-sm font-medium">Sobrenome</Label>
+                          <Input
+                            id="last_name"
+                            value={editForm.last_name}
+                            onChange={(e) => setEditForm({...editForm, last_name: e.target.value})}
+                            placeholder="Sobrenome"
+                          />
+                        </div>
+                      </div>
                       <div>
-                        <p className="text-sm font-medium">Telefone</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatPhoneNumber(user.tel_contact)}
-                        </p>
+                        <Label htmlFor="tel_contact" className="text-sm font-medium">Telefone</Label>
+                        <Input
+                          id="tel_contact"
+                          value={editForm.tel_contact}
+                          onChange={(e) => setEditForm({...editForm, tel_contact: e.target.value})}
+                          placeholder="Telefone"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Nome Completo</p>
+                          <p className="text-sm text-muted-foreground">{getUserFullName()}</p>
+                        </div>
+                      </div>
+
+                      {user.tel_contact && (
+                        <div className="flex items-center gap-3">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">Telefone</p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatPhoneNumber(user.tel_contact)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {user.partner_desc && (
+                    <div className="flex items-center gap-3">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">Parceiro</p>
+                        <p className="text-sm text-muted-foreground">{user.partner_desc}</p>
                       </div>
                     </div>
                   )}
-                </>
-              )}
+                </div>
 
-              {user.partner_desc && (
-                <div className="flex items-center gap-3">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Parceiro</p>
-                    <p className="text-sm text-muted-foreground">{user.partner_desc}</p>
+                <Separator />
+
+                {/* Ações */}
+                <div className="flex justify-between items-center">
+                  <Button variant="outline" size="sm" onClick={handleChangePassword}>
+                    <Key className="h-4 w-4 mr-2" />
+                    Alterar Senha
+                  </Button>
+                  
+                  <div className="flex gap-2">
+                    {isEditing ? (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleEditCancel}
+                        disabled={saving}
+                        className="hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+                      >
+                        Cancelar
+                      </Button>
+                      <ButtonSpinner 
+                        size="sm" 
+                        onClick={handleEditSave}
+                        loading={saving}
+                      >
+                        Salvar
+                      </ButtonSpinner>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" size="sm" onClick={handleEditStart}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Editar Perfil
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={handleDialogClose}
+                      >
+                        Fechar
+                      </Button>
+                    </>
+                  )}
                   </div>
                 </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Ações */}
-            <div className="flex justify-between items-center">
-              <Button variant="outline" size="sm" onClick={handleChangePassword}>
-                <Key className="h-4 w-4 mr-2" />
-                Alterar Senha
-              </Button>
-              
-              <div className="flex gap-2">
-                {isEditing ? (
-                <>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleEditCancel}
-                    disabled={saving}
-                    className="hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
-                  >
-                    Cancelar
-                  </Button>
-                  <ButtonSpinner 
-                    size="sm" 
-                    onClick={handleEditSave}
-                    loading={saving}
-                  >
-                    Salvar
-                  </ButtonSpinner>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" size="sm" onClick={handleEditStart}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar Perfil
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    onClick={handleDialogClose}
-                  >
-                    Fechar
-                  </Button>
-                </>
-              )}
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="settings">
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold mb-2">Visualização padrão</h3>
+              <div className="flex gap-4">
+                <Button
+                  variant={viewType === "table" ? "default" : "outline"}
+                  size="sm"
+                  disabled={tableSaving}
+                  onClick={() => handleTableViewChange("table")}
+                  className="flex items-center gap-2"
+                >
+                  <Table2 className="h-4 w-4" />
+                  Tabela
+                </Button>
+                <Button
+                  variant={viewType === "cards" ? "default" : "outline"}
+                  size="sm"
+                  disabled={tableSaving}
+                  onClick={() => handleTableViewChange("cards")}
+                  className="flex items-center gap-2"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Cards
+                </Button>
+              </div>
+              {/* Espaço para filtros futuros */}
+              <div className="mt-6">
+                <h4 className="text-sm font-medium mb-1">Filtros (em breve)</h4>
+                <p className="text-muted-foreground text-xs">Configurações de filtros personalizadas estarão disponíveis aqui.</p>
               </div>
             </div>
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

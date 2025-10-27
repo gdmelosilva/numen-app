@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Ticket } from "@/types/tickets";
-import { TicketCard } from "@/components/ticket-card";
+// import { TicketCard } from "@/components/ticket-card";
 import { SortControl, type SortOption } from "@/components/sort-control";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,8 @@ import { usePartnerOptions } from "@/hooks/usePartnerOptions";
 import { useProjectOptions } from "@/hooks/useProjectOptions";
 import { getCategoryOptions, getPriorityOptions, getModuleOptions } from "@/hooks/useOptions";
 import { exportTicketsToExcel } from "@/lib/export-file";
+import { TicketListView } from "@/components/TicketListView";
+import { useCurrentUserConfigs } from "@/hooks/useCurrentUser";
 
 interface Filters {
   external_id: string;
@@ -147,6 +149,9 @@ export default function TicketManagementPage() {
     label: 'Data de Criação',
     direction: 'desc'
   });
+
+  const { configs } = useCurrentUserConfigs();
+  const viewType = configs?.table_id === 2 ? "cards" : "table";
 
 
 
@@ -2345,52 +2350,40 @@ export default function TicketManagementPage() {
         </div>
       </div>
       
-      {(() => {
-        if (loading) {
-          return (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          );
-        }
-        if (tickets.length > 0) {
-          return (
-            <div className="space-y-4">
-              {tickets.map((ticket) => (
-                <TicketCard
-                  key={ticket.id}
-                  ticket={ticket}
-                  user={user}
-                  onLinkResource={handleLinkResource}
-                  onClick={handleRowClick}
-                />
-              ))}
-            </div>
-          );
-        }
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-              <Search className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-muted-foreground">
-                Nenhum chamado encontrado
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Não há chamados que correspondam aos filtros aplicados. Tente ajustar os filtros ou limpar todos os filtros.
-              </p>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={handleClearFilters}
-              className="mt-4"
-            >
-              Limpar Filtros
-            </Button>
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : tickets.length > 0 ? (
+        <TicketListView
+          tickets={tickets}
+          viewType={viewType}
+          user={user}
+          onLinkResource={handleLinkResource}
+          onRowClick={handleRowClick}
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+            <Search className="w-8 h-8 text-muted-foreground" />
           </div>
-        );
-      })()}
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-muted-foreground">
+              Nenhum chamado encontrado
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md">
+              Não há chamados que correspondam aos filtros aplicados. Tente ajustar os filtros ou limpar todos os filtros.
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={handleClearFilters}
+            className="mt-4"
+          >
+            Limpar Filtros
+          </Button>
+        </div>
+      )}
 
       {/* Dialog para vincular recurso */}
       <LinkResourceDialog

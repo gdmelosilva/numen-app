@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AuthenticatedUser } from "@/lib/api-auth";
 import { UserConfig } from "@/types/user_configs";
@@ -80,31 +80,32 @@ export function useCurrentUserConfigs() {
   const [configs, setConfigs] = useState<UserConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchConfigs() {
-      setLoading(true);
-      try {
-        const supabase = createClient();
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) {
-          setConfigs(null);
-          setLoading(false);
-          return;
-        }
-        const { data: configsData } = await supabase
-          .from('user_configs')
-          .select('*')
-          .eq('user_id', authUser.id)
-          .single();
-        setConfigs(configsData as UserConfig ?? null);
-      } catch {
+  const fetchConfigs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
         setConfigs(null);
-      } finally {
         setLoading(false);
+        return;
       }
+      const { data: configsData } = await supabase
+        .from('user_configs')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .single();
+      setConfigs(configsData as UserConfig ?? null);
+    } catch {
+      setConfigs(null);
+    } finally {
+      setLoading(false);
     }
-    fetchConfigs();
   }, []);
 
-  return { configs, loading };
+  useEffect(() => {
+    fetchConfigs();
+  }, [fetchConfigs]);
+
+  return { configs, loading, refreshConfigs: fetchConfigs };
 }
