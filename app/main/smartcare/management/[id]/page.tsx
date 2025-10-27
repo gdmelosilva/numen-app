@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File, Edit3, EyeOff, Lock, Edit } from "lucide-react";
+import { BookOpenText, Calendar, Info, UserCircle, ChevronLeft, ChevronRight, File, Edit3, EyeOff, Lock, Edit, Forward } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import MessageForm from "@/components/message-form";
@@ -728,6 +728,20 @@ export default function TicketDetailsPage() {
 
   const hideResourceActions = currentUser && (currentUser.is_client || (currentUser.role === 3 && !currentUser.is_client));
 
+  // Função para verificar se o usuário atual está alocado ao ticket
+  const isCurrentUserAllocated = () => {
+    if (!currentUser?.id || !resources.length) return false;
+    return resources.some(resource => resource.user_id === currentUser.id);
+  };
+
+  // Função para verificar se o usuário pode solicitar alocação
+  const canRequestAllocation = () => {
+    if (!currentUser) return false;
+    // Só usuários administrativos (não clientes) que não estão alocados podem solicitar alocação
+    const isAdmin = !currentUser.is_client && (currentUser.role === 1 || currentUser.role === 2);
+    return isAdmin && !isCurrentUserAllocated() && !isFinalized;
+  };
+
   // Função para atualizar a data de encerramento estimada
   const updatePlannedEndDate = async () => {
     if (!ticket?.id || !plannedEndDate) return;
@@ -830,6 +844,23 @@ export default function TicketDetailsPage() {
                 />
               </>
             )}
+          </div>
+        )}
+        {canRequestAllocation() && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="lg"
+              variant="outline"
+              className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+              onClick={() => {
+                // Função para solicitar alocação será implementada posteriormente
+                console.log('Solicitar alocação clicado');
+              }}
+              disabled={isFinalized}
+            >
+              <Forward size={14} className="mr-1" />
+              Solicitar Alocação
+            </Button>
           </div>
         )}
       </div>
@@ -1574,7 +1605,7 @@ export default function TicketDetailsPage() {
                   <div>
                     <div className="flex items-center justify-between gap-4">
                       <div className="text-sm text-muted-foreground min-w-[260px]">
-                        Como você avalia o atendimento do seu Gerente de Contas neste chamado?
+                        Como você avalia o apoio da Gestão neste Chamado?
                       </div>
                       <Stars value={ratingManager} onValueChange={setRatingManager} className="gap-1">
                         <Star />
@@ -1589,7 +1620,7 @@ export default function TicketDetailsPage() {
                   <div>
                     <div className="flex items-center justify-between gap-4">
                       <div className="text-sm text-muted-foreground min-w-[260px]">
-                        Como você avalia o atendimento do(s) Atendente(s) neste chamado?
+                        Como você avalia o atendimento do(s) Consultor(es) neste chamado?
                       </div>
                       <Stars value={ratingFunctional} onValueChange={setRatingFunctional} className="gap-1">
                         <Star />

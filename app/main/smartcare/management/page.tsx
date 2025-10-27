@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download, SquareMousePointer, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Search, ChevronDown, ChevronUp, Trash, Download, SquareMousePointer, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { LinkResourceDialog } from "@/components/LinkResourceDialog";
 import { useTicketStatuses } from "@/hooks/useTicketStatuses";
@@ -1303,16 +1303,27 @@ export default function TicketManagementPage() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="external_id">ID</Label>
-                  <Input
-                    id="external_id"
-                    placeholder="Filtrar por ID"
-                    value={pendingFilters.external_id}
-                    onChange={(e) =>
-                      handleFilterChange("external_id", e.target.value)
-                    }
-                    onKeyDown={handleKeyDown}
-                    disabled={loading}
-                  />
+                  <div className="flex gap-1">
+                    <Input
+                      id="external_id"
+                      placeholder="Filtrar por ID"
+                      value={pendingFilters.external_id}
+                      onChange={(e) =>
+                        handleFilterChange("external_id", e.target.value)
+                      }
+                      onKeyDown={handleKeyDown}
+                      disabled={loading}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      disabled={loading}
+                      title="Navegar direto para o chamado"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="title">Título</Label>
