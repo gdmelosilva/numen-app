@@ -14,6 +14,9 @@ Este projeto é um sistema de gestão de contratos, parceiros, usuários, chamad
 - [ ] SLA
 - [X] Pool de Chamados
 - [X] Corrção das cores do TicketCard no dark mode
+- [ ] Adicionar Switch entre Tabela e Cards
+- [X] Alterar tema padrão ao trocar de tema. Buscar tema padrão nas cfg do usuário
+- [ ] Adicionar menu de notificações no menu do usuário
   
 ### SLA
 - [X] Adicionar Criticidade para cada, em vez de categorias
@@ -26,4 +29,3 @@ Este projeto é um sistema de gestão de contratos, parceiros, usuários, chamad
 ### Pool de Chamados
 - [X] Mostrar o Pool
 - [X] Converter a tabela para o Card
-- 
