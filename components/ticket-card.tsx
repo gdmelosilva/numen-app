@@ -240,7 +240,8 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
       <CardContent className="p-6">
         <div className="flex">
           {/* Barra de SLA na lateral esquerda */}
-          <div className="flex flex-col items-center w-24 py-2 pr-8 mr-8 border-r border-gray-100 dark:border-gray-800">
+          {process.env.NEXT_PUBLIC_SLA_FEATURE_TAG === "true" && (
+            <div className="flex flex-col items-center w-24 py-2 pr-8 mr-8 border-r border-gray-100 dark:border-gray-800">
             {/* Label SLA */}
             <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">SLA</div>
             
@@ -265,6 +266,8 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
               </div>
             </div>
           </div>
+          )}
+
 
           {/* Coluna de Badges */}
           <div className="flex flex-col items-center justify-center w-32 py-2 pr-8 mr-8 border-r border-gray-100 dark:border-gray-800 gap-4">
