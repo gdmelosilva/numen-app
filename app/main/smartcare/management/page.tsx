@@ -60,6 +60,14 @@ interface CreatedByUser {
   email?: string;
 }
 
+// Definição dos grupos de status
+const STATUS_GROUPS = [
+  { id: 1, name: "Aguardando Alocação", group: [1] },
+  { id: 2, name: "Em Atuação Equipe Numen", group: [2, 4] },
+  { id: 3, name: "Ag. Atuação Equipe Cliente", group: [3] },
+  { id: 4, name: "Finalizados e Ag. Encerramento", group: [null as number | null] }
+] as const;
+
 export default function TicketManagementPage() {
   const router = useRouter();
   const { user, profile, loading: profileLoading } = useUserProfile();
@@ -94,6 +102,7 @@ export default function TicketManagementPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
   const [selectedPriorityIds, setSelectedPriorityIds] = useState<string[]>([]);
+  const [selectedStatusGroups, setSelectedStatusGroups] = useState<number[]>([]);
   const [partnerSearchTerm, setPartnerSearchTerm] = useState("");
   const [projectSearchTerm, setProjectSearchTerm] = useState("");
   const [resourceSearchTerm, setResourceSearchTerm] = useState("");
@@ -642,6 +651,31 @@ export default function TicketManagementPage() {
     
     setSelectedStatusIds(updatedStatusIds);
     
+    // Verificar se precisamos atualizar grupos baseado nos status selecionados
+    const status = ticketStatuses.find(s => String(s.id) === statusId);
+    if (status) {
+      // Remover grupos que não estão mais completos
+      const updatedGroups = selectedStatusGroups.filter(groupId => {
+        const group = STATUS_GROUPS.find(g => g.id === groupId);
+        if (!group) return false;
+        
+        // Verificar se todos os status do grupo ainda estão selecionados
+        return group.group.every(groupValue => {
+          if (groupValue === null) {
+            return ticketStatuses
+              .filter(s => s.group === null || s.group === undefined)
+              .every(s => updatedStatusIds.includes(String(s.id)));
+          } else {
+            return ticketStatuses
+              .filter(s => s.group === groupValue)
+              .every(s => updatedStatusIds.includes(String(s.id)));
+          }
+        });
+      });
+      
+      setSelectedStatusGroups(updatedGroups);
+    }
+    
     // Atualizar o filtro com os status selecionados
     const statusFilter = updatedStatusIds.length > 0 ? updatedStatusIds.join(',') : '';
     handleFilterChange('status_id', statusFilter);
@@ -654,6 +688,111 @@ export default function TicketManagementPage() {
   };
 
   const handleClearAllStatuses = () => {
+    setSelectedStatusIds([]);
+    handleFilterChange('status_id', '');
+  };
+
+  // Funções para grupos de status
+  const handleStatusGroupToggle = (groupId: number) => {
+    const group = STATUS_GROUPS.find(g => g.id === groupId);
+    if (!group) return;
+
+    const isCurrentlySelected = selectedStatusGroups.includes(groupId);
+    const updatedGroups = isCurrentlySelected
+      ? selectedStatusGroups.filter(id => id !== groupId)
+      : [...selectedStatusGroups, groupId];
+    
+    setSelectedStatusGroups(updatedGroups);
+    
+    // Se está desmarcando o grupo, remover todos os status daquele grupo dos status individuais
+    if (isCurrentlySelected) {
+      // Encontrar todos os status IDs deste grupo que está sendo desmarcado
+      const statusIdsToRemove: string[] = [];
+      group.group.forEach(groupValue => {
+        if (groupValue === null) {
+          const nullGroupStatuses = ticketStatuses
+            .filter(status => status.group === null || status.group === undefined)
+            .map(status => String(status.id));
+          statusIdsToRemove.push(...nullGroupStatuses);
+        } else {
+          const groupStatuses = ticketStatuses
+            .filter(status => status.group === groupValue)
+            .map(status => String(status.id));
+          statusIdsToRemove.push(...groupStatuses);
+        }
+      });
+      
+      // Remover estes status dos status individuais selecionados
+      const updatedIndividualStatuses = selectedStatusIds.filter(
+        statusId => !statusIdsToRemove.includes(statusId)
+      );
+      
+      setSelectedStatusIds(updatedIndividualStatuses);
+      
+      const statusFilter = updatedIndividualStatuses.length > 0 ? updatedIndividualStatuses.join(',') : '';
+      handleFilterChange('status_id', statusFilter);
+    } else {
+      // Se está marcando o grupo, adicionar todos os status daquele grupo
+      // Calcular todos os status IDs baseados nos grupos selecionados
+      const allStatusIdsFromGroups: string[] = [];
+      updatedGroups.forEach(gId => {
+        const selectedGroup = STATUS_GROUPS.find(g => g.id === gId);
+        if (selectedGroup) {
+          selectedGroup.group.forEach(groupValue => {
+            if (groupValue === null) {
+              const nullGroupStatuses = ticketStatuses
+                .filter(status => status.group === null || status.group === undefined)
+                .map(status => String(status.id));
+              allStatusIdsFromGroups.push(...nullGroupStatuses);
+            } else {
+              const groupStatuses = ticketStatuses
+                .filter(status => status.group === groupValue)
+                .map(status => String(status.id));
+              allStatusIdsFromGroups.push(...groupStatuses);
+            }
+          });
+        }
+      });
+
+      // Combinar com status individuais selecionados que não estão em nenhum grupo ativo
+      const individualStatuses = selectedStatusIds.filter(statusId => {
+        const status = ticketStatuses.find(s => String(s.id) === statusId);
+        if (!status) return false;
+        
+        // Verificar se este status faz parte de algum grupo atualmente selecionado
+        return !updatedGroups.some(gId => {
+          const group = STATUS_GROUPS.find(g => g.id === gId);
+          if (!group) return false;
+          
+          return group.group.some(groupValue => {
+            if (groupValue === null && (status.group === null || status.group === undefined)) {
+              return true;
+            }
+            return groupValue === status.group;
+          });
+        });
+      });
+
+      const finalStatusIds = [...new Set([...allStatusIdsFromGroups, ...individualStatuses])];
+      setSelectedStatusIds(finalStatusIds);
+      
+      const statusFilter = finalStatusIds.length > 0 ? finalStatusIds.join(',') : '';
+      handleFilterChange('status_id', statusFilter);
+    }
+  };
+
+  const handleSelectAllStatusGroups = () => {
+    const allGroupIds = STATUS_GROUPS.map(group => group.id);
+    setSelectedStatusGroups(allGroupIds);
+    
+    // Selecionar todos os status
+    const allStatusIds = ticketStatuses.map(status => String(status.id));
+    setSelectedStatusIds(allStatusIds);
+    handleFilterChange('status_id', allStatusIds.join(','));
+  };
+
+  const handleClearAllStatusGroups = () => {
+    setSelectedStatusGroups([]);
     setSelectedStatusIds([]);
     handleFilterChange('status_id', '');
   };
@@ -1599,68 +1738,123 @@ export default function TicketManagementPage() {
                           <SquareMousePointer className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md">
+                      <DialogContent className="max-w-lg">
                         <DialogHeader>
                           <DialogTitle>Selecionar Status</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-3">
-                          <div className="relative">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              placeholder="Buscar status..."
-                              value={statusSearchTerm}
-                              onChange={(e) => setStatusSearchTerm(e.target.value)}
-                              className="pl-8"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={handleSelectAllStatuses}
-                            >
-                              Selecionar Todos
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={handleClearAllStatuses}
-                            >
-                              Limpar Todos
-                            </Button>
-                          </div>
-                          <div className="space-y-1 max-h-80 overflow-y-auto">
-                            {statusesLoading ? (
-                              <div className="flex items-center justify-center py-4">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              </div>
-                            ) : (
-                              getFilteredStatuses().map((status) => (
+                        <div className="space-y-4">
+                          {/* Seção de Grupos de Status */}
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-medium text-muted-foreground">Grupos de Status</h4>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={handleSelectAllStatusGroups}
+                              >
+                                Selecionar Todos os Grupos
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={handleClearAllStatusGroups}
+                              >
+                                Limpar Grupos
+                              </Button>
+                            </div>
+                            <div className="grid gap-2">
+                              {STATUS_GROUPS.map((group) => (
                                 <div
-                                  key={status.id}
-                                  className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 ${
-                                    selectedStatusIds.includes(String(status.id)) 
-                                      ? 'bg-primary/10 border border-primary/20' 
-                                      : 'border border-transparent'
+                                  key={group.id}
+                                  className={`flex items-center space-x-2 p-3 rounded-md cursor-pointer hover:bg-gray-100 border ${
+                                    selectedStatusGroups.includes(group.id) 
+                                      ? 'bg-blue-50 border-blue-200' 
+                                      : 'border-gray-200'
                                   }`}
-                                  onClick={() => handleStatusToggle(String(status.id))}
+                                  onClick={() => handleStatusGroupToggle(group.id)}
                                 >
                                   <Checkbox
-                                    checked={selectedStatusIds.includes(String(status.id))}
-                                    onCheckedChange={() => handleStatusToggle(String(status.id))}
+                                    checked={selectedStatusGroups.includes(group.id)}
+                                    onCheckedChange={() => handleStatusGroupToggle(group.id)}
                                   />
-                                  <span className="flex-1">{status.name}</span>
+                                  <div className="flex-1">
+                                    <span className="font-medium">{group.name}</span>
+                                  </div>
                                 </div>
-                              ))
-                            )}
-                            {!statusesLoading && getFilteredStatuses().length === 0 && statusSearchTerm && (
-                              <div className="text-center text-muted-foreground py-4">
-                                Nenhum status encontrado
-                              </div>
-                            )}
+                              ))}
+                            </div>
                           </div>
+
+                          {/* Divisor */}
+                          <div className="border-t pt-4">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-3">Seleção Individual de Status</h4>
+                          </div>
+
+                          {/* Seção de Status Individuais */}
+                          <div className="space-y-3">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                placeholder="Buscar status..."
+                                value={statusSearchTerm}
+                                onChange={(e) => setStatusSearchTerm(e.target.value)}
+                                className="pl-8"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={handleSelectAllStatuses}
+                              >
+                                Selecionar Todos
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={handleClearAllStatuses}
+                              >
+                                Limpar Todos
+                              </Button>
+                            </div>
+                            <div className="space-y-1 max-h-60 overflow-y-auto">
+                              {statusesLoading ? (
+                                <div className="flex items-center justify-center py-4">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                </div>
+                              ) : (
+                                getFilteredStatuses().map((status) => (
+                                  <div
+                                    key={status.id}
+                                    className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 ${
+                                      selectedStatusIds.includes(String(status.id)) 
+                                        ? 'bg-primary/10 border border-primary/20' 
+                                        : 'border border-transparent'
+                                    }`}
+                                    onClick={() => handleStatusToggle(String(status.id))}
+                                  >
+                                    <Checkbox
+                                      checked={selectedStatusIds.includes(String(status.id))}
+                                      onCheckedChange={() => handleStatusToggle(String(status.id))}
+                                    />
+                                    <div className="flex-1">
+                                      <span>{status.name}</span>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                              {!statusesLoading && getFilteredStatuses().length === 0 && statusSearchTerm && (
+                                <div className="text-center text-muted-foreground py-4">
+                                  Nenhum status encontrado
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
                           <div className="flex justify-end gap-2 pt-2 border-t">
                             <Button
                               variant="outline"
