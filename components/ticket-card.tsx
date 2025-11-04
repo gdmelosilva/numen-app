@@ -130,14 +130,14 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
     
     // Baseado no mapeamento original do ColoredBadge
     switch (priority) {
+      case "Baixa":
+        return "bg-green-100 text-green-800 border-green-200"; // green
+      case "Média":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"; // yellow
       case "Alta":
         return "bg-orange-100 text-orange-800 border-orange-200"; // orange
-      case "Média":
-        return "bg-green-100 text-green-800 border-green-200"; // approved
-      case "Baixa":
-        return "bg-blue-100 text-blue-800 border-blue-200"; // primary
       case "Crítica":
-        return "bg-red-100 text-red-800 border-red-200"; // destructive
+        return "bg-red-100 text-red-800 border-red-200"; // red
       default:
         return "bg-slate-100 text-slate-800 border-slate-200";
     }
@@ -283,8 +283,15 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
             {/* Badge de Categoria */}
             <div className="flex flex-col items-center w-full">
               <div className="text-xs text-muted-foreground mb-1 text-center font-medium tracking-wide">Categoria</div>
-              <div className="px-3 py-2 rounded-lg text-xs font-bold uppercase border w-full text-center bg-blue-100 text-blue-800 border-blue-200 shadow-sm" style={{ minWidth: 110, maxWidth: 130 }}>
-                {ticket.category?.name || ticket.category_id || "SEM CATEGORIA"}
+              <div
+              className={`px-3 py-2 rounded-lg text-xs font-bold uppercase border w-full text-center shadow-sm ${
+                (ticket.category?.name || "").toLowerCase() === "incidente"
+                ? "bg-red-100 text-red-800 border-red-200"
+                : "bg-blue-100 text-blue-800 border-blue-200"
+              }`}
+              style={{ minWidth: 110, maxWidth: 130 }}
+              >
+              {ticket.category?.name || ticket.category_id || "SEM CATEGORIA"}
               </div>
             </div>
 
