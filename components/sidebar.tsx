@@ -60,6 +60,9 @@ export function SidebarInset({
 // --- Regras de visibilidade de menus ---
 import type { AuthenticatedUser } from "@/lib/api-auth";
 
+// Feature flag (build-time NEXT_PUBLIC_ variable).
+const showPoolFeature = process.env.NEXT_PUBLIC_POOL_FEATURE_TAG === "true";
+
 type NavItem = {
   title?: string;
   url?: string;
@@ -93,7 +96,8 @@ const menuVisibilityRules: MenuVisibilityRule[] = [
       "TimeFlow - Faturamento",
       "Administrativo",
       "TimeSheet",
-      { parent: "SmartCare - AMS", items: ["Pool de Chamados"] },
+      // Only include the Pool de Chamados hide rule when the feature is enabled
+      ...(showPoolFeature ? [{ parent: "SmartCare - AMS", items: ["Pool de Chamados"] }] : []),
     ],
   },
   {
@@ -158,8 +162,11 @@ export function AppSidebar() {
   const router = useRouter();
   const { expanded, setExpanded } = useSidebar();
   const { user, loading } = useUserContext();
+  const showPoolFeature = process.env.NEXT_PUBLIC_POOL_FEATURE_TAG === "true";
+  const showTasksFeature = process.env.NEXT_PUBLIC_TASKS_FEATURE_TAG === "true";
 
   const navMain = React.useMemo(() => [
+
 
     {
       title: "Administrativo",
@@ -183,9 +190,10 @@ export function AppSidebar() {
       newTab: false,
       items: [
         { title: "Gestão AMS", url: "/main/smartcare/ams", newTab: false },
-        { title: "Pool de Chamados", url: "/main/smartcare/management/pool", newTab: false },
+        // Pool de Chamados is only shown when the NEXT_PUBLIC_POOL_FEATURE_TAG env var is exactly "true"
+        ...(showPoolFeature ? [{ title: "Pool de Chamados", url: "/main/smartcare/management/pool", newTab: false }] : []),
         { title: "Administrar Chamados", url: "/main/smartcare/management", newTab: false },
-        { title: "Administrar Tarefas", url: "/main/smartcare/tasks", newTab: false},
+        ...(showTasksFeature ? [{ title: "Administrar Tarefas", url: "/main/smartcare/tasks", newTab: false}] : []),
         { title: "Abrir Chamado", url: "/main/smartcare/create", newTab: false },
       ],
     },
