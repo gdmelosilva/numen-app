@@ -36,8 +36,6 @@ async function getRecipientsForTicketUpdate({
   const supabase = await createClient();
   const recipients = new Set<string>(); // Usar Set para evitar duplicatas
 
-  console.log('DEBUG: Buscando recipients para atualização do ticket:', { ticketId, projectId });
-
   // 1. Buscar todos os gerentes do cliente específico (via projeto)
   const { data: projectData, error: projectError } = await supabase
     .from('project')
@@ -62,7 +60,6 @@ async function getRecipientsForTicketUpdate({
     } else {
       clientManagers?.forEach(manager => {
         recipients.add(manager.id);
-        console.log(`📨 Adicionado gerente do cliente: ${manager.first_name} ${manager.last_name} (${manager.email})`);
       });
     }
   }
@@ -91,13 +88,11 @@ async function getRecipientsForTicketUpdate({
       const user = (resource.user as any);
       if (user && !user.is_client) { // Apenas funcionais
         recipients.add(user.id);
-        console.log(`📨 Adicionado funcional atrelado ao ticket: ${user.first_name} ${user.last_name} (${user.email})`);
       }
     });
   }
 
   const recipientIds = Array.from(recipients);
-  console.log(`📊 Total de recipients únicos encontrados: ${recipientIds.length}`);
   return recipientIds;
 }
 
@@ -122,8 +117,6 @@ async function notifyTicketStatusUpdate({
   updateDescription: string;
 }) {
   try {
-    console.log('DEBUG: Iniciando envio de emails para atualização do ticket:', ticketId);
-    
     const supabase = await createClient();
 
     // Buscar recipients (gerentes do cliente e funcionais atrelados ao chamado)
@@ -155,13 +148,37 @@ async function notifyTicketStatusUpdate({
       return;
     }
 
+    // ===== FILTRO: Verificar preferência de notificação de atualização de ticket =====
+    const userIds = recipientUsers.map(u => u.id);
+    
+    const { data: userConfigsData, error: configError } = await supabase
+      .from('user_configs')
+      .select('user_id, ticket_update_notification')
+      .in('user_id', userIds);
+    
+    const configs: Record<string, { user_id: string; ticket_update_notification: boolean }> = {};
+    if (!configError && userConfigsData) {
+      userConfigsData.forEach(cfg => {
+        configs[cfg.user_id] = cfg;
+      });
+    }
+
+    console.log('🔥 ENTRANDO NO BLOCO de filtro');
+    
+    // Filtrar apenas recipients que querem receber notificações
+    const filteredRecipients = recipientUsers.filter(user => {
+      const config = configs[user.id];
+      const shouldReceive = config?.ticket_update_notification === true;
+      return shouldReceive;
+    });
+
+    if (!filteredRecipients || filteredRecipients.length === 0) {
+      return;
+    }
+
     // ===== MODO DE TESTE - ENVIAR APENAS PARA UM EMAIL =====
-    let finalRecipients = recipientUsers;
+    let finalRecipients = filteredRecipients;
     if (TEST_MODE && TEST_EMAIL) {
-      console.log(`🧪 MODO DE TESTE ATIVADO: Enviando email apenas para ${TEST_EMAIL}`);
-      console.log(`📧 Recipients originais: ${recipientUsers.length} usuários`);
-      console.log(`📋 Lista original:`, recipientUsers.map(u => `${u.first_name} ${u.last_name} (${u.email})`));
-      
       // Criar um recipient fictício com o email de teste
       finalRecipients = [{
         id: 'test-user',
@@ -170,8 +187,6 @@ async function notifyTicketStatusUpdate({
         last_name: 'Desenvolvimento',
         is_active: true
       }];
-      
-      console.log(`✅ Redirecionando todos os emails para: ${TEST_EMAIL}`);
     }
     // =====================================================
 
@@ -246,7 +261,6 @@ async function notifyTicketStatusUpdate({
           html: emailTemplate.html,
         });
 
-        console.log(`Email enviado com sucesso para ${fullName} (${user.email})`);
         return { success: true, user: fullName, email: user.email };
       } catch (error) {
         console.error(`Erro ao enviar email para ${fullName}:`, error);
@@ -255,17 +269,8 @@ async function notifyTicketStatusUpdate({
     });
 
     const results = await Promise.all(emailPromises);
-    const successful = results.filter(r => r.success);
     const failed = results.filter(r => !r.success);
 
-    console.log(`Emails processados para ticket ${ticketId}: ${successful.length} enviados, ${failed.length} falharam`);
-    console.log(`Recipients encontrados: ${recipientUserIds.length}, com email válido: ${recipientUsers.length}`);
-    
-    if (TEST_MODE) {
-      console.log(`🧪 MODO DE TESTE: Email redirecionado para ${TEST_EMAIL}`);
-      console.log(`📊 Estatísticas originais: ${recipientUserIds.length} recipients, ${recipientUsers.length} com email válido`);
-    }
-    
     if (failed.length > 0) {
       console.error('Falhas no envio de email:', failed);
     }
@@ -350,9 +355,6 @@ export async function PUT(req: NextRequest) {
 
     // Se o status mudou, enviar email de notificação
     if (statusChanged && previousStatusName && newStatusName) {
-      // const categoryName = currentTicket.category as { name: string } | { name: string }[] | null;
-      // const categoryStr = Array.isArray(categoryName) ? categoryName[0]?.name : categoryName?.name || null;
-
       // Buscar a última mensagem não privada do ticket para usar como updateDescription
       const lastMessageBody = await getLastPublicMessage(currentTicket.id);
       const updateDescription = lastMessageBody || `Status alterado de "${previousStatusName}" para "${newStatusName}"`;

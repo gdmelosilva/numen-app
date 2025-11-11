@@ -162,6 +162,7 @@ export default function ProfileDialog() {
 
   // Fechar dialog e resetar estado
   const handleDialogClose = () => {
+    if (loading) return; // Impede fechar enquanto carrega ou salva configs
     setIsEditing(false);
     setSaving(false);
     setEditForm({ first_name: '', last_name: '', tel_contact: '' });
@@ -402,9 +403,11 @@ export default function ProfileDialog() {
                         Editar Perfil
                       </Button>
                       <Button 
-                        variant="secondary" 
+                        variant={loading ? "outline" : "secondary"}
                         size="sm" 
                         onClick={handleDialogClose}
+                        disabled={loading}
+                        className={loading ? "bg-muted text-muted-foreground border-muted cursor-not-allowed" : ""}
                       >
                         Fechar
                       </Button>
@@ -440,10 +443,36 @@ export default function ProfileDialog() {
                   Cards
                 </Button>
               </div>
-              {/* Espaço para filtros futuros */}
-              <div className="mt-6">
-                <h4 className="text-sm font-medium mb-1">Filtros (em breve)</h4>
-                <p className="text-muted-foreground text-xs">Configurações de filtros personalizadas estarão disponíveis aqui.</p>
+              {/* Switch para notificações de atualização de tickets */}
+              <div className="mt-6 flex items-center gap-3 border-t-2 pt-4">
+                <h4 className="text-sm font-medium mb-1">Notificações de atualização de tickets</h4>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={!!configs?.ticket_update_notification}
+                    disabled={loading}
+                    onChange={async (e) => {
+                      setLoading(true);
+                      const value = e.target.checked;
+                      await fetch("/api/user-configs", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ ticket_update_notification: value }),
+                      });
+                      await refreshConfigs();
+                      setLoading(false);
+                    }}
+                  />
+                  <div className={`w-11 h-6 rounded-full transition-all 
+                    ${loading ? "bg-muted border-muted" : "bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary peer peer-checked:bg-primary"}`}></div>
+                  <div className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-all 
+                    ${loading ? "bg-muted-foreground" : "bg-white peer-checked:translate-x-5"}`}></div>
+                </label>
+                {loading && <ButtonSpinner size="sm" loading={true} className="ml-2">loading</ButtonSpinner>}
+                <span className="text-xs text-muted-foreground ml-2">
+                  {configs?.ticket_update_notification ? "Receber notificações" : "Não receber notificações"}
+                </span>
               </div>
             </div>
           </TabsContent>

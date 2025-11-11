@@ -38,8 +38,6 @@ async function getRecipientsForTicketUpdate({
   const supabase = await createClient();
   const recipients = new Set<string>(); // Usar Set para evitar duplicatas
 
-  console.log('DEBUG: Buscando recipients para atualização do ticket:', { ticketId, projectId });
-
   // 1. Buscar todos os gerentes do cliente específico (via projeto)
   const { data: projectData, error: projectError } = await supabase
     .from('project')
@@ -64,7 +62,6 @@ async function getRecipientsForTicketUpdate({
     } else {
       clientManagers?.forEach(manager => {
         recipients.add(manager.id);
-        console.log(`📨 Adicionado gerente do cliente: ${manager.first_name} ${manager.last_name} (${manager.email})`);
       });
     }
   }
@@ -93,13 +90,11 @@ async function getRecipientsForTicketUpdate({
       const user = (resource.user as any);
       if (user && !user.is_client) { // Apenas funcionais
         recipients.add(user.id);
-        console.log(`📨 Adicionado funcional atrelado ao ticket: ${user.first_name} ${user.last_name} (${user.email})`);
       }
     });
   }
 
   const recipientIds = Array.from(recipients);
-  console.log(`📊 Total de recipients únicos encontrados: ${recipientIds.length}`);
   return recipientIds;
 }
 
