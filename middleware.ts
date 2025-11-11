@@ -4,6 +4,11 @@ import { isRouteBlocked } from "@/lib/menu-visibility";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
+  // Permite acesso público à API de reset de senha
+  if (request.nextUrl.pathname === "/api/send-reset-link") {
+    return NextResponse.next();
+  }
+
   // Bloqueia acesso a /auth exceto /auth/update-password
   if (
     request.nextUrl.pathname.startsWith("/auth") &&

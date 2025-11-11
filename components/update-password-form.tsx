@@ -79,9 +79,9 @@ export function UpdatePasswordForm({
 
       setSuccess("Senha atualizada com sucesso!");
 
-      // Redirect after a short delay
+      // Redireciona para a página de login após atualizar a senha
       setTimeout(() => {
-        router.push("/");
+        router.push("/auth");
       }, 2000);
     } catch (error: unknown) {
       setError(

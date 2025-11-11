@@ -6,7 +6,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <ResetPasswordForm />
       <div className="mt-6 text-center text-sm">
-        <Link href="/auth" className="underline underline-offset-4 text-muted-foreground hover:text-foreground">
+        <Link href="/auth " className="underline underline-offset-4 text-muted-foreground hover:text-foreground">
           Voltar ao Login
         </Link>
       </div>
