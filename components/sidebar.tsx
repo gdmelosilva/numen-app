@@ -245,7 +245,7 @@ export function AppSidebar() {
       // ],
       roles: ["ADMIN"],
     }
-  ], []);
+  ], [showPoolFeature, showTasksFeature]);
 
   const toggleItem = React.useCallback((url: string) => {
     // Expande a sidebar se estiver recolhida

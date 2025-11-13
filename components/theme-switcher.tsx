@@ -19,7 +19,6 @@ export default function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
   const { user } = useCurrentUser();
   const { configs, loading: configsLoading } = useCurrentUserConfigs();
-  const themeIdToName: Record<number, string> = { 1: "light", 2: "dark", 3: "system" };
   const themeNameToId: Record<string, number> = { light: 1, dark: 2, system: 3 };
 
   useEffect(() => {
@@ -28,6 +27,7 @@ export default function ThemeSwitcher() {
 
   // Only set theme from DB once, on initial load
   useEffect(() => {
+    const themeIdToName: Record<number, string> = { 1: "light", 2: "dark", 3: "system" };
     if (mounted && configs?.theme_id && !themeInitialized) {
       const dbTheme = themeIdToName[configs.theme_id] || "system";
       if (theme !== dbTheme) {
@@ -35,7 +35,7 @@ export default function ThemeSwitcher() {
       }
       setThemeInitialized(true);
     }
-  }, [mounted, configs?.theme_id, setTheme, theme, themeIdToName, themeInitialized]);
+  }, [mounted, configs?.theme_id, setTheme, theme, themeInitialized]);
 
   // Function to update theme in DB using the API route
   async function updateThemePreference(newTheme: string) {

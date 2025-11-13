@@ -221,14 +221,6 @@ export function TicketCard({ ticket, user, onLinkResource, onClick }: TicketCard
     }
   };
 
-  // Função para obter as classes CSS para tickets finalizados
-  const getFinalizedCardClasses = () => {
-    if (isTicketFinalized()) {
-      return "opacity-60 bg-green-50/30 border-l-green-200 dark:border-l-green-500";
-    }
-    return "border-l-gray-200 dark:border-l-[rgb(80,80,80)]";
-  };
-
   return (
     <Card
       className={`ticket-card cursor-pointer border-l-8 rounded-xl shadow-md bg-white dark:bg-background transition-all duration-300 hover:shadow-lg dark:shadow-[0_4px_24px_0_rgba(255,255,255,0.10)] dark:hover:shadow-[0_8px_32px_0_rgba(255,255,255,0.16)]
