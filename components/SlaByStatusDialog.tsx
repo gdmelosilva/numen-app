@@ -39,15 +39,27 @@ const GROUP_LABELS: Record<number, string> = {
   4: "Em Desenvolvimento",
 };
 
+// Tempo padrão baseado no nome da prioridade (fallback)
+// const getDefaultTempo = (priorityName: string) => {
+//   const name = priorityName.toLowerCase();
+//   if (name.includes('crítica') || name.includes('critica')) return '';
+//   if (name.includes('alto') || name.includes('alta')) return '';
+//   if (name.includes('médio') || name.includes('media')) return '';
+//   if (name.includes('baixo') || name.includes('baixa')) return '';
+//   return 8; // padrão
+// };
+
 export function SlaByStatusDialog({
   open,
   onOpenChange,
+  onSave,
   selectedDay,
   projectId,
   weekdayId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onSave: (regras: ApiSlaRule[]) => Promise<void> | void;
   selectedDay?: string;
   projectId?: string;
   weekdayId?: number;
@@ -145,10 +157,10 @@ export function SlaByStatusDialog({
         // Marcar que todos os dados estão prontos
         setAllDataReady(true);
       }
-    }
+    };
     
     loadExistingRules();
-  }, [open, projectId, weekdayId, dataLoaded, selectedCategory]);
+  }, [open, projectId, weekdayId, dataLoaded]); // Remover selectedCategory para evitar loops
 
   // Definir categoria inicial - apenas como fallback se não há dados carregados
   useEffect(() => {
@@ -330,20 +342,11 @@ export function SlaByStatusDialog({
         });
       });
 
-      // 5. Aguardar exclusões e então salvar regras atuais
+      // 5. Aguardar exclusões e então chamar onSave com as regras formatadas
       await Promise.all(deletePromises);
-      // Envia todas as regras em uma única chamada POST
-      const response = await fetch('/api/sla-rules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiFormatRules),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao salvar regras SLA');
-      }
+      
+      // Chamar o callback onSave passado pelo componente pai
+      await onSave(apiFormatRules);
 
       onOpenChange(false);
 

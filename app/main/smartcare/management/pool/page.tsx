@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { TicketCard } from "@/components/ticket-card";
 import type { Ticket } from "@/types/tickets";
+import type { User as CreatedByUser } from "@/types/users";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";

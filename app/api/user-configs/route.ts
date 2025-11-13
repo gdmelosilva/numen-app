@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { UserConfig } from "@/types/user_configs";
 
-export async function PUT(request: Request) {
+export async function PUT(request: Request): Promise<NextResponse> {
   const { user, error } = await authenticateRequest();
-  if (error || !user) return error;
+  if (error || !user) return error!;
 
   const body: Partial<UserConfig> = await request.json();
 
@@ -43,9 +43,9 @@ export async function PUT(request: Request) {
   return NextResponse.json(data, { status: 200 });
 }
 
-export async function GET(request: Request) {
+export async function GET(request: Request): Promise<NextResponse> {
   const { user, error } = await authenticateRequest();
-  if (error || !user) return error;
+  if (error || !user) return error!;
 
   const url = new URL(request.url);
   const userIdParam = url.searchParams.get('user_id');
@@ -85,7 +85,8 @@ export async function GET(request: Request) {
 
   // Se só um id foi solicitado, retorna objeto único, senão retorna array
   if (ids.length === 1) {
-    return NextResponse.json(data?.[0] || null, { status: 200 });
+    const result = data?.[0] ?? null;
+    return NextResponse.json(result, { status: 200 });
   }
   return NextResponse.json(data || [], { status: 200 });
 }
