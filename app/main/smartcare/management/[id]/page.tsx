@@ -30,6 +30,7 @@ import DesparalizarChamadoButton from "@/components/ButtonDesparalizarChamado";
 import SolicitarEncerramentoButton from "@/components/ButtonSolicitarEncerramento";
 import { Rating as Stars, RatingButton as Star } from "@/components/ui/RatingButton";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleNotifyButton } from "@/components/ToggleNotifyButton";
 
 // Define o tipo correto para o recurso retornado pelo backend
 interface TicketResource {
@@ -795,9 +796,14 @@ export default function TicketDetailsPage() {
             {totalMessages > 0 ? `Mensagens (${totalMessages})` : "Mensagens"}
           </TabsTrigger>
         </TabsList>
-        {currentUser?.is_client && !isCloseRequested && !isFinalized && (
-          <div className="flex items-center gap-2">
-            {isPausedByRequester ? (
+        <div className="flex items-center gap-2">
+          {/* Botão de notificações para recursos alocados */}
+          {currentUser?.id && !currentUser.is_client && ticket?.id && (
+            <ToggleNotifyButton ticketId={ticket.id} userId={currentUser.id} />
+          )}
+          {currentUser?.is_client && !isCloseRequested && !isFinalized && (
+            <>
+              {isPausedByRequester ? (
               <>
                 <DesparalizarChamadoButton
                   onClick={() => {
@@ -844,7 +850,7 @@ export default function TicketDetailsPage() {
                 />
               </>
             )}
-          </div>
+          </>
         )}
         {canRequestAllocation() && (
           <div className="flex items-center gap-2">
@@ -863,6 +869,7 @@ export default function TicketDetailsPage() {
             </Button>
           </div>
         )}
+        </div>
       </div>
       <Card className="p-6 rounded-md w-full h-full">
         <TabsContent value="details">

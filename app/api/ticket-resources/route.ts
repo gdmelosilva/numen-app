@@ -83,8 +83,6 @@ async function createResourceNotification(ticketId: string, userId: string) {
 // Função auxiliar para criar notificação quando recurso é marcado como responsável principal
 async function createResourceNotificationForMain(ticketId: string, userId: string) {
   try {
-    console.log('DEBUG: Criando notificação para responsável principal:', { ticketId, userId });
-    
     const supabase = await createClient();
 
     // Buscar informações do ticket para determinar categoria e criador
@@ -166,7 +164,7 @@ export async function GET(req: Request) {
   const ticket_id = searchParams.get("ticket_id");
   let query = supabase
   .from("ticket_resource")
-  .select("*, user:user_id(id, first_name, last_name, email, is_client, is_active)");
+  .select("*, notify, user:user_id(id, first_name, last_name, email, is_client, is_active)");
   if (ticket_id) {
     query = query.eq("ticket_id", ticket_id);
   }
@@ -175,6 +173,33 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json(data || []);
+}
+
+// PATCH /api/ticket-resources - Atualizar notify
+export async function PATCH(req: Request) {
+  const supabase = await createClient();
+  const body = await req.json();
+  const { user_id, ticket_id, notify } = body;
+
+  if (!user_id || !ticket_id || typeof notify !== "boolean") {
+    return NextResponse.json({ error: "Missing or invalid fields" }, { status: 400 });
+  }
+
+  console.log('DEBUG: Atualizando notify do recurso:', { user_id, ticket_id, notify });
+
+  const { data, error } = await supabase
+    .from("ticket_resource")
+    .update({ notify })
+    .eq("user_id", user_id)
+    .eq("ticket_id", ticket_id)
+    .select();
+
+  if (error) {
+    console.error('Erro ao atualizar notify:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
 }
 
 // PUT /api/ticket-resources
@@ -226,7 +251,7 @@ export async function POST(req: Request) {
 
   console.log('DEBUG: Adicionando recurso ao ticket:', { user_id, ticket_id });
 
-  const { error } = await supabase.from("ticket_resource").insert({ user_id, ticket_id });
+  const { error } = await supabase.from("ticket_resource").insert({ user_id, ticket_id, notify: true });
   
   if (error) {
     console.error('Erro ao inserir recurso:', error);

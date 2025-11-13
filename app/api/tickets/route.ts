@@ -36,39 +36,46 @@ async function getRecipientsForTicketUpdate({
   const supabase = await createClient();
   const recipients = new Set<string>(); // Usar Set para evitar duplicatas
 
-  // 1. Buscar todos os gerentes do cliente específico (via projeto)
-  const { data: projectData, error: projectError } = await supabase
-    .from('project')
-    .select('partnerId')
-    .eq('id', projectId)
-    .single();
+  // 1. Buscar gerentes do projeto específico (não todos os gerentes do parceiro)
+  const { data: projectManagers, error: managersError } = await supabase
+    .from('project_resources')
+    .select(`
+      user_id,
+      user_functional,
+      users!inner(
+        id,
+        email,
+        first_name,
+        last_name,
+        is_client,
+        role,
+        is_active
+      )
+    `)
+    .eq('project_id', projectId)
+    .eq('is_suspended', false);
 
-  if (projectError) {
-    console.error('Erro ao buscar projeto para obter partnerId:', projectError);
-  } else if (projectData?.partnerId) {
-    // Buscar todos os gerentes (managers) do cliente/parceiro
-    const { data: clientManagers, error: managersError } = await supabase
-      .from('user')
-      .select('id, email, first_name, last_name, role')
-      .eq('partner_id', projectData.partnerId)
-      .eq('role', '2')
-      .eq('is_active', true)
-      .not('email', 'is', null);
-
-    if (managersError) {
-      console.error('Erro ao buscar gerentes do cliente:', managersError);
-    } else {
-      clientManagers?.forEach(manager => {
-        recipients.add(manager.id);
-      });
+  if (managersError) {
+    console.error('Erro ao buscar gerentes do projeto:', managersError);
+  } else {
+    for (const resource of projectManagers || []) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const user = (resource.users as any);
+      // Apenas gerentes não-clientes e ativos
+      if (user && !user.is_client && user.is_active && user.email && 
+          (resource.user_functional === 2 || user.role === 2)) {
+        recipients.add(user.id);
+      }
     }
   }
 
   // 2. Buscar funcionais diretamente atrelados ao chamado (ticket_resource)
+  // Apenas recursos com notify=true para envio de email
   const { data: ticketResources, error: ticketResourceError } = await supabase
     .from('ticket_resource')
     .select(`
       user_id,
+      notify,
       user!inner(
         id,
         email,
@@ -78,18 +85,19 @@ async function getRecipientsForTicketUpdate({
         role
       )
     `)
-    .eq('ticket_id', ticketId);
+    .eq('ticket_id', ticketId)
+    .eq('notify', true);
 
   if (ticketResourceError) {
     console.error('Erro ao buscar recursos atrelados ao ticket:', ticketResourceError);
   } else {
-    ticketResources?.forEach(resource => {
+    for (const resource of ticketResources || []) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const user = (resource.user as any);
       if (user && !user.is_client) { // Apenas funcionais
         recipients.add(user.id);
       }
-    });
+    }
   }
 
   const recipientIds = Array.from(recipients);
@@ -158,14 +166,14 @@ async function notifyTicketStatusUpdate({
     
     const configs: Record<string, { user_id: string; ticket_update_notification: boolean }> = {};
     if (!configError && userConfigsData) {
-      userConfigsData.forEach(cfg => {
+      for (const cfg of userConfigsData) {
         configs[cfg.user_id] = cfg;
-      });
+      }
     }
-
-    console.log('🔥 ENTRANDO NO BLOCO de filtro');
     
-    // Filtrar apenas recipients que querem receber notificações
+    // Filtrar apenas recipients que:
+    // 1. Tem notify=true no ticket_resource (já filtrado em getRecipientsForTicketUpdate)
+    // 2. E também tem ticket_update_notification=true nas user_configs
     const filteredRecipients = recipientUsers.filter(user => {
       const config = configs[user.id];
       const shouldReceive = config?.ticket_update_notification === true;
