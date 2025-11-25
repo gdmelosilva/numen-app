@@ -15,8 +15,9 @@ export function TopBar() {
   // Função utilitária para exibir o nome do cargo
   function roleToLabel(role: number | string | null | undefined, is_client: boolean) {
     if ((role === 1 || role === "1")) return "Administrador";
-    if (role === 2 || role === "2") return "Gerente";
-    if ((role === 3 || role === "3") && (is_client === true)) return "Key-User";
+    if ((role === 2 || role === "2") && (is_client === true)) return "Cliente";
+    if ((role === 2 || role === "2") && (is_client === false)) return "Gerente";
+    if ((role === 3 || role === "3") && (is_client === true)) return "Cliente";
     if ((role === 3 || role === "3") && (is_client === false)) return "Funcional";
     return "Cargo Indefinido";
   }

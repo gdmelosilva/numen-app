@@ -234,7 +234,6 @@ export default function ProfileDialog() {
                 <div className="flex items-center gap-2">
                   {/* <ColoredBadge value={user.is_active} type="status" /> */}
                   <ColoredBadge value={user.is_client} type="is_client" />
-                  <ColoredBadge value={roleToLabel(user.role, user.is_client)} type="user_role" />
                 </div>
               </div>
             </div>
