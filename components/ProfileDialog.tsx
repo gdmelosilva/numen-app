@@ -96,16 +96,16 @@ export default function ProfileDialog() {
   };
 
   // Função utilitária para exibir o nome do cargo
-  function roleToLabel(role: number | string | null | undefined, is_client: boolean) {
-    const roleNum = typeof role === 'string' ? parseInt(role, 10) : role;
+  // function roleToLabel(role: number | string | null | undefined, is_client: boolean) {
+  //   const roleNum = typeof role === 'string' ? parseInt(role, 10) : role;
     
-    if (roleNum === 1) return "Administrador";
-    if (roleNum === 2) return "Gerente";
-    if (roleNum === 3 && is_client === true) return "Key-User";
-    if (roleNum === 3 && is_client === false) return "Funcional";
+  //   if (roleNum === 1) return "Administrador";
+  //   if (roleNum === 2) return "Gerente";
+  //   if (roleNum === 3 && is_client === true) return "Key-User";
+  //   if (roleNum === 3 && is_client === false) return "Funcional";
     
-    return "Cargo Indefinido";
-  }
+  //   return "Cargo Indefinido";
+  // }
 
   // Gera as iniciais do usuário
   function getUserInitials() {
