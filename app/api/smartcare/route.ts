@@ -203,7 +203,7 @@ export async function GET(req: NextRequest) {
 
   // Aplicar filtros manuais do frontend (AGREGADOS aos filtros automáticos de segurança)
   if (searchParams.get("external_id")) {
-    query = query.eq("external_id", searchParams.get("external_id"));
+    query = query.ilike("external_id", `%${searchParams.get("external_id")}%`);
   }
   if (searchParams.get("title")) {
     query = query.ilike("title", `%${searchParams.get("title")}%`);
