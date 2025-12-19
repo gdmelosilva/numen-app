@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
+import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+if (!supabaseKey) {
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY não está configurada");
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: NextRequest) {
+  // Verifica autenticação do usuário
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get("sb-access-token") || cookieStore.get("sb-dbpnjawsexttdgqozfxl-auth-token");
+  
+  if (!authCookie) {
+    return NextResponse.json(
+      { error: "Unauthorized: Authentication required" },
+      { status: 401 }
+    );
+  }
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   const messageId = formData.get("messageId") as string | null;
@@ -45,6 +61,17 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // Verifica autenticação do usuário
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get("sb-access-token") || cookieStore.get("sb-dbpnjawsexttdgqozfxl-auth-token");
+  
+  if (!authCookie) {
+    return NextResponse.json(
+      { error: "Unauthorized: Authentication required" },
+      { status: 401 }
+    );
+  }
+  
   const { searchParams } = new URL(req.url);
   const ticketId = searchParams.get("ticket_id") || searchParams.get("ticketId");
   if (!ticketId) {
