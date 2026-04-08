@@ -12,6 +12,7 @@ import TicketHourDialogButton, { TicketHourData } from "./ticket-hour-dialog-but
 import { useCanUserLogHours, useCanUserSendMessage, useUserInContract } from "@/hooks/useCanUserLog";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { isTicketFinalized, getTicketFinalizedMessage } from "@/lib/ticket-status";
+import { ensureTimestampFormat, combineDateAndTime } from "@/lib/timestamp-format";
 
 interface StatusOption {
   value: string;
@@ -167,15 +168,15 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
       }// Se houver dados de apontamento, faz a requisição para /api/ticket-hours
       // Não permitir apontamento para usuários funcionais e clientes
       if (ticketHourData && user?.id && !isFunctionalOrClient) {
-        // Monta timestamps completos para appoint_start e appoint_end
+        // Monta timestamps completos para appoint_date, appoint_start e appoint_end
         const appointDate = ticketHourData.appointDate;
-        const appointStart = appointDate && ticketHourData.appointStart
-          ? `${appointDate}T${ticketHourData.appointStart}:00`
-          : null;
-        const appointEnd = appointDate && ticketHourData.appointEnd
-          ? `${appointDate}T${ticketHourData.appointEnd}:00`
-          : null;
-          const hoursRes = await fetch("/api/ticket-hours", {
+        
+        // Usa funções utilitárias para garantir formato correto de timestamps
+        const appointDateTimestamp = ensureTimestampFormat(appointDate);
+        const appointStart = combineDateAndTime(appointDate, ticketHourData.appointStart);
+        const appointEnd = combineDateAndTime(appointDate, ticketHourData.appointEnd);
+        
+        const hoursRes = await fetch("/api/ticket-hours", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -184,7 +185,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ ticket, onMessageSent, status
             message_id: createdMsg.id,
             user_id: user.id, // Usar o usuário atual, não o criador do ticket
             minutes: ticketHourData.minutes,
-            appoint_date: appointDate,
+            appoint_date: appointDateTimestamp,
             appoint_start: appointStart,
             appoint_end: appointEnd,
           }),

@@ -128,7 +128,6 @@ export async function POST(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-
     return NextResponse.json({ success: true, data });
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : "Erro desconhecido.";
