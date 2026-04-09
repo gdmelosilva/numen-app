@@ -755,7 +755,8 @@ export async function POST(req: NextRequest) {
     description,
     type_id,
     ref_ticket_id,
-    ref_external_id
+    ref_external_id,
+    responsible_id: responsibleId
   } = body;
 
   console.log('DEBUG API JSON - type_id recebido:', type_id);
@@ -790,6 +791,7 @@ export async function POST(req: NextRequest) {
         updated_by: user.id, // Incluir updated_by na criação
         ref_ticket_id: ref_ticket_id || null,
         ref_external_id: ref_external_id || null,
+        responsible: responsibleId || null,
       },
     ])
     .select('*, external_id')
