@@ -43,7 +43,7 @@ export function usePartnerClients(partnerId?: string) {
             email: user.email,
           }))
           .filter(
-            (client, index, self) =>
+            (client: PartnerClient, index: number, self: PartnerClient[]) =>
               index === self.findIndex((c) => c.id === client.id)
           );
 
