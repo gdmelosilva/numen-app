@@ -171,7 +171,7 @@ export function SlaByStatusDialog({
         setSelectedCategory(firstAvailableCategory);
       }
     }
-  }, [categories, rows, selectedCategory, allDataReady]);
+  }, [categories, rows, allDataReady]);
 
   // Atualizar grupos selecionados quando trocar de categoria
   useEffect(() => {

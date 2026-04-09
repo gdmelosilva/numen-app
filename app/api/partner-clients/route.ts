@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       partnerId = searchParams.get("partner_id") || user!.partner_id;
     }
 
-    let query = supabase
+    const query = supabase
       .from("user")
       .select(`
         id,
