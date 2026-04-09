@@ -22,6 +22,7 @@ import { useProjectOptions } from "@/hooks/useProjectOptions";
 import { useUserProjects } from "@/hooks/useUserProjects";
 import { getPriorityOptions, getCategoryOptions, getModuleOptions } from "@/hooks/useOptions";
 import { TicketSelectionDialog } from "@/components/TicketSelectionDialog";
+import { usePartnerClients } from "@/hooks/usePartnerClients";
 
 export default function CreateTicketPage() {
   const { profile, loading: loadingProfile, user } = useUserProfile();
@@ -30,6 +31,25 @@ export default function CreateTicketPage() {
   const [categories, setCategories] = React.useState<{ id: string; name: string; description: string }[]>([]);
   const [priorities, setPriorities] = React.useState<{ id: string; name: string }[]>([]);
   const [modules, setModules] = React.useState<{ id: string; name: string; description: string }[]>([]);
+
+  const [form, setForm] = useState({
+    project_id: "",
+    partner_id: "",
+    title: "",
+    category_id: "",
+    module_id: "",
+    priority_id: "",
+    description: "",
+    attachments: [] as File[],
+    ref_ticket_id: "",
+    ref_external_id: "",
+    responsible_id: "",
+  });
+
+  const [attachmentTypes, setAttachmentTypes] = useState<{ [fileName: string]: string }>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTicketTitle, setSelectedTicketTitle] = useState("");
 
   // Carregar categorias, prioridades e módulos AMS
   React.useEffect(() => {
@@ -44,23 +64,6 @@ export default function CreateTicketPage() {
     // Clientes só podem ver seu próprio parceiro
     filteredPartners = partners.filter((p) => String(p.id) === String(user.partner_id));
   }
-
-  const [form, setForm] = useState({
-    project_id: "",
-    partner_id: "",
-    title: "",
-    category_id: "",
-    module_id: "",
-    priority_id: "",
-    description: "",
-    attachments: [] as File[],
-    ref_ticket_id: "",
-    ref_external_id: "",
-  });
-  const [attachmentTypes, setAttachmentTypes] = useState<{ [fileName: string]: string }>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedTicketTitle, setSelectedTicketTitle] = useState("");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -135,6 +138,11 @@ export default function CreateTicketPage() {
     }
     if (formData.ref_external_id) {
       fd.append("ref_external_id", formData.ref_external_id);
+    }
+
+    // Adicionar responsável selecionado
+    if (formData.responsible_id) {
+      fd.append("responsible_id", formData.responsible_id);
     }
 
     // Adicionar arquivos se houver
@@ -260,6 +268,7 @@ export default function CreateTicketPage() {
         attachments: [] as File[],
         ref_ticket_id: "",
         ref_external_id: "",
+        responsible_id: "",
       };
       setForm(resetForm);
       setAttachmentTypes({});
@@ -292,6 +301,9 @@ export default function CreateTicketPage() {
 
   // Determinação se é usuário cliente
   const isClientUser = user?.is_client || false;
+
+  // Hook para buscar usuários clientes do parceiro (apenas para usuários clientes)
+  const { clients, loading: loadingClients } = usePartnerClients(isClientUser ? form.partner_id : undefined);
 
   // Se for cliente, seleciona o parceiro automaticamente
   React.useEffect(() => {
@@ -561,6 +573,34 @@ export default function CreateTicketPage() {
                   </div>
                 ) : null;
               })()}
+              
+              {/* Campo Responsável do Chamado - apenas para usuários clientes */}
+              {isClientUser && (
+                <div>
+                  <label htmlFor="responsible_id" className="block text-sm font-medium mb-1">
+                    Responsável do Chamado
+                  </label>
+                  <Select
+                    value={form.responsible_id}
+                    onValueChange={(value) => setForm((prev) => ({ ...prev, responsible_id: value }))}
+                    disabled={loading || !form.partner_id}
+                  >
+                    <SelectTrigger className="w-full" id="responsible_id">
+                      <SelectValue placeholder={!form.partner_id ? "Selecione o projeto" : loadingClients ? "Carregando..." : "Selecionar responsável"} className="truncate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem 
+                          key={client.id} 
+                          value={client.id}
+                        >
+                          <span className="truncate">{client.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>            <div>
               <label htmlFor="description" className="block text-sm font-medium mb-1">
                 Descrição do Chamado <span className="text-destructive">*</span>
@@ -726,6 +766,7 @@ export default function CreateTicketPage() {
                     attachments: [] as File[],
                     ref_ticket_id: "",
                     ref_external_id: "",
+                    responsible_id: "",
                   };
                   setForm(resetForm);
                   setSelectedTicketTitle("");

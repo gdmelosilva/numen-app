@@ -10,7 +10,37 @@ const TEST_MODE = false; // Altere para false para desabilitar o modo de teste
 const TEST_EMAIL = "guilherme.rocha@numenit.com"; // Substitua pelo seu email para testes
 // ========================================================
 
-// Helper reutilizável para identificar quem deve receber notificações/emails
+// Helper para notificações de CLIENTES - apenas criador e responsável
+async function getRecipientsForClientTicket({
+  createdBy,
+  responsibleId,
+}: {
+  createdBy: string;
+  responsibleId: string | null;
+}): Promise<string[]> {
+  const recipients = new Set<string>();
+
+  console.log('DEBUG: Buscando recipients para cliente:', { createdBy, responsibleId });
+
+  // Adicionar sempre o criador do ticket
+  if (createdBy) {
+    recipients.add(createdBy);
+    console.log(`✅ Criador do ticket adicionado aos recipients: ${createdBy}`);
+  }
+
+  // Adicionar o responsável selecionado se existir e for diferente do criador
+  if (responsibleId && responsibleId !== createdBy) {
+    recipients.add(responsibleId);
+    console.log(`✅ Responsável adicionado aos recipients: ${responsibleId}`);
+  }
+
+  const recipientsList = Array.from(recipients);
+  console.log(`📊 Total de recipients encontrados: ${recipientsList.length}`);
+  
+  return recipientsList;
+}
+
+// Helper para notificações de FUNCIONAIS - lógica original com todos os critérios
 async function getRecipientsForTicket({
   projectId,
   moduleId,
@@ -24,7 +54,7 @@ async function getRecipientsForTicket({
   const recipients = new Set<string>(); // Usar Set para evitar duplicatas
   const isIncident = categoryName === 'Incidente';
 
-  console.log('DEBUG: Buscando recipients para:', { projectId, moduleId, categoryName, isIncident });
+  console.log('DEBUG: Buscando recipients (funcional):', { projectId, moduleId, categoryName, isIncident });
 
   // 1. Buscar gerentes administrativos do projeto
   const { data: projectResources, error: resourceError } = await supabase
@@ -165,7 +195,95 @@ async function getRecipientsForTicket({
   return recipientsList;
 }
 
-// Função auxiliar para criar notificação
+// Função auxiliar para criar notificação para CLIENTES
+async function createTicketNotificationForClient(ticketData: {
+  ticketId: string;
+  categoryName: string | null;
+  userName: string;
+  userId: string;
+  responsibleId: string | null;
+}) {
+  console.log('DEBUG: createTicketNotificationForClient iniciada com dados:', ticketData);
+  
+  try {
+    const { categoryName, userName, userId, ticketId, responsibleId } = ticketData;
+    
+    console.log('DEBUG: Extraindo dados para notificação (cliente):', {
+      categoryName,
+      userName,
+      userId,
+      ticketId,
+      responsibleId
+    });
+    
+    // Determinar severidade baseada na categoria
+    const severity = categoryName === 'Incidente' ? 'warning' : 'info';
+    const supabase = await createClient();
+
+    // Usar o helper para buscar recipients (criador e responsável)
+    const recipientsList = await getRecipientsForClientTicket({
+      createdBy: userId,
+      responsibleId,
+    });
+
+    if (recipientsList.length === 0) {
+      console.warn('Nenhum recipient encontrado para a notificação do ticket:', ticketId);
+      return;
+    }
+    
+    console.log('DEBUG: Recipients para notificação (cliente):', recipientsList);
+    console.log('DEBUG: Criando notificação para ticket:', ticketId);
+    
+    // Criar a notificação diretamente no banco de dados (sem API HTTP)
+    const { data: notification, error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        type: 'ALERT',
+        severity,
+        title: 'Novo Chamado Aberto',
+        body: `Um(a) novo(a) ${categoryName || 'chamado'} foi aberto por ${userName}`,
+        action_url: `/main/smartcare/management/${ticketId}`,
+        created_by: userId,
+      })
+      .select('id')
+      .single();
+
+    console.log('DEBUG: Resultado da criação de notificação:', { notification, notificationError });
+
+    if (notificationError) {
+      console.error('Erro ao criar notificação:', notificationError);
+      return;
+    }
+
+    console.log('DEBUG: Notificação criada com ID:', notification?.id);
+
+    // Criar os recipients da notificação
+    const recipientRecords = recipientsList.map(userId => ({
+      notification_id: notification.id,
+      user_id: userId,
+    }));
+
+    console.log('DEBUG: Records de recipients:', recipientRecords);
+
+    const { error: recipientError } = await supabase
+      .from('notification_recipients')
+      .insert(recipientRecords);
+
+    console.log('DEBUG: Resultado da criação de recipients:', { recipientError });
+
+    if (recipientError) {
+      console.error('Erro ao criar recipients da notificação:', recipientError);
+    } else {
+      console.log(`Notificação criada com sucesso para o ticket: ${ticketId}`);
+      console.log(`Total de recipients: ${recipientsList.length}`);
+      console.log(`Tipo de chamado: ${categoryName || 'N/A'} (${categoryName === 'Incidente' ? 'INCIDENTE' : 'NORMAL'})`);
+    }
+  } catch (error) {
+    console.error('Erro ao criar notificação para ticket:', error);
+  }
+}
+
+// Função auxiliar para criar notificação para FUNCIONAIS
 async function createTicketNotification(ticketData: {
   ticketId: string;
   categoryName: string | null;
@@ -179,7 +297,7 @@ async function createTicketNotification(ticketData: {
   try {
     const { categoryName, userName, userId, ticketId, projectId, moduleId } = ticketData;
     
-    console.log('DEBUG: Extraindo dados para notificação:', {
+    console.log('DEBUG: Extraindo dados para notificação (funcional):', {
       categoryName,
       userName,
       userId,
@@ -204,7 +322,7 @@ async function createTicketNotification(ticketData: {
       return;
     }
     
-    console.log('DEBUG: Recipients para notificação:', recipientsList);
+    console.log('DEBUG: Recipients para notificação (funcional):', recipientsList);
     console.log('DEBUG: Criando notificação para ticket:', ticketId);
     
     // Criar a notificação diretamente no banco de dados (sem API HTTP)
@@ -257,7 +375,166 @@ async function createTicketNotification(ticketData: {
   }
 }
 
-// Função auxiliar para enviar notificação por email usando a mesma lógica de recipients
+// Função auxiliar para enviar notificação por email para CLIENTES
+async function notifyByEmailForClient({
+  ticketId,
+  ticketExternalId,
+  ticketTitle,
+  ticketDescription,
+  categoryName,
+  clientName,
+  clientEmail,
+  projectId,
+  createdBy,
+  responsibleId,
+}: {
+  ticketId: string;
+  ticketExternalId?: string;
+  ticketTitle: string;
+  ticketDescription: string;
+  categoryName: string | null;
+  clientName: string;
+  clientEmail: string;
+  projectId: string;
+  createdBy: string;
+  responsibleId: string | null;
+}) {
+  try {
+    console.log('DEBUG: Iniciando envio de emails para cliente do ticket:', ticketId);
+    
+    const supabase = await createClient();
+
+    // Usar o helper para buscar recipients (criador e responsável)
+    const recipientUserIds = await getRecipientsForClientTicket({
+      createdBy,
+      responsibleId,
+    });
+
+    if (recipientUserIds.length === 0) {
+      console.warn(`Nenhum recipient encontrado para envio de email do ticket ${ticketId}`);
+      return;
+    }
+
+    // Buscar dados completos dos usuários (email, nome, etc.) filtrando apenas ativos
+    const { data: recipientUsers, error: usersError } = await supabase
+      .from('user')
+      .select('id, email, first_name, last_name, is_active')
+      .in('id', recipientUserIds)
+      .eq('is_active', true)
+      .not('email', 'is', null);
+
+    if (usersError) {
+      console.error('Erro ao buscar dados dos recipients para email:', usersError);
+      return;
+    }
+
+    if (!recipientUsers || recipientUsers.length === 0) {
+      console.warn(`Nenhum usuário ativo com email encontrado para o ticket ${ticketId}`);
+      return;
+    }
+
+    // ===== MODO DE TESTE - ENVIAR APENAS PARA UM EMAIL =====
+    let finalRecipients = recipientUsers;
+    if (TEST_MODE && TEST_EMAIL) {
+      console.log(`🧪 MODO DE TESTE ATIVADO: Enviando email apenas para ${TEST_EMAIL}`);
+      console.log(`📧 Recipients originais: ${recipientUsers.length} usuários`);
+      console.log(`📋 Lista original:`, recipientUsers.map(u => `${u.first_name} ${u.last_name} (${u.email})`));
+      
+      // Criar um recipient fictício com o email de teste
+      finalRecipients = [{
+        id: 'test-user',
+        email: TEST_EMAIL,
+        first_name: 'Teste',
+        last_name: 'Desenvolvimento',
+        is_active: true
+      }];
+      
+      console.log(`✅ Redirecionando todos os emails para: ${TEST_EMAIL}`);
+    }
+    // =====================================================
+
+    // Buscar informações do projeto para o email
+    const { data: project, error: projectError } = await supabase
+      .from('project')
+      .select(`
+        projectName,
+        partnerId,
+        partner:partnerId ( partner_desc )
+      `)
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !project) {
+      console.error('Erro ao buscar projeto para email:', projectError);
+      return;
+    }
+
+    // Preparar dados para o template de email
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const partnerName = (project.partner as any)?.partner_desc || 'N/A';
+    
+    const emailData: EmailTemplateData = {
+      ticketId,
+      ticketExternalId,
+      ticketTitle,
+      ticketDescription,
+      projectName: project.projectName,
+      partnerName,
+      clientName,
+      clientEmail,
+      categoryName: categoryName || undefined
+    };
+
+    // Gerar template de email
+    const emailTemplate = generateEmailTemplate('ticket-created', emailData);
+
+    // Enviar email para cada recipient
+    const emailPromises = finalRecipients.map(async (user) => {
+      if (!user.email) {
+        console.warn(`Usuário ${user.first_name} ${user.last_name} não possui email cadastrado`);
+        return { success: false, user: `${user.first_name} ${user.last_name}`, error: 'Email não cadastrado' };
+      }
+
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+
+      try {
+        await sendOutlookMail({
+          to: user.email,
+          subject: emailTemplate.subject,
+          text: emailTemplate.text,
+          html: emailTemplate.html,
+        });
+
+        console.log(`Email enviado com sucesso para ${fullName} (${user.email})`);
+        return { success: true, user: fullName, email: user.email };
+      } catch (error) {
+        console.error(`Erro ao enviar email para ${fullName}:`, error);
+        return { success: false, user: fullName, error: error instanceof Error ? error.message : 'Erro desconhecido' };
+      }
+    });
+
+    const results = await Promise.all(emailPromises);
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+
+    console.log(`Emails processados para ticket ${ticketId}: ${successful.length} enviados, ${failed.length} falharam`);
+    console.log(`Recipients encontrados: ${recipientUserIds.length}, com email válido: ${recipientUsers.length}`);
+    
+    if (TEST_MODE) {
+      console.log(`🧪 MODO DE TESTE: Email redirecionado para ${TEST_EMAIL}`);
+      console.log(`📊 Estatísticas originais: ${recipientUserIds.length} recipients, ${recipientUsers.length} com email válido`);
+    }
+    
+    if (failed.length > 0) {
+      console.error('Falhas no envio de email:', failed);
+    }
+
+  } catch (error) {
+    console.error('Erro ao processar notificação de email para ticket (cliente):', error);
+  }
+}
+
+// Função auxiliar para enviar notificação por email para FUNCIONAIS
 async function notifyByEmailForTicket({
   ticketId,
   ticketExternalId,
@@ -280,11 +557,11 @@ async function notifyByEmailForTicket({
   clientEmail: string;
 }) {
   try {
-    console.log('DEBUG: Iniciando envio de emails para ticket:', ticketId);
+    console.log('DEBUG: Iniciando envio de emails para funcionais do ticket:', ticketId);
     
     const supabase = await createClient();
 
-    // Usar o helper para buscar recipients (mesma lógica das notificações)
+    // Usar o helper para buscar recipients (lógica funcional)
     const recipientUserIds = await getRecipientsForTicket({
       projectId,
       moduleId,
@@ -411,7 +688,7 @@ async function notifyByEmailForTicket({
     }
 
   } catch (error) {
-    console.error('Erro ao processar notificação de email para ticket:', error);
+    console.error('Erro ao processar notificação de email para ticket (funcional):', error);
   }
 }
 
@@ -436,6 +713,8 @@ export async function POST(req: NextRequest) {
     const attachment = formData.get("file") as File | null;
     const ref_ticket_id = formData.get("ref_ticket_id") as string | null;
     const ref_external_id = formData.get("ref_external_id") as string | null;
+    // Extrair responsável selecionado
+    const responsibleId = formData.get("responsible_id") as string | null;
 
     console.log('DEBUG API FormData - category_id recebido:', category_id);    // Validação detalhada dos campos obrigatórios (FormData)
     const missingFields = [];
@@ -468,6 +747,7 @@ export async function POST(req: NextRequest) {
           updated_by: user.id, // Incluir updated_by na criação
           ref_ticket_id: ref_ticket_id || null,
           ref_external_id: ref_external_id || null,
+          responsible: responsibleId || null,
         },
       ])
       .select('*, external_id')
@@ -549,22 +829,23 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Disparar notificação para os mesmos recipients das notificações do sistema
+      // Disparar notificação para o criador e o responsável selecionado
       const emailNotificationData = {
         ticketId: ticket.id.toString(),
         ticketExternalId: ticket.external_id,
         ticketTitle: title,
         ticketDescription: description,
-        projectId: contractId.toString(),
-        moduleId: Number(module_id),
         categoryName,
         clientName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Cliente',
         clientEmail: user.email || '',
+        projectId: contractId,
+        createdBy: user.id,
+        responsibleId: responsibleId || null,
       };
 
       // Chamar função de notificação de forma assíncrona para não bloquear a resposta
-      notifyByEmailForTicket(emailNotificationData).catch((error: unknown) => {
-        console.error('Erro ao enviar notificação por email:', error);
+      notifyByEmailForClient(emailNotificationData).catch((error: unknown) => {
+        console.error('Erro ao enviar notificação por email (cliente):', error);
       });
     }
 
@@ -592,16 +873,30 @@ export async function POST(req: NextRequest) {
       console.log('DEBUG: Nome do usuário para notificação:', userName);
       
       // Criar notificação de forma assíncrona usando external_id
-      createTicketNotification({
-        ticketId: ticket.external_id || ticket.id.toString(), // Usar external_id se disponível
-        categoryName,
-        userName,
-        userId: user.id,
-        projectId: contractId.toString(),
-        moduleId: Number(module_id),
-      }).catch(error => {
-        console.error('Erro ao criar notificação do sistema:', error);
-      });
+      if (user.is_client) {
+        // Cliente: usar versão simplificada (criador + responsável)
+        createTicketNotificationForClient({
+          ticketId: ticket.external_id || ticket.id.toString(),
+          categoryName,
+          userName,
+          userId: user.id,
+          responsibleId: responsibleId || null,
+        }).catch(error => {
+          console.error('Erro ao criar notificação do sistema (cliente):', error);
+        });
+      } else {
+        // Funcional: usar versão completa com lógica de recipients
+        createTicketNotification({
+          ticketId: ticket.external_id || ticket.id.toString(),
+          categoryName,
+          userName,
+          userId: user.id,
+          projectId: contractId,
+          moduleId: Number(module_id),
+        }).catch(error => {
+          console.error('Erro ao criar notificação do sistema (funcional):', error);
+        });
+      }
     }
 
     return NextResponse.json(ticket);
@@ -708,22 +1003,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Disparar notificação para os mesmos recipients das notificações do sistema
+    // Disparar notificação para o criador e o responsável selecionado
     const emailNotificationData = {
       ticketId: data.id.toString(),
       ticketExternalId: data.external_id,
       ticketTitle: title,
       ticketDescription: description,
-      projectId: contractId.toString(),
-      moduleId: Number(module_id),
       categoryName: categoryNameForEmail,
       clientName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Cliente',
       clientEmail: user.email || '',
+      projectId: contractId,
+      createdBy: user.id,
+      responsibleId: responsibleId || null,
     };
 
     // Chamar função de notificação de forma assíncrona para não bloquear a resposta
-    notifyByEmailForTicket(emailNotificationData).catch((error: unknown) => {
-      console.error('Erro ao enviar notificação por email:', error);
+    notifyByEmailForClient(emailNotificationData).catch((error: unknown) => {
+      console.error('Erro ao enviar notificação por email (cliente):', error);
     });
   }
 
@@ -748,16 +1044,30 @@ export async function POST(req: NextRequest) {
     const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Usuário';
     
     // Criar notificação de forma assíncrona usando external_id
-    createTicketNotification({
-      ticketId: data.external_id || data.id.toString(), // Usar external_id se disponível
-      categoryName,
-      userName,
-      userId: user.id,
-      projectId: contractId.toString(),
-      moduleId: Number(module_id),
-    }).catch(error => {
-      console.error('Erro ao criar notificação do sistema:', error);
-    });
+    if (user.is_client) {
+      // Cliente: usar versão simplificada (criador + responsável)
+      createTicketNotificationForClient({
+        ticketId: data.external_id || data.id.toString(),
+        categoryName,
+        userName,
+        userId: user.id,
+        responsibleId: responsibleId || null,
+      }).catch(error => {
+        console.error('Erro ao criar notificação do sistema (cliente):', error);
+      });
+    } else {
+      // Funcional: usar versão completa com lógica de recipients
+      createTicketNotification({
+        ticketId: data.external_id || data.id.toString(),
+        categoryName,
+        userName,
+        userId: user.id,
+        projectId: contractId,
+        moduleId: Number(module_id),
+      }).catch(error => {
+        console.error('Erro ao criar notificação do sistema (funcional):', error);
+      });
+    }
   }
 
   return NextResponse.json(data);

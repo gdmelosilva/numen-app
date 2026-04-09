@@ -25,8 +25,37 @@ async function getLastPublicMessage(ticketId: string): Promise<string | null> {
   return lastMessage?.body || null;
 }
 
-// Helper reutilizável para identificar quem deve receber notificações/emails de atualização
-async function getRecipientsForTicketUpdate({
+// Helper para atualização de tickets - CLIENTES: apenas criador e responsável
+async function getRecipientsForClientTicketUpdate({
+  createdBy,
+  responsibleId,
+}: {
+  createdBy: string;
+  responsibleId: string | null;
+}): Promise<string[]> {
+  const recipients = new Set<string>();
+
+  console.log('DEBUG: Buscando recipients para atualização (cliente):', { createdBy, responsibleId });
+
+  // Adicionar sempre o criador do ticket
+  if (createdBy) {
+    recipients.add(createdBy);
+    console.log(`✅ Criador do ticket adicionado aos recipients: ${createdBy}`);
+  }
+
+  // Adicionar o responsável selecionado se existir e for diferente do criador
+  if (responsibleId && responsibleId !== createdBy) {
+    recipients.add(responsibleId);
+    console.log(`✅ Responsável adicionado aos recipients: ${responsibleId}`);
+  }
+
+  const recipientIds = Array.from(recipients);
+  console.log(`📊 Total de recipients únicos encontrados: ${recipientIds.length}`);
+  return recipientIds;
+}
+
+// Helper para atualização de tickets - FUNCIONAIS: lógica original
+async function getRecipientsForFunctionalTicketUpdate({
   ticketId,
   projectId,
 }: {
@@ -34,9 +63,9 @@ async function getRecipientsForTicketUpdate({
   projectId: string;
 }): Promise<string[]> {
   const supabase = await createClient();
-  const recipients = new Set<string>(); // Usar Set para evitar duplicatas
+  const recipients = new Set<string>();
 
-  console.log('DEBUG: Buscando recipients para atualização do ticket:', { ticketId, projectId });
+  console.log('DEBUG: Buscando recipients para atualização (funcional):', { ticketId, projectId });
 
   // 1. Buscar todos os gerentes do cliente específico (via projeto)
   const { data: projectData, error: projectError } = await supabase
@@ -107,6 +136,9 @@ async function notifyTicketStatusUpdate({
   ticketExternalId,
   ticketTitle,
   projectId,
+  createdBy,
+  responsibleId,
+  isCreatorClient,
   updatedByUserId,
   newStatus,
   previousStatus,
@@ -116,6 +148,9 @@ async function notifyTicketStatusUpdate({
   ticketExternalId?: string;
   ticketTitle: string;
   projectId: string;
+  createdBy: string;
+  responsibleId: string | null;
+  isCreatorClient: boolean;
   updatedByUserId: string;
   newStatus: string;
   previousStatus: string;
@@ -126,11 +161,26 @@ async function notifyTicketStatusUpdate({
     
     const supabase = await createClient();
 
-    // Buscar recipients (gerentes do cliente e funcionais atrelados ao chamado)
-    const recipientUserIds = await getRecipientsForTicketUpdate({
-      ticketId,
-      projectId,
-    });
+    // Buscar recipients baseado no tipo de criador
+    let recipientUserIds: string[];
+    if (isCreatorClient) {
+      console.log('DEBUG: Usando lógica de cliente para recipients');
+      recipientUserIds = await getRecipientsForClientTicketUpdate({
+        createdBy,
+        responsibleId,
+      });
+    } else {
+      console.log('DEBUG: Usando lógica de funcional para recipients');
+      recipientUserIds = await getRecipientsForFunctionalTicketUpdate({
+        ticketId,
+        projectId,
+      });
+    }
+
+    if (recipientUserIds.length === 0) {
+      console.warn(`Nenhum recipient encontrado para envio de email do ticket ${ticketId}`);
+      return;
+    }
 
     if (recipientUserIds.length === 0) {
       console.warn(`Nenhum recipient encontrado para envio de email do ticket ${ticketId}`);
@@ -297,6 +347,8 @@ export async function PUT(req: NextRequest) {
         project_id,
         module_id,
         status_id,
+        created_by,
+        responsible,
         status:fk_status(name),
         category:fk_category(name)
       `)
@@ -353,6 +405,15 @@ export async function PUT(req: NextRequest) {
       // const categoryName = currentTicket.category as { name: string } | { name: string }[] | null;
       // const categoryStr = Array.isArray(categoryName) ? categoryName[0]?.name : categoryName?.name || null;
 
+      // Buscar se o criador é cliente
+      const { data: creatorData } = await supabase
+        .from('user')
+        .select('is_client')
+        .eq('id', currentTicket.created_by)
+        .single();
+
+      const isCreatorClient = creatorData?.is_client || false;
+
       // Buscar a última mensagem não privada do ticket para usar como updateDescription
       const lastMessageBody = await getLastPublicMessage(currentTicket.id);
       const updateDescription = lastMessageBody || `Status alterado de "${previousStatusName}" para "${newStatusName}"`;
@@ -363,6 +424,9 @@ export async function PUT(req: NextRequest) {
         ticketExternalId: currentTicket.external_id,
         ticketTitle: currentTicket.title,
         projectId: currentTicket.project_id,
+        createdBy: currentTicket.created_by,
+        responsibleId: currentTicket.responsible || null,
+        isCreatorClient,
         updatedByUserId: user.id,
         newStatus: newStatusName,
         previousStatus: previousStatusName,

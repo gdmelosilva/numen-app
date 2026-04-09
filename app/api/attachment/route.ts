@@ -1,35 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import { v4 as uuidv4 } from "uuid";
-import { cookies } from "next/headers";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-if (!supabaseKey) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY não está configurada");
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { authenticateRequest } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
   // Verifica autenticação do usuário
-  const cookieStore = await cookies();
-  const authCookie = cookieStore.get("sb-access-token") || cookieStore.get("sb-dbpnjawsexttdgqozfxl-auth-token");
+  const { user, error: authError } = await authenticateRequest();
+  if (authError) return authError;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const supabase = await createClient();
   
-  if (!authCookie) {
-    return NextResponse.json(
-      { error: "Unauthorized: Authentication required" },
-      { status: 401 }
-    );
-  }
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   const messageId = formData.get("messageId") as string | null;
   const ticketId = formData.get("ticketId") as string | null;
+  
   if (!file || (!messageId && !ticketId)) {
     return NextResponse.json({ error: "Arquivo, messageId ou ticketId ausente." }, { status: 400 });
   }
+  
   const fileExt = file.name.split(".").pop();
   const fileName = `${uuidv4()}.${fileExt}`;
   const filePath = `${messageId || ticketId}/${fileName}`;
@@ -38,9 +28,14 @@ export async function POST(req: NextRequest) {
   const { error } = await supabase.storage
     .from("numen-bucket")
     .upload(filePath, file, { contentType: file.type });
+  
   if (error) {
+    console.error("Erro ao fazer upload do arquivo:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
-  }  // Insere registro na tabela attachment
+  }
+
+  // Insere registro na tabela attachment
+  // Nota: tabela attachment NÃO tem ticket_id, apenas message_id
   const insertData = {
     path: filePath,
     name: file.name,
@@ -51,6 +46,7 @@ export async function POST(req: NextRequest) {
   
   const { error: dbError } = await supabase.from("attachment").insert(insertData);
   if (dbError) {
+    console.error("Erro ao inserir attachment no banco:", dbError);
     return NextResponse.json({ error: dbError.message }, { status: 500 });
   }
 
@@ -62,30 +58,28 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   // Verifica autenticação do usuário
-  const cookieStore = await cookies();
-  const authCookie = cookieStore.get("sb-access-token") || cookieStore.get("sb-dbpnjawsexttdgqozfxl-auth-token");
-  
-  if (!authCookie) {
-    return NextResponse.json(
-      { error: "Unauthorized: Authentication required" },
-      { status: 401 }
-    );
-  }
+  const { user, error: authError } = await authenticateRequest();
+  if (authError) return authError;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const supabase = await createClient();
   
   const { searchParams } = new URL(req.url);
-  const ticketId = searchParams.get("ticket_id") || searchParams.get("ticketId");
-  if (!ticketId) {
-    return NextResponse.json({ error: "ticket_id ausente." }, { status: 400 });
+  const messageId = searchParams.get("message_id") || searchParams.get("messageId");
+  
+  if (!messageId) {
+    return NextResponse.json({ error: "message_id ausente." }, { status: 400 });
   }
 
-  // Busca todos os anexos do ticket (com ou sem message_id)
+  // Busca todos os anexos da mensagem (remover busca por ticket_id que não existe)
   const { data, error } = await supabase
     .from("attachment")
-    .select("id, name, path, message_id, created_at, user_name")
-    .eq("ticket_id", ticketId)
+    .select("id, name, path, message_id, created_at, att_type")
+    .eq("message_id", messageId)
     .order("created_at", { ascending: true });
 
   if (error) {
+    console.error("Erro ao buscar attachments:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
