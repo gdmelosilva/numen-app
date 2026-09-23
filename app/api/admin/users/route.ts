@@ -104,7 +104,7 @@ export async function GET(request: Request) {
     });
 
     if (supabaseError) {
-      // Error details omitted for security
+      console.error("Erro ao buscar usuários:", supabaseError);
       return NextResponse.json(
         { error: "Erro ao buscar usuários", details: supabaseError.message },
         { status: 500 }
@@ -120,8 +120,8 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json(usersWithPartnerDesc || []);
-  } catch {
-    // Error details omitted for security
+  } catch (error) {
+    console.error("Erro interno ao listar usuários:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
@@ -198,6 +198,7 @@ export async function POST(request: Request) {
     });
 
     if (createErr) {
+      console.error("Erro ao criar usuário via Admin API:", createErr);
       throw createErr;
     }
 
@@ -227,6 +228,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, user: data.user });
   } catch (err) {
+    console.error("Erro ao criar usuário:", err);
     const error = err as Error & { status?: number; code?: string };
     let friendlyMessage = 'An unexpected error occurred.';
     let status = 500;
@@ -234,7 +236,13 @@ export async function POST(request: Request) {
     if (error.message?.includes('Database error saving new user')) {
       friendlyMessage = 'Database error occurred while creating user. Please check the user data and try again.';
       status = 500;
-    } else if (error.message?.includes('duplicate key') || error.message?.includes('already exists')) {
+    } else if (
+      error.code === 'email_exists' ||
+      error.code === 'user_already_exists' ||
+      error.message?.includes('duplicate key') ||
+      error.message?.includes('already exists') ||
+      error.message?.includes('already registered')
+    ) {
       friendlyMessage = 'A user with this email already exists.';
       status = 409;
     } else if (error.message?.includes('Foreign Key Violation')) {
@@ -258,18 +266,19 @@ export async function POST(request: Request) {
 
 // Geração de senha com fonte criptográfica (Deno/Web)
 function generateSecurePassword(length = 8): string {
-  if (length < 3) throw new Error('length must be >= 3');
+  if (length < 4) throw new Error('length must be >= 4');
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // sem I/O
   const lower = 'abcdefghijkmnopqrstuvwxyz'; // sem l
   const digits = '23456789'; // sem 0/1
-  const all = upper + lower + digits;
+  const symbols = '!@#$%^&*_-+='; // exigido pela política de senha do Supabase
+  const all = upper + lower + digits + symbols;
   const randIndex = (max: number) => {
     const arr = new Uint32Array(1);
     crypto.getRandomValues(arr);
     return arr[0] % max;
   };
   const pick = (chars: string) => chars[randIndex(chars.length)];
-  const required = [pick(upper), pick(lower), pick(digits)];
+  const required = [pick(upper), pick(lower), pick(digits), pick(symbols)];
   const remaining: string[] = [];
   for (let i = 0; i < length - required.length; i++) remaining.push(pick(all));
   // Fisher–Yates
